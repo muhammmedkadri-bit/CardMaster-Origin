@@ -35,14 +35,30 @@ export const dataSyncService = {
     subscribeToChanges(userId: string, onEvent: (table: string, payload: any) => void) {
         if (!supabase) return null;
 
-        const channel = supabase.channel(`db_changes_${userId}`)
-            .on('postgres_changes', { event: '*', schema: 'public' }, (payload: any) => {
-                const data = payload.new || payload.old;
-                if (data && data.user_id === userId) {
-                    onEvent(payload.table, payload);
-                }
+        const sessionId = Math.random().toString(36).substring(7);
+        console.log(`[Realtime] Subscribing for user: ${userId} (Session: ${sessionId})`);
+
+        const channel = supabase.channel(`realtime_all_${userId}_${sessionId}`)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'cards' }, (p) => {
+                console.log("[Realtime] Cards change:", p.eventType);
+                onEvent('cards', p);
             })
-            .subscribe();
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, (p) => {
+                console.log("[Realtime] Transactions change:", p.eventType);
+                onEvent('transactions', p);
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, (p) => {
+                onEvent('categories', p);
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, (p) => {
+                onEvent('notifications', p);
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_history' }, (p) => {
+                onEvent('chat_history', p);
+            })
+            .subscribe((status) => {
+                console.log(`[Realtime] Status for ${userId}:`, status);
+            });
 
         return channel;
     },
