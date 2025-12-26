@@ -1,0 +1,39 @@
+
+export interface CreditCard {
+  id: string;
+  bankName: string;
+  cardName: string;
+  lastFour: string;
+  limit: number;
+  balance: number;
+  statementDay: number;
+  dueDay: number;
+  color: string;
+  reminderDaysBefore: number;
+  minPaymentRatio: number; // Asgari ödeme yüzdesi (örn: 20 veya 40)
+  // Added optional property used for utilization alerts in visualization components
+  alertThreshold?: number;
+}
+
+export interface Transaction {
+  id: string;
+  cardId: string;
+  cardName: string;
+  type: 'spending' | 'payment';
+  amount: number;
+  category: string;
+  date: string;
+  description: string;
+  confirmationUrl?: string;
+}
+
+export interface AIInsight {
+  type: 'tip' | 'warning' | 'strategy';
+  message: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  color: string;
+}

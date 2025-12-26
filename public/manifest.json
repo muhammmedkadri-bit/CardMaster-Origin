@@ -1,0 +1,23 @@
+{
+    "name": "CardMaster",
+    "short_name": "CardMaster",
+    "description": "Kart Takip Asistanı",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0b0f1a",
+    "theme_color": "#3b82f6",
+    "icons": [
+        {
+            "src": "/favicon.png",
+            "sizes": "1024x1024",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/apple-touch-icon.png",
+            "sizes": "1024x1024",
+            "type": "image/png",
+            "purpose": "any"
+        }
+    ]
+}

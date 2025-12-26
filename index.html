@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover">
+  <title>CardMaster - Kart Takip Asistanı</title>
+
+  <!-- App Icons and PWA Meta Tags -->
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CardMaster">
+  <meta name="theme-color" content="#0b0f1a" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap"
+    rel="stylesheet">
+  <!-- PDF Generation Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+      overflow-x: hidden;
+    }
+
+    .dark body {
+      background-color: #0b0f1a;
+    }
+
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Mobile Optimization: Prevent zoom on focus for iOS */
+    @media screen and (max-width: 768px) {
+
+      input,
+      select,
+      textarea {
+        font-size: 16px !important;
+      }
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 10px;
+    }
+
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #1e293b;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Realistic Card Textures */
+    .card-texture-brushed {
+      background-image: url("https://www.transparenttextures.com/patterns/brushed-alum.png");
+    }
+
+    /* Embossed Text Effect */
+    .text-embossed {
+      text-shadow:
+        -1px -1px 1px rgba(255, 255, 255, 0.3),
+        1px 1px 1px rgba(0, 0, 0, 0.8);
+    }
+
+    .card-inner {
+      box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.3);
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      transform: translateZ(0);
+    }
+
+    .card-container:hover .card-inner {
+      transform: translateY(-8px);
+      box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Glassmorphism for card number highlights */
+    .glass-highlight {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    /* Loading Bar Animation */
+    @keyframes loading-bar {
+      0% {
+        transform: translateX(-100%);
+      }
+
+      50% {
+        transform: translateX(0);
+      }
+
+      100% {
+        transform: translateX(100%);
+      }
+    }
+
+    .animate-loading-bar {
+      animation: loading-bar 2s infinite ease-in-out;
+    }
+
+    /* Ultra-Premium Logo Animations */
+    @keyframes logo-scan {
+      0% {
+        transform: translateX(-150%) skewX(-25deg);
+      }
+
+      100% {
+        transform: translateX(150%) skewX(-25deg);
+      }
+    }
+
+    @keyframes logo-orbit {
+      0% {
+        transform: rotate(0deg) translateY(0);
+      }
+
+      33% {
+        transform: rotate(1deg) translateY(-4px);
+      }
+
+      66% {
+        transform: rotate(-1deg) translateY(2px);
+      }
+
+      100% {
+        transform: rotate(0deg) translateY(0);
+      }
+    }
+
+    @keyframes text-reveal {
+      0% {
+        letter-spacing: 0.1em;
+        opacity: 0.8;
+      }
+
+      50% {
+        letter-spacing: 0.4em;
+        opacity: 1;
+      }
+
+      100% {
+        letter-spacing: 0.1em;
+        opacity: 0.8;
+      }
+    }
+
+    @keyframes chip-glow {
+
+      0%,
+      100% {
+        opacity: 0.3;
+        filter: brightness(1);
+      }
+
+      50% {
+        opacity: 0.8;
+        filter: brightness(1.5);
+      }
+    }
+
+    .animate-logo-scan {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .animate-logo-scan::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 40%;
+      height: 100%;
+      background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.4), transparent);
+      animation: logo-scan 2s infinite ease-in-out;
+    }
+
+    .animate-logo-orbit {
+      animation: logo-orbit 4s infinite ease-in-out;
+    }
+
+    .animate-text-reveal {
+      animation: text-reveal 3s infinite ease-in-out;
+    }
+
+    .animate-chip-glow {
+      animation: chip-glow 2s infinite ease-in-out;
+    }
+  </style>
+  <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "recharts": "https://esm.sh/recharts@^3.6.0"
+  }
+}
+</script>
+  <link rel="stylesheet" href="/index.css">
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+
+</html>
