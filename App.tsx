@@ -874,7 +874,7 @@ const App: React.FC = () => {
   const logoBlur = Math.min(10, (scrollY / logoScrollThreshold) * 10);
 
   return (
-    <div className={`min-h-screen transition-colors duration-500 pb-32 overflow-x-hidden ${isDarkMode ? 'bg-[#070b14] text-slate-100' : 'bg-[#f8fafc] text-slate-900'}`}>
+    <div className={`min-h-screen transition-colors duration-500 pb-40 sm:pb-32 overflow-x-hidden ${isDarkMode ? 'bg-[#070b14] text-slate-100' : 'bg-[#f8fafc] text-slate-900'}`}>
 
       {/* Header with Revised Logo */}
       <header className="fixed top-0 left-0 right-0 z-40 pointer-events-none p-6">
@@ -894,10 +894,10 @@ const App: React.FC = () => {
             <Logo isDarkMode={isDarkMode} />
           </div>
 
-          <div className="flex items-center gap-3 pointer-events-auto">
+          <div className="flex items-center gap-2 sm:gap-3 pointer-events-auto">
             {/* Realtime Status Indicator */}
             <div
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] font-black tracking-widest uppercase transition-all shadow-sm ${realtimeStatus === 'connected'
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 rounded-full text-[9px] font-black tracking-widest uppercase transition-all shadow-sm ${realtimeStatus === 'connected'
                 ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
                 : realtimeStatus === 'connecting'
                   ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20 animate-pulse'
@@ -1094,39 +1094,47 @@ const App: React.FC = () => {
                               const isSpending = tx.type === 'spending';
 
                               return (
-                                <div key={tx.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 rounded-[24px] sm:rounded-[28px] transition-all group border border-transparent ${isDarkMode ? 'hover:bg-slate-800/30 hover:border-slate-700' : 'hover:bg-slate-50 hover:border-slate-100 shadow-sm hover:shadow-md'}`}>
-                                  <div className="flex items-center gap-4 sm:gap-5 mb-3 sm:mb-0">
+                                <div key={tx.id} className={`relative flex items-center justify-between p-3 sm:p-5 rounded-[24px] sm:rounded-[28px] transition-all group border border-transparent ${isDarkMode ? 'bg-slate-800/20 hover:bg-slate-800/40 hover:border-slate-700' : 'bg-white hover:bg-slate-50 hover:border-slate-100 shadow-sm hover:shadow-md'}`}>
+                                  {/* Left: Icon & Details */}
+                                  <div className="flex items-center gap-3 sm:gap-5 flex-1 min-w-0">
                                     <div
-                                      className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-colors ${isSpending
+                                      className={`p-2.5 sm:p-4 rounded-xl sm:rounded-2xl shrink-0 transition-colors ${isSpending
                                         ? 'bg-rose-500/10 text-rose-500'
                                         : 'bg-emerald-500/10 text-emerald-500'
                                         }`}
                                     >
-                                      {isSpending ? <ShoppingBag size={20} /> : <PaymentIcon size={20} />}
+                                      {isSpending ? <ShoppingBag size={18} className="sm:w-5 sm:h-5" /> : <PaymentIcon size={18} className="sm:w-5 sm:h-5" />}
                                     </div>
-                                    <div className="flex-1">
+                                    <div className="flex flex-col min-w-0 pr-2">
                                       <div className="flex items-center gap-2">
-                                        <p className={`font-black text-sm sm:text-base tracking-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{tx.description || (isSpending ? 'HARCAMA' : 'ÖDEME')}</p>
+                                        <p className={`font-black text-xs sm:text-base tracking-tight truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+                                          {tx.description || (isSpending ? 'HARCAMA' : 'ÖDEME')}
+                                        </p>
                                         {tx.confirmationUrl && (
-                                          <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="p-1 rounded-md text-blue-500 hover:bg-blue-500/10 transition-colors" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={14} /></a>
+                                          <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 p-1 rounded-md text-blue-500 hover:bg-blue-500/10 transition-colors" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={12} className="sm:w-3.5 sm:h-3.5" /></a>
                                         )}
                                       </div>
-                                      <div className="flex flex-col mt-0.5">
-                                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.15em]">{tx.cardName}</p>
-                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{formatDateDisplay(tx.date)}</p>
+                                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                                        <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest truncate max-w-[100px] sm:max-w-none">{tx.cardName}</p>
+                                        <span className="text-[9px] text-slate-300 dark:text-slate-700">•</span>
+                                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{formatDateDisplay(tx.date)}</p>
                                       </div>
                                     </div>
                                   </div>
-                                  <div className="flex items-center justify-between sm:justify-end gap-6">
+
+                                  {/* Right: Amount & Actions */}
+                                  <div className="flex flex-col items-end gap-1 shrink-0">
                                     <p
-                                      className={`font-black text-lg sm:text-xl tracking-tighter transition-colors ${isSpending ? 'text-rose-500' : 'text-emerald-500'
+                                      className={`font-black text-sm sm:text-xl tracking-tighter transition-colors ${isSpending ? 'text-rose-500' : 'text-emerald-500'
                                         }`}
                                     >
-                                      {isSpending ? '-' : '+'} TL {tx.amount.toLocaleString('tr-TR')}
+                                      {isSpending ? '-' : '+'}₺{tx.amount.toLocaleString('tr-TR')}
                                     </p>
-                                    <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <button onClick={() => startEditTransaction(tx)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-400 hover:text-blue-400 hover:bg-slate-700' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-200'}`}><Edit2 size={16} /></button>
-                                      <button onClick={() => setTransactionToDelete(tx)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-400 hover:text-rose-400 hover:bg-slate-700' : 'text-slate-400 hover:text-rose-600 hover:bg-slate-200'}`}><Trash2 size={16} /></button>
+
+                                    {/* Mobile Safe Actions */}
+                                    <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                      <button onClick={() => startEditTransaction(tx)} className={`p-1.5 sm:p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-500 hover:text-blue-400 hover:bg-slate-700' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-200'}`}><Edit2 size={14} className="sm:w-4 sm:h-4" /></button>
+                                      <button onClick={() => setTransactionToDelete(tx)} className={`p-1.5 sm:p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-500 hover:text-rose-400 hover:bg-slate-700' : 'text-slate-400 hover:text-rose-600 hover:bg-slate-200'}`}><Trash2 size={14} className="sm:w-4 sm:h-4" /></button>
                                     </div>
                                   </div>
                                 </div>
@@ -1228,37 +1236,39 @@ const App: React.FC = () => {
             )}
           </main>
 
-          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center">
-            {isFabOpen && (
-              <div className="mb-4 flex flex-col gap-3 min-w-[210px] animate-in fade-in slide-in-from-bottom-4 duration-300">
-                <button onClick={() => { setModalMode('spending'); setIsFabOpen(false); }} className={`p-4 rounded-[24px] shadow-2xl flex items-center gap-4 font-black uppercase text-[10px] tracking-widest transition-all border active:scale-95 group ${isDarkMode ? 'bg-slate-900 border-slate-800 text-white hover:bg-slate-800' : 'bg-white border-slate-100 text-slate-800 hover:bg-slate-50'}`}>
-                  <div className="bg-rose-500/10 text-rose-500 p-2.5 rounded-xl group-hover:rotate-45 transition-transform"><ArrowUpRight size={16} /></div>
-                  <span>HARCAMA EKLE</span>
-                </button>
-                <button onClick={() => { setModalMode('payment'); setIsFabOpen(false); }} className={`p-4 rounded-[24px] shadow-2xl flex items-center gap-4 font-black uppercase text-[10px] tracking-widest transition-all border active:scale-95 group ${isDarkMode ? 'bg-slate-900 border-slate-800 text-white hover:bg-slate-800' : 'bg-white border-slate-100 text-slate-800 hover:bg-slate-50'}`}>
-                  <div className="bg-emerald-500/10 text-emerald-500 p-2.5 rounded-xl group-hover:-rotate-45 transition-transform"><ArrowDownRight size={16} /></div>
-                  <span>ÖDEME YAP</span>
-                </button>
-                <button onClick={() => { setModalMode('add'); setIsFabOpen(false); }} className={`p-4 rounded-[24px] shadow-2xl flex items-center gap-4 font-black uppercase text-[10px] tracking-widest transition-all border active:scale-95 group ${isDarkMode ? 'bg-slate-900 border-slate-800 text-white hover:bg-slate-800' : 'bg-white border-slate-100 text-slate-800 hover:bg-slate-50'}`}>
-                  <div className="bg-blue-500/10 text-blue-500 p-2.5 rounded-xl group-hover:scale-110 transition-transform"><Plus size={16} /></div>
-                  <span>YENİ KART EKLE</span>
-                </button>
-              </div>
-            )}
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center w-full max-w-[320px] sm:max-w-none pointer-events-none">
+            <div className="pointer-events-auto flex flex-col items-center">
+              {isFabOpen && (
+                <div className="mb-4 flex flex-col gap-3 min-w-[210px] animate-in fade-in slide-in-from-bottom-4 duration-300">
+                  <button onClick={() => { setModalMode('spending'); setIsFabOpen(false); }} className={`p-4 rounded-[24px] shadow-2xl flex items-center gap-4 font-black uppercase text-[10px] tracking-widest transition-all border active:scale-95 group ${isDarkMode ? 'bg-slate-900 border-slate-800 text-white hover:bg-slate-800' : 'bg-white border-slate-100 text-slate-800 hover:bg-slate-50'}`}>
+                    <div className="bg-rose-500/10 text-rose-500 p-2.5 rounded-xl group-hover:rotate-45 transition-transform"><ArrowUpRight size={16} /></div>
+                    <span>HARCAMA EKLE</span>
+                  </button>
+                  <button onClick={() => { setModalMode('payment'); setIsFabOpen(false); }} className={`p-4 rounded-[24px] shadow-2xl flex items-center gap-4 font-black uppercase text-[10px] tracking-widest transition-all border active:scale-95 group ${isDarkMode ? 'bg-slate-900 border-slate-800 text-white hover:bg-slate-800' : 'bg-white border-slate-100 text-slate-800 hover:bg-slate-50'}`}>
+                    <div className="bg-emerald-500/10 text-emerald-500 p-2.5 rounded-xl group-hover:-rotate-45 transition-transform"><ArrowDownRight size={16} /></div>
+                    <span>ÖDEME YAP</span>
+                  </button>
+                  <button onClick={() => { setModalMode('add'); setIsFabOpen(false); }} className={`p-4 rounded-[24px] shadow-2xl flex items-center gap-4 font-black uppercase text-[10px] tracking-widest transition-all border active:scale-95 group ${isDarkMode ? 'bg-slate-900 border-slate-800 text-white hover:bg-slate-800' : 'bg-white border-slate-100 text-slate-800 hover:bg-slate-50'}`}>
+                    <div className="bg-blue-500/10 text-blue-500 p-2.5 rounded-xl group-hover:scale-110 transition-transform"><Plus size={16} /></div>
+                    <span>YENİ KART EKLE</span>
+                  </button>
+                </div>
+              )}
 
-            <div className={`flex items-center gap-1 sm:gap-2 p-1.5 sm:p-2 rounded-[28px] sm:rounded-[32px] border shadow-2xl backdrop-blur-2xl transition-all ${isDarkMode ? 'bg-[#0f172a]/80 border-slate-800 shadow-black' : 'bg-white/80 border-slate-200'}`}>
-              <div className="flex items-center px-0.5 sm:px-1">
-                <a href="#" onClick={(e) => { e.preventDefault(); handleViewChange('dashboard'); }} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'dashboard' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`}><LayoutDashboard size={18} className="sm:w-5 sm:h-5" /></a>
-                <a href="#" onClick={(e) => { e.preventDefault(); handleViewChange('cards'); }} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'cards' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`}><CardIcon size={18} className="sm:w-5 sm:h-5" /></a>
-                <a href="#" onClick={(e) => { e.preventDefault(); handleViewChange('analysis'); }} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'analysis' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`}><BarChart3 size={18} className="sm:w-5 sm:h-5" /></a>
-              </div>
-              <button onClick={() => setIsFabOpen(!isFabOpen)} className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-white shadow-xl transition-all transform hover:scale-105 active:scale-95 border-[3px] sm:border-4 ${isDarkMode ? 'border-[#0a1224]' : 'border-white'} ${isFabOpen ? 'bg-slate-800 rotate-45' : 'bg-blue-600 shadow-blue-600/30'}`}><Plus size={24} className="sm:w-8 sm:h-8" strokeWidth={3} /></button>
-              <div className="flex items-center px-0.5 sm:px-1">
-                <button onClick={() => setIsAIPanelOpen(true)} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${isDarkMode ? 'text-slate-400 hover:text-amber-400 hover:bg-slate-800' : 'text-slate-500 hover:text-amber-600 hover:bg-slate-100'}`}><Sparkles size={18} className="sm:w-5 sm:h-5" /></button>
-                <a href="#" onClick={(e) => { e.preventDefault(); handleViewChange('settings'); }} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'settings' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`}><SettingsIcon size={18} className="sm:w-5 sm:h-5" /></a>
-                <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${isDarkMode ? 'text-slate-400 hover:text-yellow-400 hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100'}`}>
-                  {isDarkMode ? <Sun size={18} className="sm:w-5 sm:h-5" /> : <Moon size={18} className="sm:w-5 sm:h-5" />}
-                </button>
+              <div className={`flex items-center gap-1 sm:gap-2 p-1.5 sm:p-2 rounded-[28px] sm:rounded-[32px] border shadow-2xl backdrop-blur-2xl transition-all ${isDarkMode ? 'bg-[#0f172a]/90 border-slate-800 shadow-black' : 'bg-white/90 border-slate-200 shadow-blue-900/10'}`}>
+                <div className="flex items-center px-0.5 sm:px-1 gap-1">
+                  <a href="#" onClick={(e) => { e.preventDefault(); handleViewChange('dashboard'); }} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'dashboard' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`}><LayoutDashboard size={20} className="sm:w-5 sm:h-5" /></a>
+                  <a href="#" onClick={(e) => { e.preventDefault(); handleViewChange('cards'); }} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'cards' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`}><CardIcon size={20} className="sm:w-5 sm:h-5" /></a>
+                  <a href="#" onClick={(e) => { e.preventDefault(); handleViewChange('analysis'); }} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'analysis' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`}><BarChart3 size={20} className="sm:w-5 sm:h-5" /></a>
+                </div>
+                <button onClick={() => setIsFabOpen(!isFabOpen)} className={`shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-white shadow-xl transition-all transform hover:scale-105 active:scale-95 border-[3px] sm:border-4 ${isDarkMode ? 'border-[#0a1224]' : 'border-white'} ${isFabOpen ? 'bg-slate-800 rotate-45' : 'bg-blue-600 shadow-blue-600/30'}`}><Plus size={24} className="sm:w-8 sm:h-8" strokeWidth={3} /></button>
+                <div className="flex items-center px-0.5 sm:px-1 gap-1">
+                  <button onClick={() => setIsAIPanelOpen(true)} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${isDarkMode ? 'text-slate-400 hover:text-amber-400 hover:bg-slate-800' : 'text-slate-500 hover:text-amber-600 hover:bg-slate-100'}`}><Sparkles size={20} className="sm:w-5 sm:h-5" /></button>
+                  <a href="#" onClick={(e) => { e.preventDefault(); handleViewChange('settings'); }} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'settings' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`}><SettingsIcon size={20} className="sm:w-5 sm:h-5" /></a>
+                  <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${isDarkMode ? 'text-slate-400 hover:text-yellow-400 hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100'}`}>
+                    {isDarkMode ? <Sun size={20} className="sm:w-5 sm:h-5" /> : <Moon size={20} className="sm:w-5 sm:h-5" />}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
