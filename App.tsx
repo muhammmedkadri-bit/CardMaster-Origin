@@ -163,6 +163,7 @@ const App: React.FC = () => {
   });
 
   const realtimeChannelRef = useRef<any>(null);
+  const lastSyncTimeRef = useRef<number>(Date.now());
 
   const [cards, setCards] = useState<CreditCard[]>(() => {
     const saved = localStorage.getItem('user_cards');
@@ -375,6 +376,7 @@ const App: React.FC = () => {
   }, []);
 
   const [lastUpdate, setLastUpdate] = useState(Date.now());
+  const [realtimeStatus, setRealtimeStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
 
   // --- REF FOR STABLE STATE ACCESS IN REALTIME ---
   const cardsRef = useRef(cards);
@@ -382,69 +384,54 @@ const App: React.FC = () => {
     cardsRef.current = cards;
   }, [cards]);
 
-  // --- REALTIME STATUS ---
-  const [realtimeStatus, setRealtimeStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
-
   // --- REALTIME SUBSCRIPTION ---
   useEffect(() => {
-    if (!user) {
-      setRealtimeStatus('connecting');
-      return;
-    }
+    if (!user) return;
+
+    let syncTimer: any;
 
     const connectRealtime = async () => {
-      // Clean up any existing channel first
       if (realtimeChannelRef.current) {
         supabase.removeChannel(realtimeChannelRef.current);
       }
 
-      console.log("[Realtime] Force establishing connection...");
-      setRealtimeStatus('connecting');
-
       const syncAll = async () => {
-        const data = await dataSyncService.fetchAllData(user.id);
-        if (data) {
-          setCards(data.cards);
-          setTransactions(data.transactions);
-          setCategories(data.categories);
-          setNotificationHistory(data.notifications);
-          setChatHistory(data.chat);
-          setLastUpdate(Date.now());
-        }
+        // Debounce sync to avoid hammering the server on multiple events
+        if (syncTimer) clearTimeout(syncTimer);
+        syncTimer = setTimeout(async () => {
+          console.log("[App] Syncing data after event...");
+          const data = await dataSyncService.fetchAllData(user.id);
+          if (data) {
+            setCards(data.cards);
+            setTransactions(data.transactions);
+            setCategories(data.categories);
+            setNotificationHistory(data.notifications);
+            setChatHistory(data.chat);
+            setLastUpdate(Date.now());
+          }
+        }, 300); // 300ms wait for more events to settle
       };
 
-      // Initial sync on connect
-      await syncAll();
-
       const channel = dataSyncService.subscribeToChanges(user.id, async () => {
-        // Any change -> Blast sync
         await syncAll();
       });
 
       realtimeChannelRef.current = channel;
       setRealtimeStatus('connected');
-      return channel;
     };
 
     connectRealtime();
 
     const checkInterval = setInterval(() => {
-      if (!realtimeChannelRef.current || realtimeChannelRef.current.state !== 'joined') {
-        console.warn("[Realtime] Connection not joined, repairing...");
+      const isBroken = !realtimeChannelRef.current || realtimeChannelRef.current.state !== 'joined';
+
+      if (isBroken) {
         connectRealtime();
       }
-    }, 4000);
-
-    const handleOnline = () => {
-      console.log("[App] Online! Syncing...");
-      connectRealtime();
-    };
-
-    window.addEventListener('online', handleOnline);
+    }, 5000);
 
     return () => {
       clearInterval(checkInterval);
-      window.removeEventListener('online', handleOnline);
       if (realtimeChannelRef.current) {
         supabase.removeChannel(realtimeChannelRef.current);
         realtimeChannelRef.current = null;

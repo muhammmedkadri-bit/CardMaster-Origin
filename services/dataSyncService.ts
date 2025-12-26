@@ -35,22 +35,9 @@ export const dataSyncService = {
         console.log(`[Realtime] Subscribing to: ${channelName}`);
 
         const channel = supabase.channel(channelName)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'cards' }, (p) => {
-                console.log("[Realtime] Cards change:", p.eventType);
-                onEvent('cards', p);
-            })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, (p) => {
-                console.log("[Realtime] Transactions change:", p.eventType);
-                onEvent('transactions', p);
-            })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, (p) => {
-                onEvent('categories', p);
-            })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, (p) => {
-                onEvent('notifications', p);
-            })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_history' }, (p) => {
-                onEvent('chat_history', p);
+            .on('postgres_changes', { event: '*', schema: 'public' }, (p) => {
+                console.log(`[Realtime] DB Change [${p.table}]:`, p.eventType);
+                onEvent(p.table, p);
             })
             .on('broadcast', { event: 'refresh' }, () => {
                 console.log("[Realtime] Sync broadcast received! Forcing refetch...");
