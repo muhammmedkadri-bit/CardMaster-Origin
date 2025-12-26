@@ -401,11 +401,13 @@ const App: React.FC = () => {
     const syncAll = async () => {
       const data = await dataSyncService.fetchAllData(user.id);
       if (data) {
-        // Create hash to detect changes
+        // Create hash to detect changes (include notifications)
         const newHash = JSON.stringify({
           cards: data.cards.length,
           transactions: data.transactions.length,
-          lastTx: data.transactions[0]?.id
+          lastTx: data.transactions[0]?.id,
+          notifications: data.notifications.length,
+          unreadCount: data.notifications.filter(n => !n.read).length
         });
 
         if (newHash !== lastDataHash) {
@@ -690,6 +692,11 @@ const App: React.FC = () => {
     // Sync to database (both read and unread states)
     if (user) {
       await dataSyncService.updateNotificationReadStatus(id, newReadState);
+      // Force immediate refresh to ensure cross-device sync
+      const data = await dataSyncService.fetchAllData(user.id);
+      if (data) {
+        setNotificationHistory(data.notifications);
+      }
     }
   };
 
