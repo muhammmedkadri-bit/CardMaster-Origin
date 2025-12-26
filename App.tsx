@@ -164,6 +164,7 @@ const App: React.FC = () => {
 
   const realtimeChannelRef = useRef<any>(null);
   const lastSyncTimeRef = useRef<number>(Date.now());
+  const shownNotificationsRef = useRef<Set<string>>(new Set());
 
   const [cards, setCards] = useState<CreditCard[]>(() => {
     const saved = localStorage.getItem('user_cards');
@@ -374,6 +375,13 @@ const App: React.FC = () => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Clear shown notifications when user changes
+  useEffect(() => {
+    if (user) {
+      shownNotificationsRef.current.clear();
+    }
+  }, [user?.id]);
 
   const [lastUpdate, setLastUpdate] = useState(Date.now());
   const [realtimeStatus, setRealtimeStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
@@ -632,8 +640,27 @@ const App: React.FC = () => {
   };
 
   const showToast = (message: string, type: 'warning' | 'info' | 'success') => {
+    // Create unique key for this notification
+    const notificationKey = `${message}-${type}`;
+
+    // Prevent duplicate notifications
+    if (shownNotificationsRef.current.has(notificationKey)) {
+      return;
+    }
+
+    shownNotificationsRef.current.add(notificationKey);
+
     const id = Date.now();
     setToastNotifications(prev => [...prev, { id, message, type }]);
+
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+      removeToast(id);
+      // Allow showing this notification again after 30 seconds
+      setTimeout(() => {
+        shownNotificationsRef.current.delete(notificationKey);
+      }, 30000);
+    }, 3000);
   };
 
   const removeToast = (id: number) => {
