@@ -667,12 +667,30 @@ const App: React.FC = () => {
     setToastNotifications(prev => prev.filter(n => n.id !== id));
   };
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
     setNotificationHistory(prev => prev.map(n => ({ ...n, read: true })));
+
+    if (user) {
+      await dataSyncService.markAllNotificationsAsRead(user.id);
+      // Refetch to ensure sync across devices
+      const data = await dataSyncService.fetchAllData(user.id);
+      if (data) {
+        setNotificationHistory(data.notifications);
+      }
+    }
   };
 
-  const toggleNotificationRead = (id: string) => {
-    setNotificationHistory(prev => prev.map(n => n.id === id ? { ...n, read: !n.read } : n));
+  const toggleNotificationRead = async (id: string) => {
+    const notification = notificationHistory.find(n => n.id === id);
+    const newReadState = !notification?.read;
+
+    // Update local state immediately
+    setNotificationHistory(prev => prev.map(n => n.id === id ? { ...n, read: newReadState } : n));
+
+    // Sync to database if marking as read
+    if (user && newReadState) {
+      await dataSyncService.markNotificationAsRead(id);
+    }
   };
 
   const unreadCount = useMemo(() => notificationHistory.filter(n => !n.read).length, [notificationHistory]);

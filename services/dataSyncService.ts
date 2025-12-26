@@ -128,6 +128,16 @@ export const dataSyncService = {
         return await supabase.from('cards').delete().eq('id', cardId);
     },
 
+    async markNotificationAsRead(notificationId: string) {
+        if (!supabase) return;
+        return await supabase.from('notifications').update({ read: true }).eq('id', notificationId);
+    },
+
+    async markAllNotificationsAsRead(userId: string) {
+        if (!supabase) return;
+        return await supabase.from('notifications').update({ read: true }).eq('user_id', userId).eq('read', false);
+    },
+
     async saveChatMessage(userId: string, message: ChatMessage) {
         if (!supabase) return;
         return await supabase.from('chat_history').insert({
