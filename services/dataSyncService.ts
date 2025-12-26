@@ -77,12 +77,45 @@ export const dataSyncService = {
             description: tx.description,
             confirmation_url: tx.confirmationUrl
         };
-        return await supabase.from('transactions').upsert(dbTx).select().single();
+        const result = await supabase.from('transactions').upsert(dbTx).select().single();
+
+        // MANUEL DENGE GÜNCELLEME (Trigger yedeği)
+        // Eğer trigger çalışmazsa bu kod devreye girer.
+        if (result.data) {
+            const { data: currentCard } = await supabase.from('cards').select('balance').eq('id', tx.cardId).single();
+            if (currentCard) {
+                const newBalance = tx.type === 'spending'
+                    ? Number(currentCard.balance) + Number(tx.amount)
+                    : Number(currentCard.balance) - Number(tx.amount);
+
+                await supabase.from('cards').update({ balance: newBalance }).eq('id', tx.cardId);
+            }
+        }
+        return result;
     },
 
     async deleteTransaction(txId: string) {
         if (!supabase) return;
-        return await supabase.from('transactions').delete().eq('id', txId);
+
+        // 1. Silinecek işlemi çek (Tutarı bilmek için)
+        const { data: txToDelete } = await supabase.from('transactions').select('*').eq('id', txId).single();
+
+        // 2. İşlemi sil
+        const result = await supabase.from('transactions').delete().eq('id', txId);
+
+        // 3. Bakiyeyi düzelt (Manuel Trigger)
+        if (txToDelete) {
+            const { data: currentCard } = await supabase.from('cards').select('balance').eq('id', txToDelete.card_id).single();
+            if (currentCard) {
+                // Silinen işlem harcamaysa bakiyeden düş, ödemeyse bakiyeye geri ekle
+                const newBalance = txToDelete.type === 'spending'
+                    ? Number(currentCard.balance) - Number(txToDelete.amount)
+                    : Number(currentCard.balance) + Number(txToDelete.amount);
+
+                await supabase.from('cards').update({ balance: newBalance }).eq('id', txToDelete.card_id);
+            }
+        }
+        return result;
     },
 
     async upsertCard(userId: string, card: CreditCard) {
