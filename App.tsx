@@ -401,13 +401,12 @@ const App: React.FC = () => {
     const syncAll = async () => {
       const data = await dataSyncService.fetchAllData(user.id);
       if (data) {
-        // Create hash to detect changes (include notifications)
+        // Create hash to detect changes (include notifications robustly)
         const newHash = JSON.stringify({
           cards: data.cards.length,
           transactions: data.transactions.length,
           lastTx: data.transactions[0]?.id,
-          notifications: data.notifications.length,
-          unreadCount: data.notifications.filter(n => !n.read).length
+          notifStatus: data.notifications.map(n => `${n.id}:${n.read}`).join(',')
         });
 
         if (newHash !== lastDataHash) {
@@ -437,6 +436,7 @@ const App: React.FC = () => {
       setRealtimeStatus('connected');
     };
 
+    syncAll();
     connectRealtime();
 
     // 2. HTTP Polling (fallback for mobile - checks every 2s when visible)
@@ -670,33 +670,40 @@ const App: React.FC = () => {
   };
 
   const markAllAsRead = async () => {
+    if (!user) return;
+
     setNotificationHistory(prev => prev.map(n => ({ ...n, read: true })));
 
-    if (user) {
-      await dataSyncService.markAllNotificationsAsRead(user.id);
-      // Refetch to ensure sync across devices
-      const data = await dataSyncService.fetchAllData(user.id);
-      if (data) {
-        setNotificationHistory(data.notifications);
-      }
+    await dataSyncService.markAllNotificationsAsRead(user.id);
+    // Broadcast to other devices
+    dataSyncService.sendSyncSignal(user.id);
+
+    // Refetch to ensure sync
+    const data = await dataSyncService.fetchAllData(user.id);
+    if (data) {
+      setNotificationHistory(data.notifications);
     }
   };
 
   const toggleNotificationRead = async (id: string) => {
+    if (!user) return;
+
     const notification = notificationHistory.find(n => n.id === id);
     const newReadState = !notification?.read;
 
     // Update local state immediately
     setNotificationHistory(prev => prev.map(n => n.id === id ? { ...n, read: newReadState } : n));
 
-    // Sync to database (both read and unread states)
-    if (user) {
-      await dataSyncService.updateNotificationReadStatus(id, newReadState);
-      // Force immediate refresh to ensure cross-device sync
-      const data = await dataSyncService.fetchAllData(user.id);
-      if (data) {
-        setNotificationHistory(data.notifications);
-      }
+    // Sync to database
+    await dataSyncService.updateNotificationReadStatus(id, newReadState);
+
+    // Broadcast to other devices
+    dataSyncService.sendSyncSignal(user.id);
+
+    // Force immediate refresh to ensure consistency
+    const data = await dataSyncService.fetchAllData(user.id);
+    if (data) {
+      setNotificationHistory(data.notifications);
     }
   };
 
