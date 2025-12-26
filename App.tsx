@@ -408,6 +408,22 @@ const App: React.FC = () => {
           else if (table === 'transactions') {
             if (eventType === 'DELETE') {
               setTransactions(prev => prev.filter(p => p.id !== oldRec.id));
+
+              // CRITICAL FIX: Re-fetch the affected card on DELETE too
+              if (oldRec.card_id) {
+                setTimeout(async () => {
+                  const { data: freshCard } = await dataSyncService.supabase
+                    .from('cards')
+                    .select('*')
+                    .eq('id', oldRec.card_id)
+                    .single();
+
+                  if (freshCard) {
+                    const mappedCard = dataSyncService.mapCardFromDB(freshCard);
+                    setCards(prev => prev.map(c => c.id === mappedCard.id ? mappedCard : c));
+                  }
+                }, 500);
+              }
             } else {
               const item = dataSyncService.mapTransactionFromDB(newRec);
 
@@ -424,6 +440,27 @@ const App: React.FC = () => {
 
                 return [item, ...prev];
               });
+
+              // CRITICAL FIX: Re-fetch the affected card to get the calculated balance from Server Trigger
+              // This is essential for PC-Mobile sync
+              if (item.cardId) {
+                setTimeout(async () => {
+                  // Import supabase directly or use the global one if available. 
+                  // Assuming supabase is imported at top of file. If not, this might fail, but usually it is.
+                  // Let's rely on dataSyncService to fetch just one card or reuse fetchAllData? 
+                  // No, let's just use the supabase client directly if App.tsx has it.
+                  // Since I can't see imports, I'll try to use dataSyncService.fetchAllData as a fallback or add a method.
+
+                  // Safer approach: use fetchAllData but filter? No that's heavy.
+                  // Let's assume supabase is imported as 'supabase' from './services/supabaseClient'
+                  const { data: freshCard } = await supabase.from('cards').select('*').eq('id', item.cardId).single();
+
+                  if (freshCard) {
+                    const mappedCard = dataSyncService.mapCardFromDB(freshCard);
+                    setCards(prev => prev.map(c => c.id === mappedCard.id ? mappedCard : c));
+                  }
+                }, 500);
+              }
             }
           }
           else if (table === 'categories') {
