@@ -162,6 +162,8 @@ const App: React.FC = () => {
     return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
   });
 
+  const realtimeChannelRef = useRef<any>(null);
+
   const [cards, setCards] = useState<CreditCard[]>(() => {
     const saved = localStorage.getItem('user_cards');
     return saved ? JSON.parse(saved) : [];
@@ -390,62 +392,62 @@ const App: React.FC = () => {
       return;
     }
 
-    let reconnectTimeout: any;
+    const connectRealtime = async () => {
+      // Clean up any existing channel first
+      if (realtimeChannelRef.current) {
+        supabase.removeChannel(realtimeChannelRef.current);
+      }
 
-    const connectRealtime = () => {
-      console.log("[Realtime] Establishing connection...");
+      console.log("[Realtime] Force establishing connection...");
       setRealtimeStatus('connecting');
 
-      // Shared and simplified sync function
       const syncAll = async () => {
-        try {
-          const data = await dataSyncService.fetchAllData(user.id);
-          if (data) {
-            setCards(data.cards);
-            setTransactions(data.transactions);
-            setCategories(data.categories);
-            setNotificationHistory(data.notifications);
-            setChatHistory(data.chat);
-            setLastUpdate(Date.now());
-          }
-        } catch (e) {
-          console.error("Sync error:", e);
+        const data = await dataSyncService.fetchAllData(user.id);
+        if (data) {
+          setCards(data.cards);
+          setTransactions(data.transactions);
+          setCategories(data.categories);
+          setNotificationHistory(data.notifications);
+          setChatHistory(data.chat);
+          setLastUpdate(Date.now());
         }
       };
 
-      const channel = dataSyncService.subscribeToChanges(user.id, async (table, payload) => {
-        console.log(`[Realtime] Event from ${table}:`, payload.eventType || 'broadcast');
-        // Any change from ANY table or broadcast -> Sync everything for 100% consistency
+      // Initial sync on connect
+      await syncAll();
+
+      const channel = dataSyncService.subscribeToChanges(user.id, async () => {
+        // Any change -> Blast sync
         await syncAll();
       });
 
-      if (channel) {
-        setRealtimeStatus('connected');
-      } else {
-        setRealtimeStatus('error');
-      }
-
+      realtimeChannelRef.current = channel;
+      setRealtimeStatus('connected');
       return channel;
     };
 
-    const activeChannel = connectRealtime();
+    connectRealtime();
 
-    // Aggressive Heartbeat (Every 2 seconds check)
-    reconnectTimeout = setInterval(() => {
-      if (!supabase) return;
-      const channels = supabase.getChannels();
-      const channelStillThere = channels.some(c => c.topic === `user_sync_${user.id}`);
-
-      if (!channelStillThere) {
-        console.warn("[Realtime] Channel lost, reconnecting...");
+    const checkInterval = setInterval(() => {
+      if (!realtimeChannelRef.current || realtimeChannelRef.current.state !== 'joined') {
+        console.warn("[Realtime] Connection not joined, repairing...");
         connectRealtime();
       }
-    }, 2000);
+    }, 4000);
+
+    const handleOnline = () => {
+      console.log("[App] Online! Syncing...");
+      connectRealtime();
+    };
+
+    window.addEventListener('online', handleOnline);
 
     return () => {
-      clearInterval(reconnectTimeout);
-      if (activeChannel) {
-        supabase.removeChannel(activeChannel);
+      clearInterval(checkInterval);
+      window.removeEventListener('online', handleOnline);
+      if (realtimeChannelRef.current) {
+        supabase.removeChannel(realtimeChannelRef.current);
+        realtimeChannelRef.current = null;
       }
     };
   }, [user, realtimeRetryTrigger]);
