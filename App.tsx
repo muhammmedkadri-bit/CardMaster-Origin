@@ -483,12 +483,13 @@ const App: React.FC = () => {
       window.addEventListener('pageshow', handleVisibilityChange);
       window.addEventListener('focus', handleVisibilityChange);
 
-      // Continuous polling as backup (500ms for instant in-app sync)
+      // Continuous polling as backup (3s for background sync)
+      // We reduced this from 500ms as it was causing heavy UI thread lag on mobile
       pollInterval = setInterval(() => {
         if (document.visibilityState === 'visible') {
           syncAll();
         }
-      }, 500);
+      }, 3000);
 
       return () => {
         window.removeEventListener('visibilitychange', handleVisibilityChange);

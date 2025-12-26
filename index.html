@@ -65,14 +65,42 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
   <style>
+    /* Mobile Performance & Touch Optimizations */
+    * {
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
     body {
       font-family: 'Inter', sans-serif;
       background-color: #f8fafc;
       overflow-x: hidden;
+      /* Improve momentum scrolling on iOS */
+      -webkit-overflow-scrolling: touch;
+      /* Prevent accidental text selection while tapping buttons */
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    input,
+    select,
+    textarea {
+      /* Allow selection in inputs */
+      user-select: text !important;
+      -webkit-user-select: text !important;
     }
 
     .dark body {
       background-color: #0b0f1a;
+    }
+
+    /* Boost button responsiveness */
+    button,
+    a,
+    [role="button"] {
+      cursor: pointer;
+      /* Remove potential click delays */
+      touch-action: manipulation;
     }
 
     .font-mono {
