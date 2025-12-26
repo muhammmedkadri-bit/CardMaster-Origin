@@ -1,6 +1,8 @@
 import { supabase } from './supabaseClient';
 import { CreditCard, Transaction, Category, NotificationItem, ChatMessage } from '../types';
 
+let activeSyncChannel: any = null;
+
 export const dataSyncService = {
     // --- FETCH DATA ---
     async fetchAllData(userId: string) {
@@ -61,19 +63,35 @@ export const dataSyncService = {
                 }
             });
 
+        activeSyncChannel = channel;
         return channel;
     },
 
     async sendSyncSignal(userId: string) {
         if (!supabase) return;
+
+        // Reuse existing active channel if possible for 0-latency broadcast
+        if (activeSyncChannel && activeSyncChannel.state === 'joined') {
+            activeSyncChannel.send({
+                type: 'broadcast',
+                event: 'refresh',
+                payload: { timestamp: Date.now() }
+            });
+            return;
+        }
+
         const channel = supabase.channel(`user_sync_${userId}`);
-        await channel.send({
-            type: 'broadcast',
-            event: 'refresh',
-            payload: { timestamp: Date.now() }
+        await channel.subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                await channel.send({
+                    type: 'broadcast',
+                    event: 'refresh',
+                    payload: { timestamp: Date.now() }
+                });
+                // We don't need to keep this temporary channel open
+                setTimeout(() => supabase.removeChannel(channel), 1000);
+            }
         });
-        // We don't need to keep this channel open, its just a signal
-        setTimeout(() => supabase.removeChannel(channel), 1000);
     },
 
     // --- MUTATIONS ---

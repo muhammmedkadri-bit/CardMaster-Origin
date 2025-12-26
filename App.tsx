@@ -540,7 +540,7 @@ const App: React.FC = () => {
         console.warn("[Realtime] Reconnecting due to lost channels...");
         connectRealtime();
       }
-    }, 15000);
+    }, 3000);
 
     return () => {
       clearInterval(reconnectTimeout);

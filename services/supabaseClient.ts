@@ -7,7 +7,11 @@ console.log('[Supabase Debug] URL:', supabaseUrl);
 console.log('[Supabase Debug] Key exists:', !!supabaseAnonKey, 'Length:', supabaseAnonKey?.length);
 
 export const supabase: SupabaseClient | null = (supabaseUrl && supabaseAnonKey)
-    ? createClient(supabaseUrl, supabaseAnonKey)
+    ? createClient(supabaseUrl, supabaseAnonKey, {
+        realtime: {
+            heartbeatIntervalMs: 1000,
+        }
+    })
     : null;
 
 if (!supabase) {
