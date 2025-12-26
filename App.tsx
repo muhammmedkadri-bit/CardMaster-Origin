@@ -733,53 +733,87 @@ const App: React.FC = () => {
   const handleTransaction = async (finalTx: Transaction) => {
     if (!user) return;
 
-    showToast(`İşlem kaydediliyor...`, 'info');
+    // 1. ANINDA ARAYÜZ GÜNCELLEME (SPEED & MATH)
+    // Beklemek yok, anında sonuç.
 
+    // A) İşlem Listesini Güncelle
+    const related = cards.find(c => c.id === finalTx.cardId);
+    const optimisticTx = { ...finalTx, cardName: related?.cardName || '' };
+    setTransactions(prev => [optimisticTx, ...prev]);
+
+    // B) Bakiyeyi Anında Hesapla (User's Idea: Calculate instantly from action)
+    if (related) {
+      setCards(prev => prev.map(c => {
+        if (c.id === finalTx.cardId) {
+          // Harcama ise borç artar (+), Ödeme ise borç azalır (-)
+          const impact = finalTx.type === 'spending' ? finalTx.amount : -finalTx.amount;
+          return { ...c, balance: c.balance + impact };
+        }
+        return c;
+      }));
+    }
+
+    // C) Modalı Kapat ve Bildirim Ver
+    setModalMode(null);
+    setEditingTransaction(undefined);
+    showToast('İşlem başarıyla eklendi', 'success');
+
+    // 2. ARKA PLAN SENKRONİZASYONU
     try {
-      // 1. Commit to Server
       await dataSyncService.saveTransaction(user.id, finalTx);
-
-      // 2. Fetch Absolute Truth (No guessing)
+      // Sessizce doğrulama yap (Kullanıcıya hissettirmeden)
       const data = await dataSyncService.fetchAllData(user.id);
       if (data) {
+        // Verileri senkronize et ama UI titremesin diye dikkatli olabiliriz
+        // Şimdilik direkt set ediyoruz, çünkü veri doğruysa zaten aynı olacaktır.
         setCards(data.cards);
         setTransactions(data.transactions);
-        setCategories(data.categories);
-        // Update history if needed but these are main ones
       }
-
-      setModalMode(null);
-      setEditingTransaction(undefined);
-      showToast('İşlem başarıyla kaydedildi.', 'success');
     } catch (error) {
       console.error(error);
-      showToast('İşlem kaydedilemedi.', 'error');
+      // Hata olursa kullanıcıyı uyar (Rollback mantığı eklenebilir ama şu an basit tutuyoruz)
+      showToast('Senkronizasyon hatası', 'warning');
     }
   };
 
   const deleteTransaction = async () => {
     if (!transactionToDelete || !user) return;
     const txId = transactionToDelete.id;
+    const deletedTx = transactions.find(t => t.id === txId);
 
-    showToast('İşlem siliniyor...', 'info');
+    // 1. ANINDA ARAYÜZ GÜNCELLEME
 
+    // A) Listeden Sil
+    setTransactions(prev => prev.filter(t => t.id !== txId));
+
+    // B) Bakiyeyi Geri Al (Reverse Math)
+    if (deletedTx) {
+      setCards(prev => prev.map(c => {
+        if (c.id === deletedTx.cardId) {
+          // Silinen Harcama -> Borç Azalır (-)
+          // Silinen Ödeme -> Borç Artar (+)
+          // impact'in tersini alıyoruz.
+          const reverseImpact = deletedTx.type === 'spending' ? -deletedTx.amount : deletedTx.amount;
+          return { ...c, balance: c.balance + reverseImpact };
+        }
+        return c;
+      }));
+    }
+
+    setTransactionToDelete(null);
+    showToast('İşlem silindi', 'success');
+
+    // 2. ARKA PLAN SENKRONİZASYONU
     try {
-      // 1. Commit to Server
       await dataSyncService.deleteTransaction(txId);
-
-      // 2. Fetch Absolute Truth
+      // Sessiz doğrulama
       const data = await dataSyncService.fetchAllData(user.id);
       if (data) {
         setCards(data.cards);
         setTransactions(data.transactions);
-        setCategories(data.categories);
       }
-
-      setTransactionToDelete(null);
-      showToast('İşlem silindi.', 'success');
     } catch (error) {
       console.error(error);
-      showToast('Silme işlemi başarısız.', 'error');
     }
   };
 
