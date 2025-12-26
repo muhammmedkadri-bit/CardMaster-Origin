@@ -434,11 +434,30 @@ const App: React.FC = () => {
     let pollInterval: any;
 
     if (isMobile) {
+      // Immediate sync on visibility change (critical for PWA mode)
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          console.log("[PWA] App visible, syncing immediately...");
+          syncAll();
+        }
+      };
+
+      window.addEventListener('visibilitychange', handleVisibilityChange);
+      window.addEventListener('pageshow', handleVisibilityChange);
+      window.addEventListener('focus', handleVisibilityChange);
+
+      // Continuous polling as backup (1s for PWA responsiveness)
       pollInterval = setInterval(() => {
         if (document.visibilityState === 'visible') {
           syncAll();
         }
-      }, 2000);
+      }, 1000);
+
+      return () => {
+        window.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.removeEventListener('pageshow', handleVisibilityChange);
+        window.removeEventListener('focus', handleVisibilityChange);
+      };
     }
 
     // 3. Connection health check
