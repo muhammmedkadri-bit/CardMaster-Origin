@@ -687,9 +687,9 @@ const App: React.FC = () => {
     // Update local state immediately
     setNotificationHistory(prev => prev.map(n => n.id === id ? { ...n, read: newReadState } : n));
 
-    // Sync to database if marking as read
-    if (user && newReadState) {
-      await dataSyncService.markNotificationAsRead(id);
+    // Sync to database (both read and unread states)
+    if (user) {
+      await dataSyncService.updateNotificationReadStatus(id, newReadState);
     }
   };
 

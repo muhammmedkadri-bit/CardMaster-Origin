@@ -128,9 +128,9 @@ export const dataSyncService = {
         return await supabase.from('cards').delete().eq('id', cardId);
     },
 
-    async markNotificationAsRead(notificationId: string) {
+    async updateNotificationReadStatus(notificationId: string, readState: boolean) {
         if (!supabase) return;
-        return await supabase.from('notifications').update({ read: true }).eq('id', notificationId);
+        return await supabase.from('notifications').update({ read: readState }).eq('id', notificationId);
     },
 
     async markAllNotificationsAsRead(userId: string) {
