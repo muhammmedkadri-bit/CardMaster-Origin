@@ -327,56 +327,28 @@ const App: React.FC = () => {
 
       if (sessionUser) {
         setIsAuthModalOpen(false);
-        // Fetch cloud data
-        const cloudData = await dataSyncService.fetchUserData(sessionUser.id);
-        const cloudNotifications = await dataSyncService.fetchNotifications(sessionUser.id);
-        const cloudChat = await dataSyncService.fetchChatHistory(sessionUser.id);
+        const data = await dataSyncService.fetchAllData(sessionUser.id);
 
-        if (cloudData.cards && cloudData.cards.length > 0) {
-          setCards(cloudData.cards);
-          setTransactions(cloudData.transactions);
-          setCategories(cloudData.categories);
-        } else if (cards.length > 0) {
-          // Cloud empty but Local has data -> Migrate Local to Cloud
-          const success = await dataSyncService.migrateToCloud(sessionUser.id, cards, transactions, categories);
-          if (success) {
-            // Re-fetch to get the new IDs from cloud
-            const refreshedData = await dataSyncService.fetchUserData(sessionUser.id);
-            setCards(refreshedData.cards);
-            setTransactions(refreshedData.transactions);
-            if (refreshedData.categories.length > 0) setCategories(refreshedData.categories);
+        if (data) {
+          if (data.cards.length > 0) {
+            setCards(data.cards);
+            setTransactions(data.transactions);
           }
-        } else {
-          setCards([]);
-          setTransactions([]);
-          setCategories([
-            { id: '1', name: 'Market', color: '#3B82F6' },
-            { id: '2', name: 'Ulaşım', color: '#10B981' },
-            { id: '3', name: 'Restoran', color: '#F59E0B' },
-            { id: '4', name: 'Fatura', color: '#EF4444' },
-            { id: '5', name: 'Eğlence', color: '#8B5CF6' },
-            { id: '6', name: 'Diğer', color: '#64748B' }
-          ]);
+          if (data.categories.length > 0) {
+            setCategories(data.categories);
+          } else {
+            setCategories([
+              { id: '1', name: 'Market', color: '#3B82F6' },
+              { id: '2', name: 'Ulaşım', color: '#10B981' },
+              { id: '3', name: 'Restoran', color: '#F59E0B' },
+              { id: '4', name: 'Fatura', color: '#EF4444' },
+              { id: '5', name: 'Eğlence', color: '#8B5CF6' },
+              { id: '6', name: 'Diğer', color: '#64748B' }
+            ]);
+          }
+          setNotificationHistory(data.notifications);
+          setChatHistory(data.chat);
         }
-
-        // Notifications Sync/Migrate
-        if (cloudNotifications.length > 0) {
-          setNotificationHistory(cloudNotifications);
-        } else if (notificationHistory.length > 0) {
-          dataSyncService.syncNotifications(sessionUser.id, notificationHistory);
-        } else {
-          setNotificationHistory([]);
-        }
-
-        // Chat Sync/Migrate
-        if (cloudChat.length > 0) {
-          setChatHistory(cloudChat);
-        } else if (chatHistory.length > 0) {
-          dataSyncService.migrateChatHistory(sessionUser.id, chatHistory);
-        } else {
-          setChatHistory([]);
-        }
-
       } else {
         setCards([]);
         setTransactions([]);
@@ -414,89 +386,62 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!user) return;
 
-    const channel = dataSyncService.subscribeToChanges(user.id, {
-      onCardChange: (payload) => {
-        try {
-          const { eventType, new: newRec, old: oldRec } = payload;
-          if (eventType === 'INSERT') {
-            const item = dataSyncService.mapCardFromDB(newRec);
-            setCards(prev => prev.some(p => p.id === item.id) ? prev : [...prev, item]);
-          } else if (eventType === 'UPDATE') {
-            const item = dataSyncService.mapCardFromDB(newRec);
-            setCards(prev => prev.map(p => p.id === item.id ? item : p));
-          } else if (eventType === 'DELETE') {
-            setCards(prev => prev.filter(p => p.id !== oldRec.id));
-          }
-        } catch (e) { console.error("Realtime Card Error:", e); }
-      },
-      onTransactionChange: (payload) => {
-        try {
-          const { eventType, new: newRec, old: oldRec } = payload;
-          if (eventType === 'INSERT' || eventType === 'UPDATE') {
+    const channel = dataSyncService.subscribeToChanges(user.id, (table, payload) => {
+      const { eventType, new: newRec, old: oldRec } = payload;
+
+      try {
+        if (table === 'cards') {
+          const item = dataSyncService.mapCardFromDB(eventType === 'DELETE' ? oldRec : newRec);
+          if (eventType === 'INSERT') setCards(prev => prev.some(p => p.id === item.id) ? prev : [...prev, item]);
+          else if (eventType === 'UPDATE') setCards(prev => prev.map(p => p.id === item.id ? item : p));
+          else if (eventType === 'DELETE') setCards(prev => prev.filter(p => p.id !== item.id));
+        }
+        else if (table === 'transactions') {
+          if (eventType === 'DELETE') {
+            setTransactions(prev => prev.filter(p => p.id !== oldRec.id));
+          } else {
             const item = dataSyncService.mapTransactionFromDB(newRec);
-            const currentCards = cardsRef.current;
-            const relatedCard = currentCards.find(c => c.id === item.cardId);
+            const relatedCard = cardsRef.current.find(c => c.id === item.cardId);
             if (relatedCard) item.cardName = relatedCard.cardName;
 
             setTransactions(prev => {
               const exists = prev.some(p => p.id === item.id);
               if (exists) return prev.map(p => p.id === item.id ? item : p);
-              return eventType === 'INSERT' ? [item, ...prev] : prev;
+              // Clean up optimistic inserts (ID is short)
+              const optimistic = prev.find(p => p.id.length < 20 && p.amount === item.amount && p.date === item.date);
+              if (optimistic) return prev.map(p => p.id === optimistic.id ? item : p);
+              return [item, ...prev];
             });
-          } else if (eventType === 'DELETE' && oldRec) {
-            setTransactions(prev => prev.filter(p => p.id !== oldRec.id));
           }
-          setLastUpdate(Date.now());
-        } catch (e) { console.error("Realtime Tx Error:", e); }
-      },
-      onCategoryChange: (payload) => {
-        try {
-          const { eventType, new: newRec, old: oldRec } = payload;
+        }
+        else if (table === 'categories') {
+          const item = dataSyncService.mapCategoryFromDB(eventType === 'DELETE' ? oldRec : newRec);
+          if (eventType === 'INSERT') setCategories(prev => [...prev, item]);
+          else if (eventType === 'UPDATE') setCategories(prev => prev.map(c => c.id === item.id ? item : c));
+          else if (eventType === 'DELETE') setCategories(prev => prev.filter(c => c.id !== item.id));
+        }
+        else if (table === 'notifications') {
+          const item = dataSyncService.mapNotificationFromDB(newRec);
           if (eventType === 'INSERT') {
-            const item = dataSyncService.mapCategoryFromDB(newRec);
-            setCategories(prev => prev.some(p => p.id === item.id) ? prev : [...prev, item]);
+            setNotificationHistory(prev => [item, ...prev]);
+            if (!item.read) showToast(item.message, item.type);
           } else if (eventType === 'UPDATE') {
-            const item = dataSyncService.mapCategoryFromDB(newRec);
-            setCategories(prev => prev.map(p => p.id === item.id ? item : p));
-            console.log("Realtime: Category UPDATE", item);
-          } else if (eventType === 'DELETE') {
-            setCategories(prev => prev.filter(p => p.id !== oldRec.id));
-            console.log("Realtime: Category DELETE", oldRec.id);
+            setNotificationHistory(prev => prev.map(p => p.id === item.id ? item : p));
           }
-        } catch (e) { console.error("Realtime Category Error:", e); }
-      },
-      onNotificationChange: (payload) => {
-        try {
-          const { eventType, new: newRec } = payload;
-          if (eventType === 'INSERT' || eventType === 'UPDATE') {
-            const item = dataSyncService.mapNotificationFromDB(newRec);
-            if (eventType === 'INSERT') {
-              setNotificationHistory(prev => [item, ...prev]);
-              if (!item.read) showToast(item.message, item.type);
-            } else {
-              setNotificationHistory(prev => prev.map(p => p.id === item.id ? item : p));
-            }
-          }
-        } catch (e) { console.error("Realtime Notification Error:", e); }
-      },
-      onChatChange: (payload) => {
-        try {
-          const { eventType, new: newRec } = payload;
+        }
+        else if (table === 'chat_history') {
           if (eventType === 'INSERT') {
             const item = dataSyncService.mapChatFromDB(newRec);
-            setChatHistory(prev => {
-              const last = prev[prev.length - 1];
-              if (last && last.role === item.role && last.content === item.content) return prev;
-              return [...prev, item];
-            });
+            setChatHistory(prev => [...prev, item]);
           }
-        } catch (e) { console.error("Realtime Chat Error:", e); }
-      },
-      onStatusChange: (status) => {
-        if (status === 'SUBSCRIBED') setRealtimeStatus('connected');
-        else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') setRealtimeStatus('error');
+        }
+        setLastUpdate(Date.now());
+      } catch (e) {
+        console.error(`Realtime Error [${table}]:`, e);
       }
     });
+
+    setRealtimeStatus('connected');
 
     return () => {
       if (channel) supabase.removeChannel(channel);
@@ -658,102 +603,23 @@ const App: React.FC = () => {
   }, [transactions]);
 
   const handleSaveCard = async (savedCard: CreditCard) => {
-    setCards(prevCards => {
-      const exists = prevCards.some(c => c.id === savedCard.id);
-      if (exists) {
-        return prevCards.map(c => c.id === savedCard.id ? savedCard : c);
-      } else {
-        return [...prevCards, savedCard];
-      }
-    });
-
+    showToast(`${savedCard.cardName} kaydediliyor...`, 'info');
     if (user) {
-      const { data, error } = await dataSyncService.upsertCard(user.id, savedCard);
-      if (error) {
-        showToast('Senkronizasyon hatası: ' + error.message, 'warning');
-      } else if (data) {
-        // Update local card with its real Supabase UUID
-        setCards(prev => prev.map(c => c.id === savedCard.id ? { ...c, id: data.id } : c));
-      }
+      await dataSyncService.upsertCard(user.id, savedCard);
     }
-
-    showToast(`${savedCard.cardName} ${modalMode === 'edit' ? 'güncellendi' : 'eklendi'}.`, 'success');
     setModalMode(null);
     setEditingCard(undefined);
   };
 
-  const handleTransaction = async (tx: Transaction) => {
-    let finalTx = { ...tx };
-    const rawCategory = tx.category?.trim();
-
-    // If it's a spending, format and potentially add the category
-    if (tx.type === 'spending' && rawCategory && rawCategory !== 'Diğer') {
-      // Format to Title Case: "market" -> "Market", "akaryakıt" -> "Akaryakıt"
-      const formattedCategory = rawCategory
-        .split(' ')
-        .map(word =>
-          word.length > 0
-            ? word.charAt(0).toLocaleUpperCase('tr-TR') + word.slice(1).toLocaleLowerCase('tr-TR')
-            : ''
-        )
-        .join(' ');
-
-      finalTx.category = formattedCategory;
-
-      setCategories(prev => {
-        const normalizedNew = formattedCategory.toLocaleUpperCase('tr-TR');
-        const exists = prev.some(c => c.name.toLocaleUpperCase('tr-TR') === normalizedNew);
-        if (exists) return prev;
-
-        const other = prev.find(c => c.name === 'Diğer');
-        const filtered = prev.filter(c => c.name !== 'Diğer');
-        const newCat: Category = {
-          id: Date.now().toString(),
-          name: formattedCategory,
-          color: '#3B82F6' // Default color for auto-added categories
-        };
-        return [...filtered, newCat, other].filter(Boolean) as Category[];
-      });
-    }
-
-    if (modalMode === 'edit_transaction' && editingTransaction) {
-      const oldTx = editingTransaction;
-      setCards(prevCards => prevCards.map(c => {
-        if (c.id === finalTx.cardId) {
-          let balance = c.balance;
-          balance = oldTx.type === 'spending' ? balance - oldTx.amount : balance + oldTx.amount;
-          balance = finalTx.type === 'spending' ? balance + finalTx.amount : balance - finalTx.amount;
-          return { ...c, balance };
-        }
-        return c;
-      }));
-      setTransactions(prevTxs => prevTxs.map(t => t.id === finalTx.id ? finalTx : t));
-      showToast('İşlem güncellendi.', 'success');
-    } else {
-      setTransactions(prev => [finalTx, ...prev]);
-      setCards(prevCards => prevCards.map(c => {
-        if (c.id === finalTx.cardId) {
-          return { ...c, balance: finalTx.type === 'spending' ? c.balance + finalTx.amount : c.balance - finalTx.amount };
-        }
-        return c;
-      }));
-      showToast(`${finalTx.type === 'spending' ? 'Harcama' : 'Ödeme'} kaydedildi.`, 'success');
-    }
-
+  const handleTransaction = async (finalTx: Transaction) => {
+    showToast(`İşlem kaydediliyor...`, 'info');
     if (user) {
-      const { data: savedDbTx, error: txError } = await dataSyncService.saveTransaction(user.id, finalTx);
-
-      if (!txError && savedDbTx) {
-        // Update local transaction with its real Supabase UUID to prevent duplicates
-        setTransactions(prev => prev.map(t => t.id === finalTx.id ? { ...t, id: savedDbTx.id } : t));
+      // Optimistic insert to avoid empty list wait
+      if (modalMode !== 'edit_transaction') {
+        const related = cards.find(c => c.id === finalTx.cardId);
+        setTransactions(prev => [{ ...finalTx, cardName: related?.cardName || '' }, ...prev]);
       }
-
-      // We might also need to update the card balance in Supabase if we want full consistency
-      const updatedCard = cards.find(c => c.id === finalTx.cardId);
-      if (updatedCard) {
-        let newBalance = finalTx.type === 'spending' ? updatedCard.balance + finalTx.amount : updatedCard.balance - finalTx.amount;
-        await dataSyncService.upsertCard(user.id, { ...updatedCard, balance: newBalance });
-      }
+      await dataSyncService.saveTransaction(user.id, finalTx);
     }
 
     setModalMode(null);
@@ -762,40 +628,18 @@ const App: React.FC = () => {
 
   const deleteTransaction = async () => {
     if (!transactionToDelete) return;
-    const tx = transactionToDelete;
-
-    setCards(prevCards => prevCards.map(c => {
-      if (c.id === tx.cardId) {
-        return { ...c, balance: tx.type === 'spending' ? c.balance - tx.amount : c.balance + tx.amount };
-      }
-      return c;
-    }));
-    setTransactions(prevTxs => prevTxs.filter(t => t.id !== tx.id));
-
-    if (user) {
-      await dataSyncService.deleteTransaction(tx.id);
-      const updatedCard = cards.find(c => c.id === tx.cardId);
-      if (updatedCard) {
-        let newBalance = tx.type === 'spending' ? updatedCard.balance - tx.amount : updatedCard.balance + tx.amount;
-        await dataSyncService.upsertCard(user.id, { ...updatedCard, balance: newBalance });
-      }
-    }
-
+    const txId = transactionToDelete.id;
     setTransactionToDelete(null);
-    showToast('İşlem silindi.', 'info');
+    if (user) await dataSyncService.deleteTransaction(txId);
+    showToast('İşlem siliniyor...', 'info');
   };
 
   const deleteCard = async () => {
     if (!cardToDelete) return;
-    setCards(cards.filter(c => c.id !== cardToDelete.id));
-    setTransactions(transactions.filter(tx => tx.cardId !== cardToDelete.id));
-
-    if (user) {
-      await dataSyncService.deleteCard(cardToDelete.id);
-    }
-
+    const cardId = cardToDelete.id;
     setCardToDelete(null);
-    showToast(`${cardToDelete.cardName} kaldırıldı.`, 'info');
+    if (user) await dataSyncService.deleteCard(cardId);
+    showToast('Kart kaldırılıyor...', 'info');
   };
 
   const resetAllData = () => {
@@ -803,7 +647,14 @@ const App: React.FC = () => {
     setTransactions([]);
     setNotificationHistory([]);
     setAiInsights([]);
-    setCategories(['Market', 'Ulaşım', 'Restoran', 'Fatura', 'Eğlence', 'Diğer']);
+    setCategories([
+      { id: '1', name: 'Market', color: '#3B82F6' },
+      { id: '2', name: 'Ulaşım', color: '#10B981' },
+      { id: '3', name: 'Restoran', color: '#F59E0B' },
+      { id: '4', name: 'Fatura', color: '#EF4444' },
+      { id: '5', name: 'Eğlence', color: '#8B5CF6' },
+      { id: '6', name: 'Diğer', color: '#64748B' }
+    ]);
     localStorage.removeItem('user_cards');
     localStorage.removeItem('user_transactions');
     localStorage.removeItem('notifications');
