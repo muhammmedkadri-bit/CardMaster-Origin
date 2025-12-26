@@ -115,10 +115,10 @@ const Toast: React.FC<{ message: string; type: 'warning' | 'info' | 'success'; o
   const [isExiting, setIsExiting] = useState(false);
 
   useEffect(() => {
-    // 2.7 saniye sonra çıkış animasyonunu başlat
-    const exitTimer = setTimeout(() => setIsExiting(true), 2700);
-    // 3 saniye sonra tamamen kaldır
-    const closeTimer = setTimeout(onClose, 3000);
+    // 1.7 saniye sonra çıkış animasyonunu başlat
+    const exitTimer = setTimeout(() => setIsExiting(true), 1700);
+    // 2 saniye sonra tamamen kaldır
+    const closeTimer = setTimeout(onClose, 2000);
 
     return () => {
       clearTimeout(exitTimer);
