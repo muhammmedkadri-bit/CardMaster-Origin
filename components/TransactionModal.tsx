@@ -72,7 +72,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
     }
 
     onSave({
-      id: initialData?.id || Math.random().toString(36).substr(2, 9),
+      id: initialData?.id || crypto.randomUUID(),
       cardId: formData.cardId,
       cardName: selectedCard.cardName,
       type: initialData?.type || type,

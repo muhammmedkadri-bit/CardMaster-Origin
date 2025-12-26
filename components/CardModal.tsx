@@ -41,7 +41,7 @@ const CardModal: React.FC<CardModalProps> = ({ onClose, onSave, initialData, tit
     onSave({
       ...(initialData || {}),
       ...formData,
-      id: initialData?.id || Math.random().toString(36).substr(2, 9)
+      id: initialData?.id || crypto.randomUUID()
     } as CreditCard);
     onClose();
   };
