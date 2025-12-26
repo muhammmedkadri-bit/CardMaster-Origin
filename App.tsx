@@ -668,17 +668,27 @@ const App: React.FC = () => {
   const deleteTransaction = async () => {
     if (!transactionToDelete) return;
     const txId = transactionToDelete.id;
+
+    // 1. Optimistic Update (Immediate Feedback)
+    setTransactions(prev => prev.filter(t => t.id !== txId));
     setTransactionToDelete(null);
-    if (user) await dataSyncService.deleteTransaction(txId);
     showToast('İşlem siliniyor...', 'info');
+
+    // 2. Server Sync
+    if (user) await dataSyncService.deleteTransaction(txId);
   };
 
   const deleteCard = async () => {
     if (!cardToDelete) return;
     const cardId = cardToDelete.id;
+
+    // 1. Optimistic Update (Immediate Feedback)
+    setCards(prev => prev.filter(c => c.id !== cardId));
     setCardToDelete(null);
-    if (user) await dataSyncService.deleteCard(cardId);
     showToast('Kart kaldırılıyor...', 'info');
+
+    // 2. Server Sync
+    if (user) await dataSyncService.deleteCard(cardId);
   };
 
   const resetAllData = () => {
