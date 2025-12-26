@@ -459,7 +459,7 @@ const App: React.FC = () => {
                     const mappedCard = dataSyncService.mapCardFromDB(freshCard);
                     setCards(prev => prev.map(c => c.id === mappedCard.id ? mappedCard : c));
                   }
-                }, 500);
+                }, 50);
               }
             }
           }
