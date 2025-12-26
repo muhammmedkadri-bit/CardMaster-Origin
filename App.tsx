@@ -384,33 +384,40 @@ const App: React.FC = () => {
     cardsRef.current = cards;
   }, [cards]);
 
-  // --- REALTIME SUBSCRIPTION ---
+  // --- HYBRID REALTIME + POLLING SYNC (Safari Compatibility) ---
   useEffect(() => {
     if (!user) return;
 
-    let syncTimer: any;
+    let lastDataHash = '';
 
+    const syncAll = async () => {
+      const data = await dataSyncService.fetchAllData(user.id);
+      if (data) {
+        // Create hash to detect changes
+        const newHash = JSON.stringify({
+          cards: data.cards.length,
+          transactions: data.transactions.length,
+          lastTx: data.transactions[0]?.id
+        });
+
+        if (newHash !== lastDataHash) {
+          console.log("[App] Data changed, updating UI...");
+          setCards(data.cards);
+          setTransactions(data.transactions);
+          setCategories(data.categories);
+          setNotificationHistory(data.notifications);
+          setChatHistory(data.chat);
+          setLastUpdate(Date.now());
+          lastDataHash = newHash;
+        }
+      }
+    };
+
+    // 1. WebSocket Realtime (works great on desktop, spotty on mobile Safari)
     const connectRealtime = async () => {
       if (realtimeChannelRef.current) {
         supabase.removeChannel(realtimeChannelRef.current);
       }
-
-      const syncAll = async () => {
-        // Debounce sync to avoid hammering the server on multiple events
-        if (syncTimer) clearTimeout(syncTimer);
-        syncTimer = setTimeout(async () => {
-          console.log("[App] Syncing data after event...");
-          const data = await dataSyncService.fetchAllData(user.id);
-          if (data) {
-            setCards(data.cards);
-            setTransactions(data.transactions);
-            setCategories(data.categories);
-            setNotificationHistory(data.notifications);
-            setChatHistory(data.chat);
-            setLastUpdate(Date.now());
-          }
-        }, 300); // 300ms wait for more events to settle
-      };
 
       const channel = dataSyncService.subscribeToChanges(user.id, async () => {
         await syncAll();
@@ -422,9 +429,21 @@ const App: React.FC = () => {
 
     connectRealtime();
 
+    // 2. HTTP Polling (fallback for mobile - checks every 2s when visible)
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    let pollInterval: any;
+
+    if (isMobile) {
+      pollInterval = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+          syncAll();
+        }
+      }, 2000);
+    }
+
+    // 3. Connection health check
     const checkInterval = setInterval(() => {
       const isBroken = !realtimeChannelRef.current || realtimeChannelRef.current.state !== 'joined';
-
       if (isBroken) {
         connectRealtime();
       }
@@ -432,6 +451,7 @@ const App: React.FC = () => {
 
     return () => {
       clearInterval(checkInterval);
+      if (pollInterval) clearInterval(pollInterval);
       if (realtimeChannelRef.current) {
         supabase.removeChannel(realtimeChannelRef.current);
         realtimeChannelRef.current = null;
