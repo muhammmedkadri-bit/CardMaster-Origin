@@ -1,13 +1,5 @@
-
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from './supabaseClient';
 import { CreditCard, Transaction, Category, NotificationItem, ChatMessage } from '../types';
-
-const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL;
-const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY;
-
-export const supabase = (supabaseUrl && supabaseAnonKey)
-    ? createClient(supabaseUrl, supabaseAnonKey)
-    : null;
 
 export const dataSyncService = {
     // --- FETCH DATA ---
@@ -35,10 +27,12 @@ export const dataSyncService = {
     subscribeToChanges(userId: string, onEvent: (table: string, payload: any) => void) {
         if (!supabase) return null;
 
-        const sessionId = Math.random().toString(36).substring(7);
-        console.log(`[Realtime] Subscribing for user: ${userId} (Session: ${sessionId})`);
+        // Use a persistent channel name for the user to allow cross-device broadcasting
+        // Session ID is removed to allow multiple devices to join the SAME physical room for broadcasts
+        const channelName = `user_sync_${userId}`;
+        console.log(`[Realtime] Subscribing to: ${channelName}`);
 
-        const channel = supabase.channel(`realtime_all_${userId}_${sessionId}`)
+        const channel = supabase.channel(channelName)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'cards' }, (p) => {
                 console.log("[Realtime] Cards change:", p.eventType);
                 onEvent('cards', p);
@@ -56,17 +50,30 @@ export const dataSyncService = {
             .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_history' }, (p) => {
                 onEvent('chat_history', p);
             })
+            .on('broadcast', { event: 'refresh' }, () => {
+                console.log("[Realtime] Sync broadcast received! Forcing refetch...");
+                onEvent('force_refresh', {});
+            })
             .subscribe((status, err) => {
-                console.log(`[Realtime] Status for ${userId}:`, status);
+                console.log(`[Realtime] Status [${channelName}]:`, status);
                 if (status === 'CHANNEL_ERROR') {
                     console.error('[Realtime] Connection Error:', err);
-                }
-                if (status === 'TIMED_OUT') {
-                    console.warn('[Realtime] Connection Timed Out');
                 }
             });
 
         return channel;
+    },
+
+    async sendSyncSignal(userId: string) {
+        if (!supabase) return;
+        const channel = supabase.channel(`user_sync_${userId}`);
+        await channel.send({
+            type: 'broadcast',
+            event: 'refresh',
+            payload: { timestamp: Date.now() }
+        });
+        // We don't need to keep this channel open, its just a signal
+        setTimeout(() => supabase.removeChannel(channel), 1000);
     },
 
     // --- MUTATIONS ---

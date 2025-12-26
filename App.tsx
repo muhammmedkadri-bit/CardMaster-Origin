@@ -396,8 +396,21 @@ const App: React.FC = () => {
       console.log("[Realtime] Connecting...");
       setRealtimeStatus('connecting');
 
-      const channel = dataSyncService.subscribeToChanges(user.id, (table, payload) => {
+      const channel = dataSyncService.subscribeToChanges(user.id, async (table, payload) => {
         const { eventType, new: newRec, old: oldRec } = payload;
+
+        if (table === 'force_refresh') {
+          console.log("[App] Force refresh signal received...");
+          const data = await dataSyncService.fetchAllData(user.id);
+          if (data) {
+            setCards(data.cards);
+            setTransactions(data.transactions);
+            setCategories(data.categories);
+            setNotificationHistory(data.notifications);
+            setChatHistory(data.chat);
+          }
+          return;
+        }
 
         try {
           if (table === 'cards') {
@@ -562,7 +575,23 @@ const App: React.FC = () => {
       }
     };
 
-    // Safari often fires 'pageshow' instead of visibilitychange when coming from cache
+    // Safari specific: Auto-refresh every 30s as a fallback for potential dead sockets
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    let safariInterval: any;
+    if (isSafari) {
+      safariInterval = setInterval(async () => {
+        if (document.visibilityState === 'visible') {
+          console.log("[App] Safari periodic sync...");
+          const data = await dataSyncService.fetchAllData(user.id);
+          if (data) {
+            setCards(data.cards);
+            setTransactions(data.transactions);
+          }
+        }
+      }, 30000);
+    }
+
+    // Event listeners for focus/visibility
     window.addEventListener('pageshow', handleVisibilityChange);
     window.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', handleVisibilityChange);
@@ -571,6 +600,7 @@ const App: React.FC = () => {
       window.removeEventListener('pageshow', handleVisibilityChange);
       window.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleVisibilityChange);
+      if (safariInterval) clearInterval(safariInterval);
     };
   }, [user]);
 
@@ -777,6 +807,10 @@ const App: React.FC = () => {
     // 2. ARKA PLAN SENKRONİZASYONU
     try {
       await dataSyncService.saveTransaction(user.id, finalTx);
+
+      // SEND SYNC SIGNAL: Tell other devices to refresh (Critical for Safari Mobile)
+      dataSyncService.sendSyncSignal(user.id);
+
       // Sessizce doğrulama yap (Kullanıcıya hissettirmeden)
       const data = await dataSyncService.fetchAllData(user.id);
       if (data) {
@@ -822,6 +856,10 @@ const App: React.FC = () => {
     // 2. ARKA PLAN SENKRONİZASYONU
     try {
       await dataSyncService.deleteTransaction(txId);
+
+      // SEND SYNC SIGNAL
+      dataSyncService.sendSyncSignal(user.id);
+
       // Sessiz doğrulama
       const data = await dataSyncService.fetchAllData(user.id);
       if (data) {
