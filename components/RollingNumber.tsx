@@ -8,10 +8,14 @@ interface RollingNumberProps {
 }
 
 const RollingNumber: React.FC<RollingNumberProps> = ({ value, currency = '₺', className = '' }) => {
-    const [displayValue, setDisplayValue] = useState(value);
+    const [displayValue, setDisplayValue] = useState(0);
 
     useEffect(() => {
-        setDisplayValue(value);
+        // Small delay to ensure the browser has rendered the 0 state first
+        const timer = setTimeout(() => {
+            setDisplayValue(value);
+        }, 50);
+        return () => clearTimeout(timer);
     }, [value]);
 
     const isPercent = currency === '%';
@@ -19,18 +23,15 @@ const RollingNumber: React.FC<RollingNumberProps> = ({ value, currency = '₺', 
         ? { minimumFractionDigits: 1, maximumFractionDigits: 1 }
         : { minimumFractionDigits: 0, maximumFractionDigits: 0 };
 
-    // Format with Turkish locale for standard formatting
     const formattedStr = displayValue.toLocaleString('tr-TR', formatOptions);
     const chars = formattedStr.split('');
 
     return (
         <div className={`inline-flex items-baseline font-mono tabular-nums ${className}`} dir="ltr">
-            {/* Prefix Symbol (₺) */}
             {currency && !isPercent && (
                 <span className="mr-1 opacity-70 shrink-0 select-none leading-[1.2em]">{currency}</span>
             )}
 
-            {/* Animated Digits Container */}
             <div className="flex items-baseline leading-[1.2em]">
                 {chars.map((char, index) => {
                     const isDigit = /\d/.test(char);
@@ -45,7 +46,7 @@ const RollingNumber: React.FC<RollingNumberProps> = ({ value, currency = '₺', 
 
                     return (
                         <div
-                            key={`digit-${index}-${char}`}
+                            key={`digit-${index}`} // Use stable key to keep the element and transition it
                             className="relative w-[0.6em] h-[1.2em] overflow-hidden flex flex-col items-center"
                             style={{ height: '1.2em' }}
                         >
@@ -61,14 +62,12 @@ const RollingNumber: React.FC<RollingNumberProps> = ({ value, currency = '₺', 
                                     </span>
                                 ))}
                             </div>
-                            {/* Invisible placeholder to maintain width and height */}
-                            <span className="invisible h-[1.2em] leading-[1.2em] uppercase">{char}</span>
+                            <span className="invisible h-[1.2em] leading-[1.2em]">{char}</span>
                         </div>
                     );
                 })}
             </div>
 
-            {/* Suffix Symbol (%) */}
             {isPercent && (
                 <span className="ml-1 opacity-70 shrink-0 select-none leading-[1.2em]">{currency}</span>
             )}
