@@ -446,12 +446,12 @@ const App: React.FC = () => {
       window.addEventListener('pageshow', handleVisibilityChange);
       window.addEventListener('focus', handleVisibilityChange);
 
-      // Continuous polling as backup (1s for PWA responsiveness)
+      // Continuous polling as backup (500ms for instant in-app sync)
       pollInterval = setInterval(() => {
         if (document.visibilityState === 'visible') {
           syncAll();
         }
-      }, 1000);
+      }, 500);
 
       return () => {
         window.removeEventListener('visibilitychange', handleVisibilityChange);
