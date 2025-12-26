@@ -1243,7 +1243,6 @@ const App: React.FC = () => {
                           <RollingNumber
                             value={item.val}
                             currency={item.suffix === '%' ? '%' : '₺'}
-                            className="flex-row-reverse"
                           />
                         </div>
                       </div>

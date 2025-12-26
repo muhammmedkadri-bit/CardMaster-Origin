@@ -11,41 +11,55 @@ const RollingNumber: React.FC<RollingNumberProps> = ({ value, currency = '₺', 
     const [displayValue, setDisplayValue] = useState(value);
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setDisplayValue(value);
-        }, 50);
-        return () => clearTimeout(timer);
+        setDisplayValue(value);
     }, [value]);
 
-    const formatted = Math.floor(displayValue)
-        .toLocaleString('tr-TR')
-        .split('');
+    // Handle both integer and decimal parts
+    const isPercent = currency === '%';
+    const formatOptions = isPercent
+        ? { minimumFractionDigits: 1, maximumFractionDigits: 1 }
+        : { minimumFractionDigits: 0, maximumFractionDigits: 0 };
+
+    const formattedStr = displayValue.toLocaleString('tr-TR', formatOptions);
+    const chars = formattedStr.split('');
 
     return (
-        <div className={`flex items-baseline overflow-hidden ${className}`}>
-            {currency && <span className="mr-1 opacity-70">{currency}</span>}
-            <div className="flex">
-                {formatted.map((char, index) => (
-                    <div key={index} className="relative h-[1.2em] overflow-hidden flex items-center">
-                        {char === '.' || char === ',' ? (
-                            <span className="px-0.5">{char}</span>
-                        ) : (
+        <div className={`flex items-baseline ${className}`} dir="ltr">
+            {currency && !isPercent && (
+                <span className="mr-1 opacity-70 shrink-0 select-none">{currency}</span>
+            )}
+            <div className="flex items-baseline">
+                {chars.map((char, index) => {
+                    const isDigit = /\d/.test(char);
+                    if (!isDigit) {
+                        return (
+                            <span key={index} className="px-[0.5px] opacity-70 select-none">
+                                {char}
+                            </span>
+                        );
+                    }
+
+                    return (
+                        <div key={index} className="relative h-[1.1em] overflow-hidden flex items-center">
                             <div
-                                className="transition-all duration-700 ease-[cubic-bezier(0.45,0.05,0.55,0.95)] flex flex-col"
+                                className="transition-all duration-1000 ease-[cubic-bezier(0.34,1.56,0.64,1)] flex flex-col items-center"
                                 style={{
                                     transform: `translateY(-${Number(char) * 10}%)`,
                                 }}
                             >
                                 {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                                    <span key={num} className="block leading-none">
+                                    <span key={num} className="block leading-[1.1em]">
                                         {num}
                                     </span>
                                 ))}
                             </div>
-                        )}
-                    </div>
-                ))}
+                        </div>
+                    );
+                })}
             </div>
+            {isPercent && (
+                <span className="ml-0.5 opacity-70 shrink-0 select-none">{currency}</span>
+            )}
         </div>
     );
 };
