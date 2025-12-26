@@ -744,11 +744,17 @@ const App: React.FC = () => {
           setCards(prev => prev.map(c => c.id === finalTx.cardId ? { ...c, balance: c.balance + impact } : c));
         }
       }
-      await dataSyncService.saveTransaction(user.id, finalTx);
-    }
 
-    setModalMode(null);
-    setEditingTransaction(undefined);
+      // Close Modal IMMEDIATELY for Instant UI Feel
+      setModalMode(null);
+      setEditingTransaction(undefined);
+
+      await dataSyncService.saveTransaction(user.id, finalTx);
+    } else {
+      // If no user, just close
+      setModalMode(null);
+      setEditingTransaction(undefined);
+    }
   };
 
   const deleteTransaction = async () => {
