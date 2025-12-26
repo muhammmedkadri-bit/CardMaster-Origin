@@ -121,7 +121,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
           return (
             <div
               key={card.id}
-              className={`group relative p-6 sm:p-10 rounded-[40px] border transition-all hover:shadow-2xl hover:z-10 ${isDarkMode ? 'bg-[#0f172a]/40 border-slate-800 hover:bg-[#0f172a]/60' : 'bg-white border-slate-100 shadow-sm hover:shadow-md'
+              className={`group relative p-6 sm:p-10 rounded-[40px] border transition-all hover:shadow-2xl hover:z-10 ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800 hover:bg-[#0b0f1a]/60' : 'bg-white border-slate-100 shadow-sm hover:shadow-md'
                 } group-hover:scale-[1.01] sm:group-hover:scale-[1.02]`}
             >
               {/* Card Color Side Accent */}

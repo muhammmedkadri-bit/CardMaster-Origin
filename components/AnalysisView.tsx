@@ -201,7 +201,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
           ['Asgari Ödeme', `TL ${cardStats.minPayment.toLocaleString('tr-TR')}`]
         ],
         theme: 'striped',
-        headStyles: { fillStyle: 'F', fillColor: [59, 130, 246] }
+        headStyles: { fillColor: [59, 130, 246] }
       });
 
       // Transactions
@@ -243,7 +243,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
   }
 
   return (
-    <div className={`min-h-screen pt-32 pb-24 px-4 sm:px-10 transition-colors duration-500 ${isDarkMode ? 'bg-[#0f172a]' : 'bg-[#f8fafc]'}`}>
+    <div className={`min-h-screen pt-32 pb-24 px-4 sm:px-10 transition-colors duration-500 ${isDarkMode ? 'bg-[#0b0f1a]' : 'bg-[#f8fafc]'}`}>
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-8 mb-16">
           <div className="flex items-center gap-6">

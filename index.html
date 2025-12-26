@@ -18,6 +18,45 @@
   <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          }
+        }
+      }
+    }
+  </script>
+  <script>
+    // Theme color sync for PWA
+    function updateThemeColor() {
+      const isDark = document.documentElement.classList.contains('dark');
+      const color = isDark ? '#0b0f1a' : '#f8fafc';
+      let meta = document.querySelector('meta[name="theme-color"]');
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute('name', 'theme-color');
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute('content', color);
+    }
+
+    // Watch for class changes on html
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          updateThemeColor();
+        }
+      });
+    });
+    observer.observe(document.documentElement, { attributes: true });
+
+    // Initial call
+    window.addEventListener('load', updateThemeColor);
+  </script>
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap"
     rel="stylesheet">

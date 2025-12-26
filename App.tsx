@@ -299,8 +299,12 @@ const App: React.FC = () => {
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
+      document.body.classList.add('dark');
+      document.body.style.backgroundColor = '#0b0f1a';
     } else {
       document.documentElement.classList.remove('dark');
+      document.body.classList.remove('dark');
+      document.body.style.backgroundColor = '#f8fafc';
     }
   }, [isDarkMode]);
 
@@ -1111,7 +1115,7 @@ const App: React.FC = () => {
   const logoBlur = Math.min(10, (scrollY / logoScrollThreshold) * 10);
 
   return (
-    <div className={`min-h-screen transition-colors duration-500 pb-40 sm:pb-32 overflow-x-hidden ${isDarkMode ? 'bg-[#070b14] text-slate-100' : 'bg-[#f8fafc] text-slate-900'}`}>
+    <div className={`min-h-screen transition-colors duration-500 pb-40 sm:pb-32 overflow-x-hidden ${isDarkMode ? 'bg-[#0b0f1a] text-slate-100' : 'bg-[#f8fafc] text-slate-900'}`}>
 
       {/* Header with Revised Logo */}
       <header className="fixed top-0 left-0 right-0 z-40 pointer-events-none p-6">
@@ -1211,7 +1215,7 @@ const App: React.FC = () => {
                     { label: 'TOPLAM BORÇ', val: totalBalance, icon: <CardIcon size={28} />, color: 'text-rose-500', bg: 'bg-rose-500/10' },
                     { label: 'KULLANIM ORANI', val: overallUtilization, icon: <Zap size={28} />, color: 'text-blue-500', bg: 'bg-blue-500/10', suffix: '%' }
                   ].map((item, i) => (
-                    <div key={i} className={`p-6 sm:p-8 rounded-[40px] border transition-all duration-300 group flex items-center gap-6 ${isDarkMode ? 'bg-[#0f172a]/40 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-100 shadow-sm hover:shadow-md'}`}>
+                    <div key={i} className={`p-6 sm:p-8 rounded-[40px] border transition-all duration-300 group flex items-center gap-6 ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-100 shadow-sm hover:shadow-md'}`}>
                       <div className={`w-14 h-14 shrink-0 ${item.bg} ${item.color} rounded-3xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
                         {item.icon}
                       </div>
@@ -1297,7 +1301,7 @@ const App: React.FC = () => {
                       </div>
                     </section>
 
-                    <div className={`p-6 sm:p-10 rounded-[40px] border transition-all ${isDarkMode ? 'bg-[#0f172a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                    <div className={`p-6 sm:p-10 rounded-[40px] border transition-all ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                         <h3 className={`text-xl font-black flex items-center gap-4 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
                           <ArrowUpRight size={24} className="text-blue-500" /> SON HAREKETLER
@@ -1382,7 +1386,7 @@ const App: React.FC = () => {
                     </div>
 
                     <div id="dağılım" className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className={`p-8 rounded-[32px] border transition-all min-h-[480px] h-auto ${isDarkMode ? 'bg-[#0f172a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                      <div className={`p-8 rounded-[32px] border transition-all min-h-[480px] h-auto ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
                         <h3 className={`text-lg font-black mb-8 flex items-center gap-3 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
                           <PieIcon size={20} className="text-blue-500" /> DAĞILIM
                         </h3>
@@ -1390,7 +1394,7 @@ const App: React.FC = () => {
                           <DistributionChart cards={cards} transactions={transactions} isDarkMode={isDarkMode} categories={categories} />
                         </div>
                       </div>
-                      <div id="odemeler" className={`p-8 rounded-[32px] border transition-all ${isDarkMode ? 'bg-[#0f172a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                      <div id="odemeler" className={`p-8 rounded-[32px] border transition-all ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
                         <h3 className={`text-lg font-black mb-8 flex items-center gap-3 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
                           <Calendar size={20} className="text-blue-500" /> ÖDEMELER
                         </h3>
@@ -1477,7 +1481,7 @@ const App: React.FC = () => {
                 </div>
               )}
 
-              <div className={`flex items-center gap-1 sm:gap-2 p-1.5 sm:p-2 rounded-[28px] sm:rounded-[32px] border shadow-2xl backdrop-blur-2xl transition-all ${isDarkMode ? 'bg-[#0f172a]/90 border-slate-800 shadow-black' : 'bg-white/90 border-slate-200 shadow-blue-900/10'}`}>
+              <div className={`flex items-center gap-1 sm:gap-2 p-1.5 sm:p-2 rounded-[28px] sm:rounded-[32px] border shadow-2xl backdrop-blur-2xl transition-all ${isDarkMode ? 'bg-[#0b0f1a]/90 border-slate-800 shadow-black' : 'bg-white/90 border-slate-200 shadow-blue-900/10'}`}>
                 <div className="flex items-center px-0.5 sm:px-1 gap-1">
                   <a href="#" onClick={(e) => { e.preventDefault(); handleViewChange('dashboard'); }} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'dashboard' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`}><LayoutDashboard size={20} className="sm:w-5 sm:h-5" /></a>
                   <a href="#" onClick={(e) => { e.preventDefault(); handleViewChange('cards'); }} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'cards' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`}><CardIcon size={20} className="sm:w-5 sm:h-5" /></a>
@@ -1689,7 +1693,7 @@ const App: React.FC = () => {
                         onChange={(e) => setUserMessage(e.target.value)}
                         placeholder="Mesajınızı buraya yazın..."
                         className={`w-full py-5 pl-8 pr-16 rounded-[24px] text-sm focus:outline-none transition-all font-semibold shadow-inner border ${isDarkMode
-                          ? 'bg-[#0f172a] border-slate-700 text-white focus:border-blue-500/50 placeholder:text-slate-600'
+                          ? 'bg-[#0b0f1a] border-slate-700 text-white focus:border-blue-500/50 placeholder:text-slate-600'
                           : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-blue-400 placeholder:text-slate-400'
                           }`}
                       />
@@ -1713,7 +1717,7 @@ const App: React.FC = () => {
           {
             cardToDelete && (
               <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[130] flex items-center justify-center p-6 animate-in fade-in duration-300">
-                <div className={`p-10 rounded-[40px] max-w-sm w-full text-center border shadow-2xl animate-in zoom-in-95 duration-300 ${isDarkMode ? 'bg-[#0f172a] border-slate-800 text-white' : 'bg-white border-slate-100 text-slate-800'}`}>
+                <div className={`p-10 rounded-[40px] max-w-sm w-full text-center border shadow-2xl animate-in zoom-in-95 duration-300 ${isDarkMode ? 'bg-[#0b0f1a] border-slate-800 text-white' : 'bg-white border-slate-100 text-slate-800'}`}>
                   <div className="w-16 h-16 bg-rose-500/10 text-rose-500 rounded-3xl flex items-center justify-center mx-auto mb-8"><AlertTriangle size={32} /></div>
                   <h3 className="text-xl font-black mb-4 uppercase tracking-tight">KARTI SİL?</h3>
                   <p className="text-sm font-medium text-slate-500 mb-10 leading-relaxed"><span className="font-black text-rose-500 uppercase">{cardToDelete.cardName}</span> kartını silmek üzeresiniz.</p>
@@ -1726,7 +1730,7 @@ const App: React.FC = () => {
           {
             transactionToDelete && (
               <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[130] flex items-center justify-center p-6 animate-in fade-in duration-300">
-                <div className={`p-10 rounded-[40px] max-w-sm w-full text-center border shadow-2xl animate-in zoom-in-95 duration-300 ${isDarkMode ? 'bg-[#0f172a] border-slate-800 text-white' : 'bg-white border-slate-100 text-slate-800'}`}>
+                <div className={`p-10 rounded-[40px] max-w-sm w-full text-center border shadow-2xl animate-in zoom-in-95 duration-300 ${isDarkMode ? 'bg-[#0b0f1a] border-slate-800 text-white' : 'bg-white border-slate-100 text-slate-800'}`}>
                   <div className="w-16 h-16 bg-blue-500/10 text-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-8"><AlertTriangle size={32} /></div>
                   <h3 className="text-xl font-black mb-4 uppercase tracking-tight">İŞLEMİ SİL?</h3>
                   <p className="text-sm font-medium text-slate-500 mb-10 leading-relaxed"><span className="font-black text-blue-500 uppercase">{transactionToDelete.description || (transactionToDelete.type === 'spending' ? 'Harcama' : 'Ödeme')}</span> işlemini silmek istediğinize emin misiniz?</p>
@@ -1739,7 +1743,7 @@ const App: React.FC = () => {
           {
             modalMode === 'reset_confirm' && (
               <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-[200] flex items-center justify-center p-6 animate-in fade-in duration-300">
-                <div className="p-12 rounded-[56px] max-w-md w-full text-center border border-rose-500/30 bg-[#0f172a] shadow-[0_0_100px_rgba(244,63,94,0.1)]">
+                <div className="p-12 rounded-[56px] max-w-md w-full text-center border border-rose-500/30 bg-[#0b0f1a] shadow-[0_0_100px_rgba(244,63,94,0.1)]">
                   <div className="w-24 h-24 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-10 ring-4 ring-rose-500/5"><AlertTriangle size={48} /></div>
                   <h3 className="text-3xl font-black mb-6 text-white tracking-tight italic uppercase">HER ŞEYİ SİL?</h3>
                   <p className="text-slate-400 font-medium mb-12 leading-relaxed">Bu işlem tüm kartlarınızı, harcamalarınızı ve ayarlarınızı kalıcı olarak silecektir. Bu işlemin geri dönüşü yoktur.</p>
@@ -1774,7 +1778,7 @@ const App: React.FC = () => {
           }
           {
             (modalMode === 'spending' || modalMode === 'payment') && cards.length === 0 && (
-              <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-6 z-50 backdrop-blur-xl"><div className={`p-10 rounded-[48px] max-w-sm text-center border ${isDarkMode ? 'bg-[#0f172a] border-slate-800 text-white' : 'bg-white border-slate-100 shadow-2xl'}`}><div className="w-20 h-20 bg-blue-100 rounded-3xl flex items-center justify-center mx-auto mb-8 text-blue-600"><CardIcon size={40} /></div><p className="font-black text-xl mb-10 leading-tight uppercase">İşlem yapabilmek için önce bir kart eklemelisiniz.</p><button onClick={() => setModalMode('add')} className="w-full bg-blue-600 text-white py-4.5 rounded-[24px] font-black uppercase tracking-[0.2em] text-[10px] hover:bg-blue-700">İLK KARTIMI EKLE</button></div></div>
+              <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-6 z-50 backdrop-blur-xl"><div className={`p-10 rounded-[48px] max-w-sm text-center border ${isDarkMode ? 'bg-[#0b0f1a] border-slate-800 text-white' : 'bg-white border-slate-100 shadow-2xl'}`}><div className="w-20 h-20 bg-blue-100 rounded-3xl flex items-center justify-center mx-auto mb-8 text-blue-600"><CardIcon size={40} /></div><p className="font-black text-xl mb-10 leading-tight uppercase">İşlem yapabilmek için önce bir kart eklemelisiniz.</p><button onClick={() => setModalMode('add')} className="w-full bg-blue-600 text-white py-4.5 rounded-[24px] font-black uppercase tracking-[0.2em] text-[10px] hover:bg-blue-700">İLK KARTIMI EKLE</button></div></div>
             )
           }
         </>
@@ -1800,7 +1804,7 @@ const App: React.FC = () => {
 
       {/* View Transition Overlay */}
       {isChangingView && (
-        <div className={`fixed inset-0 z-[400] flex flex-col items-center justify-center p-6 animate-in fade-in duration-300 ${isDarkMode ? 'bg-[#070b14]' : 'bg-white'}`}>
+        <div className={`fixed inset-0 z-[400] flex flex-col items-center justify-center p-6 animate-in fade-in duration-300 ${isDarkMode ? 'bg-[#0b0f1a]' : 'bg-white'}`}>
           <div className="flex flex-col items-center animate-in zoom-in-95 duration-500">
             <div className="scale-110">
               <Logo isDarkMode={isDarkMode} isAnimated={true} />
