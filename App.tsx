@@ -393,14 +393,12 @@ const App: React.FC = () => {
     let reconnectTimeout: any;
 
     const connectRealtime = () => {
-      console.log("[Realtime] Connecting...");
+      console.log("[Realtime] Establishing connection...");
       setRealtimeStatus('connecting');
 
-      const channel = dataSyncService.subscribeToChanges(user.id, async (table, payload) => {
-        const { eventType, new: newRec, old: oldRec } = payload;
-
-        if (table === 'force_refresh') {
-          console.log("[App] Force refresh signal received...");
+      // Shared and simplified sync function
+      const syncAll = async () => {
+        try {
           const data = await dataSyncService.fetchAllData(user.id);
           if (data) {
             setCards(data.cards);
@@ -408,119 +406,17 @@ const App: React.FC = () => {
             setCategories(data.categories);
             setNotificationHistory(data.notifications);
             setChatHistory(data.chat);
+            setLastUpdate(Date.now());
           }
-          return;
-        }
-
-        try {
-          if (table === 'cards') {
-            const item = dataSyncService.mapCardFromDB(eventType === 'DELETE' ? oldRec : newRec);
-            if (eventType === 'INSERT') setCards(prev => prev.some(p => p.id === item.id) ? prev : [...prev, item]);
-            else if (eventType === 'UPDATE') setCards(prev => prev.map(p => p.id === item.id ? item : p));
-            else if (eventType === 'DELETE') setCards(prev => prev.filter(p => p.id !== item.id));
-          }
-          else if (table === 'transactions') {
-            if (eventType === 'DELETE') {
-              setTransactions(prev => prev.filter(p => p.id !== oldRec.id));
-
-              // CRITICAL FIX: Re-fetch the affected card on DELETE too
-              if (oldRec.card_id) {
-                // 1. Instant Balance Update (Try if fields exist)
-                if (oldRec.amount && oldRec.type) {
-                  setCards(prev => prev.map(c => {
-                    if (c.id === oldRec.card_id) {
-                      const reverseImpact = oldRec.type === 'spending' ? -oldRec.amount : oldRec.amount;
-                      return { ...c, balance: c.balance + reverseImpact };
-                    }
-                    return c;
-                  }));
-                }
-
-                // 2. Fetch immediately (No timeout)
-                const fetchFreshCard = async () => {
-                  const { data: freshCard } = await supabase
-                    .from('cards')
-                    .select('*')
-                    .eq('id', oldRec.card_id)
-                    .single();
-
-                  if (freshCard) {
-                    const mappedCard = dataSyncService.mapCardFromDB(freshCard);
-                    setCards(prev => prev.map(c => c.id === mappedCard.id ? mappedCard : c));
-                  }
-                };
-                fetchFreshCard();
-              }
-            } else {
-              const item = dataSyncService.mapTransactionFromDB(newRec);
-
-              setTransactions(prev => {
-                const currentCards = cardsRef.current;
-                const relatedCard = currentCards.find(c => c.id === item.cardId);
-                if (relatedCard) item.cardName = relatedCard.cardName;
-
-                const exists = prev.some(p => p.id === item.id);
-                if (exists) return prev.map(p => p.id === item.id ? item : p);
-
-                const optimistic = prev.find(p => p.id.length < 20 && p.amount === item.amount && p.date === item.date);
-                if (optimistic) return prev.map(p => p.id === optimistic.id ? item : p);
-
-                return [item, ...prev];
-              });
-
-              if (item.cardId) {
-                // 1. Instant Balance Update (For INSERT only)
-                if (eventType === 'INSERT') {
-                  setCards(prev => prev.map(c => {
-                    if (c.id === item.cardId) {
-                      const impact = item.type === 'spending' ? item.amount : -item.amount;
-                      return { ...c, balance: c.balance + impact };
-                    }
-                    return c;
-                  }));
-                }
-
-                // 2. Fetch immediately
-                const fetchFresh = async () => {
-                  try {
-                    const { data: freshCard } = await supabase.from('cards').select('*').eq('id', item.cardId).single();
-                    if (freshCard) {
-                      const mappedCard = dataSyncService.mapCardFromDB(freshCard);
-                      setCards(prev => prev.map(c => c.id === mappedCard.id ? mappedCard : c));
-                    }
-                  } catch (err) {
-                    console.error("Error refetching card:", err);
-                  }
-                };
-                fetchFresh();
-              }
-            }
-          }
-          else if (table === 'categories') {
-            const item = dataSyncService.mapCategoryFromDB(eventType === 'DELETE' ? oldRec : newRec);
-            if (eventType === 'INSERT') setCategories(prev => [...prev, item]);
-            else if (eventType === 'UPDATE') setCategories(prev => prev.map(c => c.id === item.id ? item : c));
-            else if (eventType === 'DELETE') setCategories(prev => prev.filter(c => c.id !== item.id));
-          }
-          else if (table === 'notifications') {
-            const item = dataSyncService.mapNotificationFromDB(newRec);
-            if (eventType === 'INSERT') {
-              setNotificationHistory(prev => [item, ...prev]);
-              if (!item.read) showToast(item.message, item.type);
-            } else if (eventType === 'UPDATE') {
-              setNotificationHistory(prev => prev.map(p => p.id === item.id ? item : p));
-            }
-          }
-          else if (table === 'chat_history') {
-            if (eventType === 'INSERT') {
-              const item = dataSyncService.mapChatFromDB(newRec);
-              setChatHistory(prev => [...prev, item]);
-            }
-          }
-          setLastUpdate(Date.now());
         } catch (e) {
-          console.error(`Realtime Error [${table}]:`, e);
+          console.error("Sync error:", e);
         }
+      };
+
+      const channel = dataSyncService.subscribeToChanges(user.id, async (table, payload) => {
+        console.log(`[Realtime] Event from ${table}:`, payload.eventType || 'broadcast');
+        // Any change from ANY table or broadcast -> Sync everything for 100% consistency
+        await syncAll();
       });
 
       if (channel) {
@@ -534,17 +430,23 @@ const App: React.FC = () => {
 
     const activeChannel = connectRealtime();
 
-    // Heartbeat to check if connection is alive (essential for mobile browsers)
+    // Aggressive Heartbeat (Every 2 seconds check)
     reconnectTimeout = setInterval(() => {
-      if (supabase && supabase.realtime && supabase.realtime.getChannels().length === 0) {
-        console.warn("[Realtime] Reconnecting due to lost channels...");
+      if (!supabase) return;
+      const channels = supabase.getChannels();
+      const channelStillThere = channels.some(c => c.topic === `user_sync_${user.id}`);
+
+      if (!channelStillThere) {
+        console.warn("[Realtime] Channel lost, reconnecting...");
         connectRealtime();
       }
-    }, 3000);
+    }, 2000);
 
     return () => {
       clearInterval(reconnectTimeout);
-      if (activeChannel) supabase.removeChannel(activeChannel);
+      if (activeChannel) {
+        supabase.removeChannel(activeChannel);
+      }
     };
   }, [user, realtimeRetryTrigger]);
 
