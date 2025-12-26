@@ -414,11 +414,14 @@ const App: React.FC = () => {
           setCards(data.cards);
           setTransactions(data.transactions);
           setCategories(data.categories);
-          setNotificationHistory(data.notifications);
           setChatHistory(data.chat);
           setLastUpdate(Date.now());
           lastDataHash = newHash;
         }
+
+        // ALWAYS update notifications to ensure read/unread status is synced
+        // This bypasses the hash check specifically for notification status 
+        setNotificationHistory(data.notifications);
       }
     };
 
