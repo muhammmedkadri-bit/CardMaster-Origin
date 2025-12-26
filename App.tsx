@@ -731,51 +731,56 @@ const App: React.FC = () => {
   };
 
   const handleTransaction = async (finalTx: Transaction) => {
-    showToast(`İşlem kaydediliyor...`, 'info');
-    if (user) {
-      // Optimistic insert to avoid empty list wait
-      if (modalMode !== 'edit_transaction') {
-        const related = cards.find(c => c.id === finalTx.cardId);
-        setTransactions(prev => [{ ...finalTx, cardName: related?.cardName || '' }, ...prev]);
+    if (!user) return;
 
-        // Optimistic Balance Update
-        if (related) {
-          const impact = finalTx.type === 'spending' ? finalTx.amount : -finalTx.amount;
-          setCards(prev => prev.map(c => c.id === finalTx.cardId ? { ...c, balance: c.balance + impact } : c));
-        }
+    showToast(`İşlem kaydediliyor...`, 'info');
+
+    try {
+      // 1. Commit to Server
+      await dataSyncService.saveTransaction(user.id, finalTx);
+
+      // 2. Fetch Absolute Truth (No guessing)
+      const data = await dataSyncService.fetchAllData(user.id);
+      if (data) {
+        setCards(data.cards);
+        setTransactions(data.transactions);
+        setCategories(data.categories);
+        // Update history if needed but these are main ones
       }
 
-      // Close Modal IMMEDIATELY for Instant UI Feel
       setModalMode(null);
       setEditingTransaction(undefined);
-
-      await dataSyncService.saveTransaction(user.id, finalTx);
-    } else {
-      // If no user, just close
-      setModalMode(null);
-      setEditingTransaction(undefined);
+      showToast('İşlem başarıyla kaydedildi.', 'success');
+    } catch (error) {
+      console.error(error);
+      showToast('İşlem kaydedilemedi.', 'error');
     }
   };
 
   const deleteTransaction = async () => {
-    if (!transactionToDelete) return;
+    if (!transactionToDelete || !user) return;
     const txId = transactionToDelete.id;
 
-    // 1. Optimistic Update (Immediate Feedback)
-    setTransactions(prev => prev.filter(t => t.id !== txId));
-
-    // Optimistic Balance Revert
-    const deletedTx = transactions.find(t => t.id === txId);
-    if (deletedTx) {
-      const reverseImpact = deletedTx.type === 'spending' ? -deletedTx.amount : deletedTx.amount;
-      setCards(prev => prev.map(c => c.id === deletedTx.cardId ? { ...c, balance: c.balance + reverseImpact } : c));
-    }
-
-    setTransactionToDelete(null);
     showToast('İşlem siliniyor...', 'info');
 
-    // 2. Server Sync
-    if (user) await dataSyncService.deleteTransaction(txId);
+    try {
+      // 1. Commit to Server
+      await dataSyncService.deleteTransaction(txId);
+
+      // 2. Fetch Absolute Truth
+      const data = await dataSyncService.fetchAllData(user.id);
+      if (data) {
+        setCards(data.cards);
+        setTransactions(data.transactions);
+        setCategories(data.categories);
+      }
+
+      setTransactionToDelete(null);
+      showToast('İşlem silindi.', 'success');
+    } catch (error) {
+      console.error(error);
+      showToast('Silme işlemi başarısız.', 'error');
+    }
   };
 
   const deleteCard = async () => {
