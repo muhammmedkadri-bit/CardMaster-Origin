@@ -432,7 +432,6 @@ const App: React.FC = () => {
       onTransactionChange: (payload) => {
         try {
           const { eventType, new: newRec, old: oldRec } = payload;
-
           if (eventType === 'INSERT' || eventType === 'UPDATE') {
             const item = dataSyncService.mapTransactionFromDB(newRec);
             const currentCards = cardsRef.current;
@@ -442,49 +441,10 @@ const App: React.FC = () => {
             setTransactions(prev => {
               const exists = prev.some(p => p.id === item.id);
               if (exists) return prev.map(p => p.id === item.id ? item : p);
-
-              const optimisticMatch = prev.find(p =>
-                p.cardId === item.cardId && Math.abs(p.amount - item.amount) < 0.01 &&
-                p.date === item.date && p.id.length < 20
-              );
-              if (optimisticMatch) return prev.map(p => p.id === optimisticMatch.id ? item : p);
-
               return eventType === 'INSERT' ? [item, ...prev] : prev;
             });
-
-            // --- Balance Management ---
-            if (eventType === 'INSERT') {
-              setCards(prev => prev.map(c => {
-                if (c.id === item.cardId) {
-                  return { ...c, balance: item.type === 'spending' ? c.balance + item.amount : c.balance - item.amount };
-                }
-                return c;
-              }));
-            } else if (eventType === 'UPDATE' && oldRec) {
-              const oldItem = dataSyncService.mapTransactionFromDB(oldRec);
-              if (oldItem.amount !== item.amount || oldItem.type !== item.type) {
-                setCards(prev => prev.map(c => {
-                  if (c.id === item.cardId) {
-                    let balance = c.balance;
-                    // Undo old
-                    balance = oldItem.type === 'spending' ? balance - oldItem.amount : balance + oldItem.amount;
-                    // Apply new
-                    balance = item.type === 'spending' ? balance + item.amount : balance - item.amount;
-                    return { ...c, balance };
-                  }
-                  return c;
-                }));
-              }
-            }
           } else if (eventType === 'DELETE' && oldRec) {
-            const item = dataSyncService.mapTransactionFromDB(oldRec);
-            setTransactions(prev => prev.filter(p => p.id !== item.id));
-            setCards(prev => prev.map(c => {
-              if (c.id === item.cardId) {
-                return { ...c, balance: item.type === 'spending' ? c.balance - item.amount : c.balance + item.amount };
-              }
-              return c;
-            }));
+            setTransactions(prev => prev.filter(p => p.id !== oldRec.id));
           }
           setLastUpdate(Date.now());
         } catch (e) { console.error("Realtime Tx Error:", e); }
