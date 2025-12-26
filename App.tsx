@@ -384,67 +384,97 @@ const App: React.FC = () => {
 
   // --- REALTIME SUBSCRIPTION ---
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setRealtimeStatus('connecting');
+      return;
+    }
 
-    const channel = dataSyncService.subscribeToChanges(user.id, (table, payload) => {
-      const { eventType, new: newRec, old: oldRec } = payload;
+    let reconnectTimeout: any;
 
-      try {
-        if (table === 'cards') {
-          const item = dataSyncService.mapCardFromDB(eventType === 'DELETE' ? oldRec : newRec);
-          if (eventType === 'INSERT') setCards(prev => prev.some(p => p.id === item.id) ? prev : [...prev, item]);
-          else if (eventType === 'UPDATE') setCards(prev => prev.map(p => p.id === item.id ? item : p));
-          else if (eventType === 'DELETE') setCards(prev => prev.filter(p => p.id !== item.id));
-        }
-        else if (table === 'transactions') {
-          if (eventType === 'DELETE') {
-            setTransactions(prev => prev.filter(p => p.id !== oldRec.id));
-          } else {
-            const item = dataSyncService.mapTransactionFromDB(newRec);
-            const relatedCard = cardsRef.current.find(c => c.id === item.cardId);
-            if (relatedCard) item.cardName = relatedCard.cardName;
+    const connectRealtime = () => {
+      console.log("[Realtime] Connecting...");
+      setRealtimeStatus('connecting');
 
-            setTransactions(prev => {
-              const exists = prev.some(p => p.id === item.id);
-              if (exists) return prev.map(p => p.id === item.id ? item : p);
-              // Clean up optimistic inserts (ID is short)
-              const optimistic = prev.find(p => p.id.length < 20 && p.amount === item.amount && p.date === item.date);
-              if (optimistic) return prev.map(p => p.id === optimistic.id ? item : p);
-              return [item, ...prev];
-            });
+      const channel = dataSyncService.subscribeToChanges(user.id, (table, payload) => {
+        const { eventType, new: newRec, old: oldRec } = payload;
+
+        try {
+          if (table === 'cards') {
+            const item = dataSyncService.mapCardFromDB(eventType === 'DELETE' ? oldRec : newRec);
+            if (eventType === 'INSERT') setCards(prev => prev.some(p => p.id === item.id) ? prev : [...prev, item]);
+            else if (eventType === 'UPDATE') setCards(prev => prev.map(p => p.id === item.id ? item : p));
+            else if (eventType === 'DELETE') setCards(prev => prev.filter(p => p.id !== item.id));
           }
-        }
-        else if (table === 'categories') {
-          const item = dataSyncService.mapCategoryFromDB(eventType === 'DELETE' ? oldRec : newRec);
-          if (eventType === 'INSERT') setCategories(prev => [...prev, item]);
-          else if (eventType === 'UPDATE') setCategories(prev => prev.map(c => c.id === item.id ? item : c));
-          else if (eventType === 'DELETE') setCategories(prev => prev.filter(c => c.id !== item.id));
-        }
-        else if (table === 'notifications') {
-          const item = dataSyncService.mapNotificationFromDB(newRec);
-          if (eventType === 'INSERT') {
-            setNotificationHistory(prev => [item, ...prev]);
-            if (!item.read) showToast(item.message, item.type);
-          } else if (eventType === 'UPDATE') {
-            setNotificationHistory(prev => prev.map(p => p.id === item.id ? item : p));
+          else if (table === 'transactions') {
+            if (eventType === 'DELETE') {
+              setTransactions(prev => prev.filter(p => p.id !== oldRec.id));
+            } else {
+              const item = dataSyncService.mapTransactionFromDB(newRec);
+
+              setTransactions(prev => {
+                const currentCards = cardsRef.current;
+                const relatedCard = currentCards.find(c => c.id === item.cardId);
+                if (relatedCard) item.cardName = relatedCard.cardName;
+
+                const exists = prev.some(p => p.id === item.id);
+                if (exists) return prev.map(p => p.id === item.id ? item : p);
+
+                const optimistic = prev.find(p => p.id.length < 20 && p.amount === item.amount && p.date === item.date);
+                if (optimistic) return prev.map(p => p.id === optimistic.id ? item : p);
+
+                return [item, ...prev];
+              });
+            }
           }
-        }
-        else if (table === 'chat_history') {
-          if (eventType === 'INSERT') {
-            const item = dataSyncService.mapChatFromDB(newRec);
-            setChatHistory(prev => [...prev, item]);
+          else if (table === 'categories') {
+            const item = dataSyncService.mapCategoryFromDB(eventType === 'DELETE' ? oldRec : newRec);
+            if (eventType === 'INSERT') setCategories(prev => [...prev, item]);
+            else if (eventType === 'UPDATE') setCategories(prev => prev.map(c => c.id === item.id ? item : c));
+            else if (eventType === 'DELETE') setCategories(prev => prev.filter(c => c.id !== item.id));
           }
+          else if (table === 'notifications') {
+            const item = dataSyncService.mapNotificationFromDB(newRec);
+            if (eventType === 'INSERT') {
+              setNotificationHistory(prev => [item, ...prev]);
+              if (!item.read) showToast(item.message, item.type);
+            } else if (eventType === 'UPDATE') {
+              setNotificationHistory(prev => prev.map(p => p.id === item.id ? item : p));
+            }
+          }
+          else if (table === 'chat_history') {
+            if (eventType === 'INSERT') {
+              const item = dataSyncService.mapChatFromDB(newRec);
+              setChatHistory(prev => [...prev, item]);
+            }
+          }
+          setLastUpdate(Date.now());
+        } catch (e) {
+          console.error(`Realtime Error [${table}]:`, e);
         }
-        setLastUpdate(Date.now());
-      } catch (e) {
-        console.error(`Realtime Error [${table}]:`, e);
+      });
+
+      if (channel) {
+        setRealtimeStatus('connected');
+      } else {
+        setRealtimeStatus('error');
       }
-    });
 
-    setRealtimeStatus('connected');
+      return channel;
+    };
+
+    const activeChannel = connectRealtime();
+
+    // Heartbeat to check if connection is alive (essential for mobile browsers)
+    reconnectTimeout = setInterval(() => {
+      if (supabase && supabase.realtime && supabase.realtime.getChannels().length === 0) {
+        console.warn("[Realtime] Reconnecting due to lost channels...");
+        connectRealtime();
+      }
+    }, 15000);
 
     return () => {
-      if (channel) supabase.removeChannel(channel);
+      clearInterval(reconnectTimeout);
+      if (activeChannel) supabase.removeChannel(activeChannel);
     };
   }, [user]);
 
@@ -811,6 +841,22 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3 pointer-events-auto">
+            {/* Realtime Status Indicator */}
+            <div
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] font-black tracking-widest uppercase transition-all shadow-sm ${realtimeStatus === 'connected'
+                  ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                  : realtimeStatus === 'connecting'
+                    ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20 animate-pulse'
+                    : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
+                }`}
+            >
+              <div className={`w-1.5 h-1.5 rounded-full ${realtimeStatus === 'connected' ? 'bg-emerald-500 animate-pulse' : realtimeStatus === 'connecting' ? 'bg-amber-500' : 'bg-rose-500'
+                }`} />
+              <span className="hidden sm:inline">
+                {realtimeStatus === 'connected' ? 'CANLI' : realtimeStatus === 'connecting' ? 'BAĞLANIYOR' : 'KOPUK'}
+              </span>
+            </div>
+
             <button
               onClick={() => user ? handleLogout() : setIsAuthModalOpen(true)}
               className={`relative p-2.5 sm:p-3.5 rounded-2xl transition-all border group flex items-center gap-2 ${isDarkMode ? 'bg-slate-900/40 border-slate-800 text-slate-400 hover:text-white' : 'bg-white/80 border-slate-100 text-slate-500 hover:text-blue-600 shadow-sm backdrop-blur-md'}`}
