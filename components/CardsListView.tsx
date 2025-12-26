@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
+import RollingNumber from './RollingNumber';
 import { CreditCard, Transaction } from '../types';
 import {
   ArrowLeft,
@@ -375,7 +376,10 @@ const CardsListView: React.FC<CardsListViewProps> = ({
             </div>
             <div>
               <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block mb-0.5">TOPLAM LİMİT</span>
-              <span className={`text-xl font-black ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>₺{cards.reduce((a, b) => a + b.limit, 0).toLocaleString('tr-TR')}</span>
+              <RollingNumber
+                value={cards.reduce((a, b) => a + b.limit, 0)}
+                className={`text-xl font-black ${isDarkMode ? 'text-white' : 'text-slate-800'}`}
+              />
             </div>
           </div>
 
@@ -385,7 +389,10 @@ const CardsListView: React.FC<CardsListViewProps> = ({
             </div>
             <div>
               <span className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] block mb-0.5">TOPLAM BORÇ</span>
-              <span className={`text-xl font-black text-rose-500`}>₺{cards.reduce((a, b) => a + (b.balance > 0 ? b.balance : 0), 0).toLocaleString('tr-TR')}</span>
+              <RollingNumber
+                value={cards.reduce((a, b) => a + (b.balance > 0 ? b.balance : 0), 0)}
+                className="text-xl font-black text-rose-500"
+              />
             </div>
           </div>
 
@@ -395,9 +402,10 @@ const CardsListView: React.FC<CardsListViewProps> = ({
             </div>
             <div>
               <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] block mb-0.5">TOPLAM ASGARİ</span>
-              <span className={`text-xl font-black text-blue-600`}>
-                ₺{cards.reduce((acc, c) => acc + (c.balance > 0 ? (c.balance * (c.minPaymentRatio / 100)) : 0), 0).toLocaleString('tr-TR')}
-              </span>
+              <RollingNumber
+                value={cards.reduce((acc, c) => acc + (c.balance > 0 ? (c.balance * (c.minPaymentRatio / 100)) : 0), 0)}
+                className="text-xl font-black text-blue-600"
+              />
             </div>
           </div>
         </div>

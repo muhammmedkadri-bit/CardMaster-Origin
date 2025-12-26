@@ -53,6 +53,7 @@ import { supabase } from './services/supabaseClient';
 import AuthModal from './components/AuthModal';
 import { User } from '@supabase/supabase-js';
 import { dataSyncService } from './services/dataSyncService';
+import RollingNumber from './components/RollingNumber';
 
 // Ultra-Modern & Aesthetic Layered Card Logo Component
 const Logo: React.FC<{ isDarkMode: boolean; isAnimated?: boolean }> = ({ isDarkMode, isAnimated }) => (
@@ -1238,9 +1239,13 @@ const App: React.FC = () => {
                       </div>
                       <div>
                         <span className="text-[10px] font-black text-slate-500 dark:text-slate-500 tracking-[0.2em] block mb-1 uppercase">{item.label}</span>
-                        <p className={`text-xl sm:text-3xl font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                          {item.suffix === '%' ? `%${item.val.toFixed(1)}` : `₺${item.val.toLocaleString('tr-TR')}`}
-                        </p>
+                        <div className={`text-xl sm:text-3xl font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                          <RollingNumber
+                            value={item.val}
+                            currency={item.suffix === '%' ? '%' : '₺'}
+                            className="flex-row-reverse"
+                          />
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -1255,7 +1260,10 @@ const App: React.FC = () => {
                           <div className="overflow-hidden">
                             <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">SIRADAKİ ÖDEME</p>
                             <p className={`text-sm font-black truncate ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{widgetsData.closestDue?.cardName} ({widgetsData.closestDue?.dueDay}. Gün)</p>
-                            <p className="text-[10px] font-bold text-slate-500">₺{Math.max(0, widgetsData.closestDue?.balance || 0).toLocaleString('tr-TR')}</p>
+                            <RollingNumber
+                              value={Math.max(0, widgetsData.closestDue?.balance || 0)}
+                              className="text-[10px] font-bold text-slate-500"
+                            />
                           </div>
                         </div>
 

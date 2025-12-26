@@ -1,5 +1,6 @@
 
 import React, { useMemo, useState, useRef } from 'react';
+import RollingNumber from './RollingNumber';
 import {
   BarChart,
   Bar,
@@ -333,7 +334,10 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
             <div className={`flex-1 p-8 rounded-[48px] border relative overflow-hidden group ${isDarkMode ? 'bg-gradient-to-br from-blue-600/20 to-indigo-600/20 border-white/10' : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100'}`}>
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl group-hover:scale-150 transition-transform duration-700"></div>
               <p className="text-[11px] font-black text-blue-500 uppercase tracking-[0.2em] mb-4">SEÇİLİ KARTIN BORCU</p>
-              <h4 className={`text-4xl font-black tracking-tighter mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>₺{cardStats.cardData!.balance.toLocaleString('tr-TR')}</h4>
+              <RollingNumber
+                value={cardStats.cardData!.balance}
+                className={`text-4xl font-black tracking-tighter mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}
+              />
               <div className="flex items-center gap-2 text-slate-500 font-bold text-xs">
                 <Clock size={14} />
                 <span>Son Güncelleme: {new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
@@ -343,7 +347,10 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
             <div className={`p-8 rounded-[40px] border flex items-center justify-between ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-white shadow-lg border-slate-50'}`}>
               <div>
                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">ASGARİ ÖDEME</p>
-                <p className={`text-2xl font-black ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>₺{cardStats.minPayment.toLocaleString('tr-TR')}</p>
+                <RollingNumber
+                  value={cardStats.minPayment}
+                  className={`text-2xl font-black ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}
+                />
               </div>
               <div className={`w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center ${isDarkMode ? 'text-emerald-400' : 'text-emerald-500'}`}>
                 <Zap size={24} />
@@ -390,7 +397,10 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                 <div key={idx} className="space-y-2">
                   <div className="flex justify-between items-end">
                     <span className="text-xs font-black uppercase tracking-widest text-slate-500">{cat.name}</span>
-                    <span className={`text-sm font-black ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>₺{cat.value.toLocaleString('tr-TR')}</span>
+                    <RollingNumber
+                      value={cat.value}
+                      className={`text-sm font-black ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}
+                    />
                   </div>
                   <div className="h-3 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div

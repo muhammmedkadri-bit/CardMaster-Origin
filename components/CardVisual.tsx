@@ -2,6 +2,7 @@
 import React from 'react';
 import { CreditCard } from '../types';
 import { AlertTriangle, CalendarPlus, Edit2, Trash2, CheckCircle2 } from 'lucide-react';
+import RollingNumber from './RollingNumber';
 
 interface CardVisualProps {
   card: CreditCard;
@@ -95,9 +96,8 @@ const CardVisual: React.FC<CardVisualProps> = ({ card, onAddToCalendar, onEdit, 
                 {isCreditBalance ? 'ARTI BAKİYE' : 'GÜNCEL BORÇ'}
               </span>
               <div className="flex items-baseline gap-1 sm:gap-2">
-                <span className={`text-[8px] sm:text-xs font-bold ${isCreditBalance ? 'text-emerald-400' : 'text-white/80'}`}>TL</span>
                 <span className={`text-base sm:text-2xl font-mono font-black tracking-tighter ${isCreditBalance ? 'text-emerald-400 drop-shadow-[0_0_12px_rgba(52,211,153,0.6)]' : isOverThreshold ? 'text-rose-200' : 'text-white'}`}>
-                  {displayBalance.toLocaleString('tr-TR')}
+                  <RollingNumber value={displayBalance} className="gap-0.5" />
                 </span>
               </div>
             </div>
