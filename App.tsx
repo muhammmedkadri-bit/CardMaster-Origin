@@ -47,7 +47,11 @@ import StatementModal from './components/StatementModal';
 import DistributionChart from './components/DistributionChart';
 import { getFinancialAdvice, getChatResponse } from './services/geminiService';
 import { apiService } from './services/apiService';
-import { Send, Bot, User as UserIcon, MessageSquare } from 'lucide-react';
+import { Send, Bot, User as UserIcon, MessageSquare, LogIn as LoginIcon, User as AccountIcon, LogOut } from 'lucide-react';
+import { supabase } from './services/supabaseClient';
+import AuthModal from './components/AuthModal';
+import { User } from '@supabase/supabase-js';
+import { dataSyncService } from './services/dataSyncService';
 
 // Ultra-Modern & Aesthetic Layered Card Logo Component
 const Logo: React.FC<{ isDarkMode: boolean; isAnimated?: boolean }> = ({ isDarkMode, isAnimated }) => (
@@ -235,6 +239,10 @@ const App: React.FC = () => {
   const [isChangingView, setIsChangingView] = useState(false);
   const [transitionData, setTransitionData] = useState<{ from: string, to: string } | null>(null);
 
+  // Auth States
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
   // AI Chat States
   const [chatHistory, setChatHistory] = useState<{ role: 'user' | 'assistant', content: string }[]>([]);
   const [userMessage, setUserMessage] = useState('');
@@ -301,6 +309,43 @@ const App: React.FC = () => {
     }
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    // Listen for auth changes
+    const handleAuthState = async (sessionUser: User | null) => {
+      setUser(sessionUser);
+
+      if (sessionUser) {
+        // Fetch cloud data
+        const cloudData = await dataSyncService.fetchUserData(sessionUser.id);
+
+        if (cloudData.cards.length > 0) {
+          setCards(cloudData.cards);
+          setTransactions(cloudData.transactions);
+          setCategories(cloudData.categories);
+        } else if (cards.length > 0) {
+          // Empty cloud, but has local data -> Migration
+          const success = await dataSyncService.migrateToCloud(sessionUser.id, cards, transactions, categories);
+          if (success) showToast('Verileriniz buluta taşındı.', 'success');
+        }
+      }
+    };
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      handleAuthState(session?.user ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      handleAuthState(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [cards.length, transactions.length]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    showToast('Oturum kapatıldı.', 'info');
+  };
 
   const handleViewChange = (newView: 'dashboard' | 'cards' | 'analysis' | 'settings') => {
     if (newView === view) return;
@@ -449,7 +494,7 @@ const App: React.FC = () => {
     return [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
   }, [transactions]);
 
-  const handleSaveCard = (savedCard: CreditCard) => {
+  const handleSaveCard = async (savedCard: CreditCard) => {
     setCards(prevCards => {
       const exists = prevCards.some(c => c.id === savedCard.id);
       if (exists) {
@@ -459,12 +504,16 @@ const App: React.FC = () => {
       }
     });
 
+    if (user) {
+      await dataSyncService.upsertCard(user.id, savedCard);
+    }
+
     showToast(`${savedCard.cardName} ${modalMode === 'edit' ? 'güncellendi' : 'eklendi'}.`, 'success');
     setModalMode(null);
     setEditingCard(undefined);
   };
 
-  const handleTransaction = (tx: Transaction) => {
+  const handleTransaction = async (tx: Transaction) => {
     let finalTx = { ...tx };
     const rawCategory = tx.category?.trim();
 
@@ -521,13 +570,25 @@ const App: React.FC = () => {
       }));
       showToast(`${finalTx.type === 'spending' ? 'Harcama' : 'Ödeme'} kaydedildi.`, 'success');
     }
+
+    if (user) {
+      await dataSyncService.saveTransaction(user.id, finalTx);
+      // We might also need to update the card balance in Supabase if we want full consistency
+      const updatedCard = cards.find(c => c.id === finalTx.cardId);
+      if (updatedCard) {
+        let newBalance = finalTx.type === 'spending' ? updatedCard.balance + finalTx.amount : updatedCard.balance - finalTx.amount;
+        await dataSyncService.upsertCard(user.id, { ...updatedCard, balance: newBalance });
+      }
+    }
+
     setModalMode(null);
     setEditingTransaction(undefined);
   };
 
-  const deleteTransaction = () => {
+  const deleteTransaction = async () => {
     if (!transactionToDelete) return;
     const tx = transactionToDelete;
+
     setCards(prevCards => prevCards.map(c => {
       if (c.id === tx.cardId) {
         return { ...c, balance: tx.type === 'spending' ? c.balance - tx.amount : c.balance + tx.amount };
@@ -535,14 +596,29 @@ const App: React.FC = () => {
       return c;
     }));
     setTransactions(prevTxs => prevTxs.filter(t => t.id !== tx.id));
+
+    if (user) {
+      await dataSyncService.deleteTransaction(tx.id);
+      const updatedCard = cards.find(c => c.id === tx.cardId);
+      if (updatedCard) {
+        let newBalance = tx.type === 'spending' ? updatedCard.balance - tx.amount : updatedCard.balance + tx.amount;
+        await dataSyncService.upsertCard(user.id, { ...updatedCard, balance: newBalance });
+      }
+    }
+
     setTransactionToDelete(null);
     showToast('İşlem silindi.', 'info');
   };
 
-  const deleteCard = () => {
+  const deleteCard = async () => {
     if (!cardToDelete) return;
     setCards(cards.filter(c => c.id !== cardToDelete.id));
     setTransactions(transactions.filter(tx => tx.cardId !== cardToDelete.id));
+
+    if (user) {
+      await dataSyncService.deleteCard(cardToDelete.id);
+    }
+
     setCardToDelete(null);
     showToast(`${cardToDelete.cardName} kaldırıldı.`, 'info');
   };
@@ -695,20 +771,33 @@ const App: React.FC = () => {
             <Logo isDarkMode={isDarkMode} />
           </div>
 
-          <button
-            onClick={() => { setIsNotificationPanelOpen(true); }}
-            className={`relative p-2.5 sm:p-3.5 rounded-2xl transition-all border group ${isDarkMode ? 'bg-slate-900/40 border-slate-800 text-slate-400 hover:text-white' : 'bg-white/80 border-slate-100 text-slate-500 hover:text-blue-600 shadow-sm backdrop-blur-md'}`}
-          >
-            <Bell size={18} className="sm:w-5 sm:h-5 group-active:scale-90 transition-transform" />
-            {unreadCount > 0 && (
-              <>
-                <span className="absolute top-2 right-2 sm:top-2.5 sm:right-2.5 w-4 h-4 sm:w-4.5 sm:h-4.5 bg-rose-500 border-2 border-white dark:border-[#0b101d] rounded-full flex items-center justify-center text-[7px] sm:text-[8px] font-black text-white shadow-sm z-10">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-                <span className="absolute top-2 right-2 sm:top-2.5 sm:right-2.5 w-4 h-4 sm:w-4.5 sm:h-4.5 bg-rose-500 rounded-full animate-ping opacity-20"></span>
-              </>
-            )}
-          </button>
+          <div className="flex items-center gap-3 pointer-events-auto">
+            <button
+              onClick={() => user ? handleLogout() : setIsAuthModalOpen(true)}
+              className={`relative p-2.5 sm:p-3.5 rounded-2xl transition-all border group flex items-center gap-2 ${isDarkMode ? 'bg-slate-900/40 border-slate-800 text-slate-400 hover:text-white' : 'bg-white/80 border-slate-100 text-slate-500 hover:text-blue-600 shadow-sm backdrop-blur-md'}`}
+              title={user ? `${user.email} - Çıkış Yap` : 'Giriş Yap'}
+            >
+              {user ? <LogOut size={18} className="sm:w-5 sm:h-5" /> : <LoginIcon size={18} className="sm:w-5 sm:h-5" />}
+              <span className="hidden md:block text-[10px] font-black uppercase tracking-widest">
+                {user ? 'Çıkış' : 'Giriş Yap'}
+              </span>
+            </button>
+
+            <button
+              onClick={() => { setIsNotificationPanelOpen(true); }}
+              className={`relative p-2.5 sm:p-3.5 rounded-2xl transition-all border group ${isDarkMode ? 'bg-slate-900/40 border-slate-800 text-slate-400 hover:text-white' : 'bg-white/80 border-slate-100 text-slate-500 hover:text-blue-600 shadow-sm backdrop-blur-md'}`}
+            >
+              <Bell size={18} className="sm:w-5 sm:h-5 group-active:scale-90 transition-transform" />
+              {unreadCount > 0 && (
+                <>
+                  <span className="absolute top-2 right-2 sm:top-2.5 sm:right-2.5 w-4 h-4 sm:w-4.5 sm:h-4.5 bg-rose-500 border-2 border-white dark:border-[#0b101d] rounded-full flex items-center justify-center text-[7px] sm:text-[8px] font-black text-white shadow-sm z-10">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                  <span className="absolute top-2 right-2 sm:top-2.5 sm:right-2.5 w-4 h-4 sm:w-4.5 sm:h-4.5 bg-rose-500 rounded-full animate-ping opacity-20"></span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -1139,10 +1228,10 @@ const App: React.FC = () => {
                         {chat.role === 'user' && <UserIcon size={10} className="opacity-40" />}
                       </div>
                       <div className={`px-6 py-4 rounded-[26px] shadow-sm transition-all ${chat.role === 'user'
-                          ? 'bg-blue-600 text-white rounded-tr-none'
-                          : (isDarkMode
-                            ? 'bg-[#1a2235] border border-slate-800 text-slate-100 rounded-tl-none'
-                            : 'bg-slate-100 border border-slate-200/50 text-slate-800 rounded-tl-none')
+                        ? 'bg-blue-600 text-white rounded-tr-none'
+                        : (isDarkMode
+                          ? 'bg-[#1a2235] border border-slate-800 text-slate-100 rounded-tl-none'
+                          : 'bg-slate-100 border border-slate-200/50 text-slate-800 rounded-tl-none')
                         }`}>
                         <p className="text-[15px] leading-relaxed font-medium whitespace-pre-wrap">{chat.content}</p>
                       </div>
@@ -1175,8 +1264,8 @@ const App: React.FC = () => {
                     key={i}
                     onClick={() => { setUserMessage(s.text); }}
                     className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border ${isDarkMode
-                        ? 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800'
-                        : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-100'
+                      ? 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800'
+                      : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-100'
                       }`}
                   >
                     {s.label}
@@ -1191,16 +1280,16 @@ const App: React.FC = () => {
                   onChange={(e) => setUserMessage(e.target.value)}
                   placeholder="Mesajınızı buraya yazın..."
                   className={`w-full py-5 pl-8 pr-16 rounded-[24px] text-sm focus:outline-none transition-all font-semibold shadow-inner border ${isDarkMode
-                      ? 'bg-[#0f172a] border-slate-700 text-white focus:border-blue-500/50 placeholder:text-slate-600'
-                      : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-blue-400 placeholder:text-slate-400'
+                    ? 'bg-[#0f172a] border-slate-700 text-white focus:border-blue-500/50 placeholder:text-slate-600'
+                    : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-blue-400 placeholder:text-slate-400'
                     }`}
                 />
                 <button
                   type="submit"
                   disabled={!userMessage.trim() || isAIThinking}
                   className={`absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 rounded-[18px] flex items-center justify-center transition-all active:scale-90 shadow-xl disabled:opacity-30 ${isDarkMode
-                      ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/20'
-                      : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/10'
+                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/20'
+                    : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/10'
                     }`}
                 >
                   <Send size={20} />
@@ -1290,6 +1379,11 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        isDarkMode={isDarkMode}
+      />
     </div>
   );
 };
