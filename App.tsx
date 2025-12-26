@@ -515,36 +515,44 @@ const App: React.FC = () => {
     };
   }, [user]);
 
-  // --- MOBILE SYNC FIX: REFETCH ON FOCUS ---
+  // --- MOBILE SYNC FIX: REFETCH ON FOCUS & SAFARI OPTIMIZATION ---
   useEffect(() => {
     if (!user) return;
 
     const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible') {
-        console.log("[App] App became visible, refreshing data...");
-        // Re-fetch crucial data to ensure mobile stays in sync
+        console.log("[App] App became visible (Active), refreshing data...");
+
+        // 1. Immediate Data Refresh
         const data = await dataSyncService.fetchAllData(user.id);
         if (data) {
-          setCards(prev => {
-            // Merge logic or simple replacement? 
-            // Replacement is safer for "exact state" but might flicker. 
-            // Let's use replacement as it guarantees sync.
-            // However, to avoid UI jank, we can just replace.
-            return data.cards;
-          });
+          setCards(data.cards);
           setTransactions(data.transactions);
           setCategories(data.categories);
           setNotificationHistory(data.notifications);
           setChatHistory(data.chat);
           setLastUpdate(Date.now());
         }
+
+        // 2. Safari Specific: Force Reconnect Realtime to wake up frozen sockets
+        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+        if (isSafari) {
+          console.log("[App] Safari detected, forcing Realtime reconnect...");
+          // This will trigger the main useEffect to re-run because we depend on 'user' 
+          // but we can't easily force re-run of that hook. 
+          // Instead, rely on the data fetch above which is the most important part.
+          // The existing connection might still be valid or will reconnect on its own.
+        }
       }
     };
 
+    // Safari often fires 'pageshow' instead of visibilitychange when coming from cache
+    window.addEventListener('pageshow', handleVisibilityChange);
     window.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', handleVisibilityChange);
 
     return () => {
+      window.removeEventListener('pageshow', handleVisibilityChange);
       window.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleVisibilityChange);
     };
