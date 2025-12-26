@@ -732,7 +732,7 @@ const App: React.FC = () => {
   };
 
   const handleDeleteNotification = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation(); // Don't toggle read status when clicking delete
+    e.stopPropagation(); // Don't toggle any other clicks
     if (!user) return;
 
     // Optimistic UI update
@@ -745,6 +745,25 @@ const App: React.FC = () => {
     } catch (err) {
       console.error("Failed to delete notification:", err);
       showToast('Bildirim silinemedi.', 'warning');
+      // Revert if failed
+      const data = await dataSyncService.fetchAllData(user.id);
+      if (data) setNotificationHistory(data.notifications);
+    }
+  };
+
+  const handleDeleteAllNotifications = async () => {
+    if (!user) return;
+
+    // Optimistic UI update
+    setNotificationHistory([]);
+
+    try {
+      await dataSyncService.deleteAllNotifications(user.id);
+      dataSyncService.sendSyncSignal(user.id);
+      showToast('Tüm bildirimler temizlendi.', 'info');
+    } catch (err) {
+      console.error("Failed to delete all notifications:", err);
+      showToast('Bildirimler silinemedi.', 'warning');
       // Revert if failed
       const data = await dataSyncService.fetchAllData(user.id);
       if (data) setNotificationHistory(data.notifications);
@@ -1493,25 +1512,17 @@ const App: React.FC = () => {
                             }`}></div>
                         )}
 
-                        {/* Bireysel Okundu Toggle Butonu */}
+                        {/* Bildirim Silme Butonu */}
                         <div className="flex flex-col gap-2 shrink-0">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); toggleNotificationRead(item.id); }}
-                            title={item.read ? "Okunmamış olarak işaretle" : "Okundu olarak işaretle"}
-                            className={`w-12 h-12 rounded-[20px] flex items-center justify-center shadow-md transform transition-all active:scale-90 ${item.read
-                              ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 font-black'
-                              : (item.type === 'warning' ? 'bg-rose-500 text-white hover:bg-rose-600' : 'bg-blue-600 text-white hover:bg-blue-700')
-                              }`}
-                          >
-                            {item.read ? <Check size={22} /> : item.type === 'warning' ? <AlertTriangle size={22} /> : <Bell size={22} />}
-                          </button>
-
                           <button
                             onClick={(e) => handleDeleteNotification(e, item.id)}
                             title="Bildirimi sil"
-                            className="w-12 h-12 rounded-[20px] flex items-center justify-center bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white border border-rose-500/20 shadow-sm transition-all active:scale-90"
+                            className={`w-12 h-12 rounded-[20px] flex items-center justify-center transform transition-all active:scale-90 ${item.type === 'warning'
+                                ? 'bg-rose-500 text-white hover:bg-rose-600 shadow-md'
+                                : 'bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white border border-rose-500/20 shadow-sm shadow-rose-500/5'
+                              }`}
                           >
-                            <Trash2 size={18} />
+                            <Trash2 size={20} />
                           </button>
                         </div>
 
@@ -1536,7 +1547,7 @@ const App: React.FC = () => {
 
                   {notificationHistory.length > 0 && (
                     <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/40 backdrop-blur-xl">
-                      <button onClick={markAllAsRead} className="w-full py-5 rounded-[22px] bg-blue-600 text-white text-xs font-black uppercase tracking-[0.2em] shadow-xl hover:bg-blue-700 transition-all active:scale-[0.98] flex items-center justify-center gap-3"><CheckCircle2 size={18} /> TÜMÜNÜ OKUNDU İŞARETLE</button>
+                      <button onClick={handleDeleteAllNotifications} className="w-full py-5 rounded-[22px] bg-rose-600 text-white text-xs font-black uppercase tracking-[0.2em] shadow-xl hover:bg-rose-700 transition-all active:scale-[0.98] flex items-center justify-center gap-3"><Trash2 size={18} /> TÜMÜNÜ SİL</button>
                     </div>
                   )}
                 </div>
