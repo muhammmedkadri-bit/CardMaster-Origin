@@ -56,6 +56,21 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
       ? newCategory.trim()
       : formData.category;
 
+    // Combine date with time for precise sorting
+    let finalDate = formData.date;
+    const now = new Date();
+    const timePart = now.toTimeString().split(' ')[0]; // HH:mm:ss
+
+    if (!initialData) {
+      // New transaction: current time
+      finalDate = `${formData.date}T${timePart}`;
+    } else if (initialData.date.includes('T')) {
+      // Edit: keep existing time or use current if not present
+      finalDate = `${formData.date}T${initialData.date.split('T')[1]}`;
+    } else {
+      finalDate = `${formData.date}T${timePart}`;
+    }
+
     onSave({
       id: initialData?.id || Math.random().toString(36).substr(2, 9),
       cardId: formData.cardId,
@@ -63,7 +78,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
       type: initialData?.type || type,
       amount: Number(formData.amount),
       category: type === 'payment' ? 'Ödeme' : finalCategory,
-      date: formData.date,
+      date: finalDate,
       description: formData.description,
       confirmationUrl: formData.confirmationUrl || undefined
     });

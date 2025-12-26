@@ -37,3 +37,19 @@ export interface Category {
   name: string;
   color: string;
 }
+
+export interface NotificationItem {
+  id: string;
+  message: string;
+  type: 'warning' | 'info' | 'success';
+  timestamp: string;
+  read: boolean;
+  dateKey?: string;
+  cardColor?: string;
+  cardName?: string;
+}
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}

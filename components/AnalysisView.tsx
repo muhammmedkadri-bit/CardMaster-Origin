@@ -64,8 +64,23 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
 
   const formatDateDisplay = (dateStr: string) => {
     if (!dateStr) return '';
-    const [y, m, d] = dateStr.split('-');
-    return `${d}.${m}.${y.slice(-2)}`;
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return dateStr;
+
+      const d = String(date.getDate()).padStart(2, '0');
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const y = String(date.getFullYear()).slice(-2);
+
+      if (dateStr.includes('T') || dateStr.includes(':')) {
+        const hh = String(date.getHours()).padStart(2, '0');
+        const mm = String(date.getMinutes()).padStart(2, '0');
+        return `${d}.${m}.${y} ${hh}.${mm}`;
+      }
+      return `${d}.${m}.${y}`;
+    } catch (e) {
+      return dateStr;
+    }
   };
 
   const filteredTransactions = useMemo(() => {
@@ -92,7 +107,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
     return cardFiltered.filter(t => {
       const d = new Date(t.date);
       return d >= start && d <= end;
-    });
+    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [selectedCardId, transactions, timeRange, customStart, customEnd]);
 
   const cardStats = useMemo(() => {

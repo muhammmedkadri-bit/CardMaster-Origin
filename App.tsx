@@ -34,7 +34,7 @@ import {
   Inbox,
   Settings as SettingsIcon
 } from 'lucide-react';
-import { CreditCard, AIInsight, Transaction, Category } from './types';
+import { CreditCard, AIInsight, Transaction, Category, NotificationItem, ChatMessage } from './types';
 import CardVisual from './components/CardVisual';
 import CardModal from './components/CardModal';
 import TransactionModal from './components/TransactionModal';
@@ -109,16 +109,7 @@ const Logo: React.FC<{ isDarkMode: boolean; isAnimated?: boolean }> = ({ isDarkM
   </div>
 );
 
-interface NotificationItem {
-  id: string;
-  message: string;
-  type: 'warning' | 'info' | 'success';
-  timestamp: string;
-  read: boolean;
-  dateKey: string;
-  cardColor?: string;
-  cardName?: string;
-}
+
 
 const Toast: React.FC<{ message: string; type: 'warning' | 'info' | 'success'; onClose: () => void }> = ({ message, type, onClose }) => {
   const [isExiting, setIsExiting] = useState(false);
@@ -244,7 +235,7 @@ const App: React.FC = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // AI Chat States
-  const [chatHistory, setChatHistory] = useState<{ role: 'user' | 'assistant', content: string }[]>([]);
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [userMessage, setUserMessage] = useState('');
   const [isAIThinking, setIsAIThinking] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -263,8 +254,24 @@ const App: React.FC = () => {
   // Helper to format date as dd.mm.yy
   const formatDateDisplay = (dateStr: string) => {
     if (!dateStr) return '';
-    const [y, m, d] = dateStr.split('-');
-    return `${d}.${m}.${y.slice(-2)}`;
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return dateStr;
+
+      const d = String(date.getDate()).padStart(2, '0');
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const y = String(date.getFullYear()).slice(-2);
+
+      // Check if there is a time component or if it's an ISO string
+      if (dateStr.includes('T') || dateStr.includes(':')) {
+        const hh = String(date.getHours()).padStart(2, '0');
+        const mm = String(date.getMinutes()).padStart(2, '0');
+        return `${d}.${m}.${y} ${hh}.${mm}`;
+      }
+      return `${d}.${m}.${y}`;
+    } catch (e) {
+      return dateStr;
+    }
   };
 
   useEffect(() => {
@@ -277,6 +284,7 @@ const App: React.FC = () => {
     localStorage.setItem('user_categories', JSON.stringify(categories));
   }, [categories]);
 
+  // --- LOCAL STORAGE SYNC ONLY ---
   useEffect(() => {
     localStorage.setItem('notifications', JSON.stringify(notificationHistory));
   }, [notificationHistory]);
@@ -311,23 +319,70 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (!supabase) return;
+
     // Listen for auth changes
     const handleAuthState = async (sessionUser: User | null) => {
       setUser(sessionUser);
 
       if (sessionUser) {
+        setIsAuthModalOpen(false);
         // Fetch cloud data
         const cloudData = await dataSyncService.fetchUserData(sessionUser.id);
+        const cloudNotifications = await dataSyncService.fetchNotifications(sessionUser.id);
+        const cloudChat = await dataSyncService.fetchChatHistory(sessionUser.id);
 
-        if (cloudData.cards.length > 0) {
+        if (cloudData.cards && cloudData.cards.length > 0) {
           setCards(cloudData.cards);
           setTransactions(cloudData.transactions);
           setCategories(cloudData.categories);
         } else if (cards.length > 0) {
-          // Empty cloud, but has local data -> Migration
+          // Cloud empty but Local has data -> Migrate Local to Cloud
           const success = await dataSyncService.migrateToCloud(sessionUser.id, cards, transactions, categories);
-          if (success) showToast('Verileriniz buluta taşındı.', 'success');
+          if (success) {
+            // Re-fetch to get the new IDs from cloud
+            const refreshedData = await dataSyncService.fetchUserData(sessionUser.id);
+            setCards(refreshedData.cards);
+            setTransactions(refreshedData.transactions);
+            if (refreshedData.categories.length > 0) setCategories(refreshedData.categories);
+          }
+        } else {
+          setCards([]);
+          setTransactions([]);
+          setCategories([
+            { id: '1', name: 'Market', color: '#3B82F6' },
+            { id: '2', name: 'Ulaşım', color: '#10B981' },
+            { id: '3', name: 'Restoran', color: '#F59E0B' },
+            { id: '4', name: 'Fatura', color: '#EF4444' },
+            { id: '5', name: 'Eğlence', color: '#8B5CF6' },
+            { id: '6', name: 'Diğer', color: '#64748B' }
+          ]);
         }
+
+        // Notifications Sync/Migrate
+        if (cloudNotifications.length > 0) {
+          setNotificationHistory(cloudNotifications);
+        } else if (notificationHistory.length > 0) {
+          dataSyncService.syncNotifications(sessionUser.id, notificationHistory);
+        } else {
+          setNotificationHistory([]);
+        }
+
+        // Chat Sync/Migrate
+        if (cloudChat.length > 0) {
+          setChatHistory(cloudChat);
+        } else if (chatHistory.length > 0) {
+          dataSyncService.migrateChatHistory(sessionUser.id, chatHistory);
+        } else {
+          setChatHistory([]);
+        }
+
+      } else {
+        setCards([]);
+        setTransactions([]);
+        setNotificationHistory([]);
+        setChatHistory([]);
+        setIsAuthModalOpen(true);
       }
     };
 
@@ -335,16 +390,128 @@ const App: React.FC = () => {
       handleAuthState(session?.user ?? null);
     });
 
+
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       handleAuthState(session?.user ?? null);
     });
 
     return () => subscription.unsubscribe();
-  }, [cards.length, transactions.length]);
+  }, []);
+
+  // --- REF FOR STABLE STATE ACCESS IN REALTIME ---
+  const cardsRef = useRef(cards);
+  useEffect(() => {
+    cardsRef.current = cards;
+  }, [cards]);
+
+  // --- REALTIME STATUS ---
+  const [realtimeStatus, setRealtimeStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
+
+  // --- REALTIME SUBSCRIPTION ---
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = dataSyncService.subscribeToChanges(user.id, {
+      onCardChange: (payload) => {
+        try {
+          const { eventType, new: newRec, old: oldRec } = payload;
+          if (eventType === 'INSERT') {
+            const item = dataSyncService.mapCardFromDB(newRec);
+            setCards(prev => prev.some(p => p.id === item.id) ? prev : [...prev, item]);
+          } else if (eventType === 'UPDATE') {
+            const item = dataSyncService.mapCardFromDB(newRec);
+            setCards(prev => prev.map(p => p.id === item.id ? item : p));
+          } else if (eventType === 'DELETE') {
+            setCards(prev => prev.filter(p => p.id !== oldRec.id));
+          }
+        } catch (e) { console.error("Realtime Card Error:", e); }
+      },
+      onTransactionChange: (payload) => {
+        try {
+          const { eventType, new: newRec, old: oldRec } = payload;
+          if (eventType === 'INSERT' || eventType === 'UPDATE') {
+            const item = dataSyncService.mapTransactionFromDB(newRec);
+            const currentCards = cardsRef.current;
+            const relatedCard = currentCards.find(c => c.id === item.cardId);
+            if (relatedCard) item.cardName = relatedCard.cardName;
+
+            setTransactions(prev => {
+              const exists = prev.some(p => p.id === item.id);
+              if (exists) return prev.map(p => p.id === item.id ? item : p);
+
+              const optimisticMatch = prev.find(p =>
+                p.cardId === item.cardId && p.amount === item.amount &&
+                p.date === item.date && p.id.length < 20
+              );
+              if (optimisticMatch) return prev.map(p => p.id === optimisticMatch.id ? item : p);
+
+              return eventType === 'INSERT' ? [item, ...prev] : prev;
+            });
+          } else if (eventType === 'DELETE') {
+            setTransactions(prev => prev.filter(p => p.id !== oldRec.id));
+          }
+        } catch (e) { console.error("Realtime Tx Error:", e); }
+      },
+      onCategoryChange: (payload) => {
+        try {
+          const { eventType, new: newRec, old: oldRec } = payload;
+          if (eventType === 'INSERT') {
+            const item = dataSyncService.mapCategoryFromDB(newRec);
+            setCategories(prev => prev.some(p => p.id === item.id) ? prev : [...prev, item]);
+          } else if (eventType === 'UPDATE') {
+            const item = dataSyncService.mapCategoryFromDB(newRec);
+            setCategories(prev => prev.map(p => p.id === item.id ? item : p));
+            console.log("Realtime: Category UPDATE", item);
+          } else if (eventType === 'DELETE') {
+            setCategories(prev => prev.filter(p => p.id !== oldRec.id));
+            console.log("Realtime: Category DELETE", oldRec.id);
+          }
+        } catch (e) { console.error("Realtime Category Error:", e); }
+      },
+      onNotificationChange: (payload) => {
+        try {
+          const { eventType, new: newRec } = payload;
+          if (eventType === 'INSERT' || eventType === 'UPDATE') {
+            const item = dataSyncService.mapNotificationFromDB(newRec);
+            if (eventType === 'INSERT') {
+              setNotificationHistory(prev => [item, ...prev]);
+              if (!item.read) showToast(item.message, item.type);
+            } else {
+              setNotificationHistory(prev => prev.map(p => p.id === item.id ? item : p));
+            }
+          }
+        } catch (e) { console.error("Realtime Notification Error:", e); }
+      },
+      onChatChange: (payload) => {
+        try {
+          const { eventType, new: newRec } = payload;
+          if (eventType === 'INSERT') {
+            const item = dataSyncService.mapChatFromDB(newRec);
+            setChatHistory(prev => {
+              const last = prev[prev.length - 1];
+              if (last && last.role === item.role && last.content === item.content) return prev;
+              return [...prev, item];
+            });
+          }
+        } catch (e) { console.error("Realtime Chat Error:", e); }
+      },
+      onStatusChange: (status) => {
+        if (status === 'SUBSCRIBED') setRealtimeStatus('connected');
+        else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') setRealtimeStatus('error');
+      }
+    });
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    showToast('Oturum kapatıldı.', 'info');
+    if (supabase) {
+      await supabase.auth.signOut();
+
+    }
   };
 
   const handleViewChange = (newView: 'dashboard' | 'cards' | 'analysis' | 'settings') => {
@@ -505,7 +672,13 @@ const App: React.FC = () => {
     });
 
     if (user) {
-      await dataSyncService.upsertCard(user.id, savedCard);
+      const { data, error } = await dataSyncService.upsertCard(user.id, savedCard);
+      if (error) {
+        showToast('Senkronizasyon hatası: ' + error.message, 'warning');
+      } else if (data) {
+        // Update local card with its real Supabase UUID
+        setCards(prev => prev.map(c => c.id === savedCard.id ? { ...c, id: data.id } : c));
+      }
     }
 
     showToast(`${savedCard.cardName} ${modalMode === 'edit' ? 'güncellendi' : 'eklendi'}.`, 'success');
@@ -572,7 +745,13 @@ const App: React.FC = () => {
     }
 
     if (user) {
-      await dataSyncService.saveTransaction(user.id, finalTx);
+      const { data: savedDbTx, error: txError } = await dataSyncService.saveTransaction(user.id, finalTx);
+
+      if (!txError && savedDbTx) {
+        // Update local transaction with its real Supabase UUID to prevent duplicates
+        setTransactions(prev => prev.map(t => t.id === finalTx.id ? { ...t, id: savedDbTx.id } : t));
+      }
+
       // We might also need to update the card balance in Supabase if we want full consistency
       const updatedCard = cards.find(c => c.id === finalTx.cardId);
       if (updatedCard) {
@@ -679,13 +858,26 @@ const App: React.FC = () => {
     if (!userMessage.trim() || isAIThinking) return;
 
     const msg = userMessage;
+    const userMsgObj: ChatMessage = { role: 'user', content: msg };
+
     setUserMessage('');
-    setChatHistory(prev => [...prev, { role: 'user', content: msg }]);
+    setChatHistory(prev => [...prev, userMsgObj]);
     setIsAIThinking(true);
+
+    if (user) {
+      // Fire and forget save to avoid blocking UI
+      dataSyncService.saveChatMessage(user.id, userMsgObj);
+    }
 
     try {
       const response = await getChatResponse(cards, msg, chatHistory);
-      setChatHistory(prev => [...prev, { role: 'assistant', content: response }]);
+      const aiMsgObj: ChatMessage = { role: 'assistant', content: response };
+
+      setChatHistory(prev => [...prev, aiMsgObj]);
+
+      if (user) {
+        dataSyncService.saveChatMessage(user.id, aiMsgObj);
+      }
     } catch (error) {
       setChatHistory(prev => [...prev, { role: 'assistant', content: "Üzgünüm, şu an bağlantı kuramıyorum." }]);
     } finally {
@@ -809,583 +1001,616 @@ const App: React.FC = () => {
         ))}
       </div>
 
-      <main className="max-w-7xl mx-auto pt-24 px-4 sm:px-6 space-y-8 sm:space-y-12">
-        {view === 'dashboard' ? (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 pt-4 sm:pt-8">
-              {[
-                { label: 'TOPLAM LİMİT', val: totalLimit, icon: <TrendingUp size={28} />, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-                { label: 'TOPLAM BORÇ', val: totalBalance, icon: <CardIcon size={28} />, color: 'text-rose-500', bg: 'bg-rose-500/10' },
-                { label: 'KULLANIM ORANI', val: overallUtilization, icon: <Zap size={28} />, color: 'text-blue-500', bg: 'bg-blue-500/10', suffix: '%' }
-              ].map((item, i) => (
-                <div key={i} className={`p-6 sm:p-8 rounded-[40px] border transition-all duration-300 group flex items-center gap-6 ${isDarkMode ? 'bg-[#0f172a]/40 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-100 shadow-sm hover:shadow-md'}`}>
-                  <div className={`w-14 h-14 shrink-0 ${item.bg} ${item.color} rounded-3xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                    {item.icon}
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-black text-slate-500 dark:text-slate-500 tracking-[0.2em] block mb-1 uppercase">{item.label}</span>
-                    <p className={`text-xl sm:text-3xl font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                      {item.suffix === '%' ? `%${item.val.toFixed(1)}` : `₺${item.val.toLocaleString('tr-TR')}`}
-                    </p>
-                  </div>
+      {/* Login Gate / Welcome Screen */}
+      {!user ? (
+        <div className="fixed inset-0 z-50 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-[#070b14] dark:to-[#0f172a]" />
+      ) : (
+        <>
+          <main className="max-w-7xl mx-auto pt-24 px-4 sm:px-6 space-y-8 sm:space-y-12">
+            {view === 'dashboard' ? (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 pt-4 sm:pt-8">
+                  {[
+                    { label: 'TOPLAM LİMİT', val: totalLimit, icon: <TrendingUp size={28} />, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+                    { label: 'TOPLAM BORÇ', val: totalBalance, icon: <CardIcon size={28} />, color: 'text-rose-500', bg: 'bg-rose-500/10' },
+                    { label: 'KULLANIM ORANI', val: overallUtilization, icon: <Zap size={28} />, color: 'text-blue-500', bg: 'bg-blue-500/10', suffix: '%' }
+                  ].map((item, i) => (
+                    <div key={i} className={`p-6 sm:p-8 rounded-[40px] border transition-all duration-300 group flex items-center gap-6 ${isDarkMode ? 'bg-[#0f172a]/40 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-100 shadow-sm hover:shadow-md'}`}>
+                      <div className={`w-14 h-14 shrink-0 ${item.bg} ${item.color} rounded-3xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                        {item.icon}
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-black text-slate-500 dark:text-slate-500 tracking-[0.2em] block mb-1 uppercase">{item.label}</span>
+                        <p className={`text-xl sm:text-3xl font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                          {item.suffix === '%' ? `%${item.val.toFixed(1)}` : `₺${item.val.toLocaleString('tr-TR')}`}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
 
-            <div className="grid grid-cols-1 gap-6 sm:gap-10 items-start max-w-5xl mx-auto">
-              <div className="space-y-6 sm:space-y-10">
-                {cards.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 pt-2 sm:pt-4">
-                    <div className={`flex items-center gap-4 p-5 rounded-[24px] border ${isDarkMode ? 'bg-blue-500/5 border-blue-500/20' : 'bg-blue-50 border-blue-100 shadow-sm'}`}>
-                      <div className="p-3 bg-blue-500/10 text-blue-600 rounded-xl"><Clock size={20} /></div>
-                      <div className="overflow-hidden">
-                        <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">SIRADAKİ ÖDEME</p>
-                        <p className={`text-sm font-black truncate ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{widgetsData.closestDue?.cardName} ({widgetsData.closestDue?.dueDay}. Gün)</p>
-                        <p className="text-[10px] font-bold text-slate-500">₺{Math.max(0, widgetsData.closestDue?.balance || 0).toLocaleString('tr-TR')}</p>
-                      </div>
-                    </div>
-
-                    <div className={`flex items-center gap-4 p-5 rounded-[24px] border ${isDarkMode ? 'bg-amber-500/5 border-amber-500/20' : 'bg-amber-50 border-amber-100 shadow-sm'}`}>
-                      <div className="p-3 bg-amber-500/10 text-amber-600 rounded-xl"><TrendingUp size={20} /></div>
-                      <div className="overflow-hidden">
-                        <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-1">EN YÜKSEK BORÇ</p>
-                        <p className={`text-sm font-black truncate ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{widgetsData.highestDebt?.cardName}</p>
-                        <p className="text-[10px] font-bold text-slate-500">₺{Math.max(0, widgetsData.highestDebt?.balance || 0).toLocaleString('tr-TR')}</p>
-                      </div>
-                    </div>
-
-                    {widgetsData.overdue ? (
-                      <div className={`flex items-center gap-4 p-5 rounded-[24px] border ${isDarkMode ? 'bg-rose-500/10 border-rose-500/30' : 'bg-rose-50 border-rose-200 shadow-sm'}`}>
-                        <div className="p-3 bg-rose-500/10 text-rose-600 rounded-xl"><AlertTriangle size={20} className="animate-pulse" /></div>
-                        <div className="overflow-hidden">
-                          <p className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest mb-1">ÖDEME GÜNÜ GEÇTİ</p>
-                          <p className={`text-sm font-black truncate ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{widgetsData.overdue.cardName}</p>
-                          <p className="text-[10px] font-bold text-slate-500">Ayın {widgetsData.overdue.dueDay}. günüydü</p>
+                <div className="grid grid-cols-1 gap-6 sm:gap-10 items-start max-w-5xl mx-auto">
+                  <div className="space-y-6 sm:space-y-10">
+                    {cards.length > 0 && (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 pt-2 sm:pt-4">
+                        <div className={`flex items-center gap-4 p-5 rounded-[24px] border ${isDarkMode ? 'bg-blue-500/5 border-blue-500/20' : 'bg-blue-50 border-blue-100 shadow-sm'}`}>
+                          <div className="p-3 bg-blue-500/10 text-blue-600 rounded-xl"><Clock size={20} /></div>
+                          <div className="overflow-hidden">
+                            <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">SIRADAKİ ÖDEME</p>
+                            <p className={`text-sm font-black truncate ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{widgetsData.closestDue?.cardName} ({widgetsData.closestDue?.dueDay}. Gün)</p>
+                            <p className="text-[10px] font-bold text-slate-500">₺{Math.max(0, widgetsData.closestDue?.balance || 0).toLocaleString('tr-TR')}</p>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <div className={`flex items-center gap-4 p-5 rounded-[24px] border ${isDarkMode ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100 shadow-sm'}`}>
-                        <div className="p-3 bg-emerald-500/10 text-emerald-600 rounded-xl"><CheckCircle2 size={20} /></div>
-                        <div className="overflow-hidden">
-                          <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">DURUM ÖZETİ</p>
-                          <p className={`text-sm font-black truncate ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Ödemeler Güncel</p>
-                          <p className="text-[10px] font-bold text-slate-500">Kritik borç bulunmuyor</p>
+
+                        <div className={`flex items-center gap-4 p-5 rounded-[24px] border ${isDarkMode ? 'bg-amber-500/5 border-amber-500/20' : 'bg-amber-50 border-amber-100 shadow-sm'}`}>
+                          <div className="p-3 bg-amber-500/10 text-amber-600 rounded-xl"><TrendingUp size={20} /></div>
+                          <div className="overflow-hidden">
+                            <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-1">EN YÜKSEK BORÇ</p>
+                            <p className={`text-sm font-black truncate ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{widgetsData.highestDebt?.cardName}</p>
+                            <p className="text-[10px] font-bold text-slate-500">₺{Math.max(0, widgetsData.highestDebt?.balance || 0).toLocaleString('tr-TR')}</p>
+                          </div>
                         </div>
+
+                        {widgetsData.overdue ? (
+                          <div className={`flex items-center gap-4 p-5 rounded-[24px] border ${isDarkMode ? 'bg-rose-500/10 border-rose-500/30' : 'bg-rose-50 border-rose-200 shadow-sm'}`}>
+                            <div className="p-3 bg-rose-500/10 text-rose-600 rounded-xl"><AlertTriangle size={20} className="animate-pulse" /></div>
+                            <div className="overflow-hidden">
+                              <p className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest mb-1">ÖDEME GÜNÜ GEÇTİ</p>
+                              <p className={`text-sm font-black truncate ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{widgetsData.overdue.cardName}</p>
+                              <p className="text-[10px] font-bold text-slate-500">Ayın {widgetsData.overdue.dueDay}. günüydü</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className={`flex items-center gap-4 p-5 rounded-[24px] border ${isDarkMode ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100 shadow-sm'}`}>
+                            <div className="p-3 bg-emerald-500/10 text-emerald-600 rounded-xl"><CheckCircle2 size={20} /></div>
+                            <div className="overflow-hidden">
+                              <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">DURUM ÖZETİ</p>
+                              <p className={`text-sm font-black truncate ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Ödemeler Güncel</p>
+                              <p className="text-[10px] font-bold text-slate-500">Kritik borç bulunmuyor</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
-                  </div>
-                )}
 
-                <section id="cuzdan" className="space-y-4 sm:space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h2 className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>CÜZDANIM</h2>
-                    <div className="hidden sm:flex gap-2">
-                      <button onClick={() => scrollBy(-400)} className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 cursor-pointer transition-colors active:scale-90"><ChevronLeft size={20} /></button>
-                      <button onClick={() => scrollBy(400)} className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 cursor-pointer transition-colors active:scale-90"><ChevronRight size={20} /></button>
-                    </div>
-                  </div>
-                  <div ref={scrollContainerRef} onScroll={handleScroll} className="flex overflow-x-auto gap-4 sm:gap-10 pt-6 sm:pt-10 pb-10 sm:pb-14 -mb-10 sm:-mb-14 snap-x no-scrollbar scroll-smooth min-h-[200px] sm:min-h-[220px]">
-                    {cards.map((card, index) => {
-                      const cardWidth = 380; const gap = 40; const cardCenter = index * (cardWidth + gap) + (cardWidth / 2);
-                      const containerWidth = scrollContainerRef.current?.offsetWidth || 800; const viewportCenter = scrollX + (containerWidth / 2);
-                      const relativePos = (cardCenter - viewportCenter) / containerWidth;
-                      return (
-                        <div key={card.id} className="snap-start shrink-0 w-[280px] sm:w-[380px] relative">
-                          <CardVisual card={card} scrollProgress={relativePos} onAddToCalendar={handleAddToCalendarClick} onEdit={startEdit} onDelete={setCardToDelete} />
+                    <section id="cuzdan" className="space-y-4 sm:space-y-6">
+                      <div className="flex items-center justify-between">
+                        <h2 className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>CÜZDANIM</h2>
+                        <div className="hidden sm:flex gap-2">
+                          <button onClick={() => scrollBy(-400)} className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 cursor-pointer transition-colors active:scale-90"><ChevronLeft size={20} /></button>
+                          <button onClick={() => scrollBy(400)} className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 cursor-pointer transition-colors active:scale-90"><ChevronRight size={20} /></button>
                         </div>
-                      );
-                    })}
-                    <button onClick={() => setModalMode('add')} className={`snap-start shrink-0 w-[280px] sm:w-[380px] aspect-[1.586/1] border-2 border-dashed rounded-[32px] flex flex-col items-center justify-center gap-4 sm:gap-6 transition-all group ${isDarkMode ? 'border-slate-800 hover:bg-slate-900/50' : 'border-slate-200 hover:bg-slate-50'}`}>
-                      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
-                        <Plus size={32} />
                       </div>
-                      <span className={`font-black text-[9px] sm:text-[10px] tracking-[0.3em] uppercase ${isDarkMode ? 'text-slate-600' : 'text-slate-400'}`}>YENİ KART EKLE</span>
-                    </button>
-                  </div>
-                </section>
-
-                <div className={`p-6 sm:p-10 rounded-[40px] border transition-all ${isDarkMode ? 'bg-[#0f172a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-                    <h3 className={`text-xl font-black flex items-center gap-4 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                      <ArrowUpRight size={24} className="text-blue-500" /> SON HAREKETLER
-                    </h3>
-                    {isSyncing && (
-                      <div className="flex items-center gap-2 text-[10px] font-black text-blue-500 uppercase tracking-widest bg-blue-500/10 px-4 py-2 rounded-full animate-pulse">
-                        <RefreshCw size={12} className="animate-spin" /> GÜNCELLENİYOR
-                      </div>
-                    )}
-                  </div>
-                  <div className="space-y-4 sm:space-y-5">
-                    {sortedTransactions.length > 0 ? (
-                      <>
-                        {sortedTransactions.slice(0, 5).map(tx => {
-                          const catColor = categories.find(c => c.name.toLocaleLowerCase('tr-TR') === tx.category.toLocaleLowerCase('tr-TR'))?.color || '#3B82F6';
-                          const isSpending = tx.type === 'spending';
-
+                      <div ref={scrollContainerRef} onScroll={handleScroll} className="flex overflow-x-auto gap-4 sm:gap-10 pt-6 sm:pt-10 pb-10 sm:pb-14 -mb-10 sm:-mb-14 snap-x no-scrollbar scroll-smooth min-h-[200px] sm:min-h-[220px]">
+                        {cards.map((card, index) => {
+                          const cardWidth = 380; const gap = 40; const cardCenter = index * (cardWidth + gap) + (cardWidth / 2);
+                          const containerWidth = scrollContainerRef.current?.offsetWidth || 800; const viewportCenter = scrollX + (containerWidth / 2);
+                          const relativePos = (cardCenter - viewportCenter) / containerWidth;
                           return (
-                            <div key={tx.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 rounded-[24px] sm:rounded-[28px] transition-all group border border-transparent ${isDarkMode ? 'hover:bg-slate-800/30 hover:border-slate-700' : 'hover:bg-slate-50 hover:border-slate-100 shadow-sm hover:shadow-md'}`}>
-                              <div className="flex items-center gap-4 sm:gap-5 mb-3 sm:mb-0">
-                                <div
-                                  className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-colors ${isSpending
-                                    ? 'bg-rose-500/10 text-rose-500'
-                                    : 'bg-emerald-500/10 text-emerald-500'
-                                    }`}
-                                >
-                                  {isSpending ? <ShoppingBag size={20} /> : <PaymentIcon size={20} />}
-                                </div>
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <p className={`font-black text-sm sm:text-base tracking-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{tx.description || (isSpending ? 'HARCAMA' : 'ÖDEME')}</p>
-                                    {tx.confirmationUrl && (
-                                      <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="p-1 rounded-md text-blue-500 hover:bg-blue-500/10 transition-colors" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={14} /></a>
-                                    )}
-                                  </div>
-                                  <div className="flex flex-col mt-0.5">
-                                    <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.15em]">{tx.cardName}</p>
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{formatDateDisplay(tx.date)}</p>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex items-center justify-between sm:justify-end gap-6">
-                                <p
-                                  className={`font-black text-lg sm:text-xl tracking-tighter transition-colors ${isSpending ? 'text-rose-500' : 'text-emerald-500'
-                                    }`}
-                                >
-                                  {isSpending ? '-' : '+'} TL {tx.amount.toLocaleString('tr-TR')}
-                                </p>
-                                <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <button onClick={() => startEditTransaction(tx)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-400 hover:text-blue-400 hover:bg-slate-700' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-200'}`}><Edit2 size={16} /></button>
-                                  <button onClick={() => setTransactionToDelete(tx)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-400 hover:text-rose-400 hover:bg-slate-700' : 'text-slate-400 hover:text-rose-600 hover:bg-slate-200'}`}><Trash2 size={16} /></button>
-                                </div>
-                              </div>
+                            <div key={card.id} className="snap-start shrink-0 w-[280px] sm:w-[380px] relative">
+                              <CardVisual card={card} scrollProgress={relativePos} onAddToCalendar={handleAddToCalendarClick} onEdit={startEdit} onDelete={setCardToDelete} />
                             </div>
                           );
                         })}
-                        {sortedTransactions.length > 5 && (
-                          <button
-                            onClick={() => handleViewChange('analysis')}
-                            className={`w-full mt-4 p-5 rounded-3xl border border-dashed font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3 ${isDarkMode
-                              ? 'border-slate-800 text-slate-500 hover:bg-slate-800/30 hover:text-blue-400 hover:border-blue-500/50'
-                              : 'border-slate-200 text-slate-400 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200'
-                              }`}
-                          >
-                            <span>Daha fazla hareket göster</span>
-                            <ChevronRight size={16} />
-                          </button>
-                        )}
-                      </>
-                    ) : (
-                      <div className="py-20 text-center text-slate-500 font-bold italic">İşlem geçmişi bulunmuyor.</div>
-                    )}
-                  </div>
-                </div>
+                        <button onClick={() => setModalMode('add')} className={`snap-start shrink-0 w-[280px] sm:w-[380px] aspect-[1.586/1] border-2 border-dashed rounded-[32px] flex flex-col items-center justify-center gap-4 sm:gap-6 transition-all group ${isDarkMode ? 'border-slate-800 hover:bg-slate-900/50' : 'border-slate-200 hover:bg-slate-50'}`}>
+                          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+                            <Plus size={32} />
+                          </div>
+                          <span className={`font-black text-[9px] sm:text-[10px] tracking-[0.3em] uppercase ${isDarkMode ? 'text-slate-600' : 'text-slate-400'}`}>YENİ KART EKLE</span>
+                        </button>
+                      </div>
+                    </section>
 
-                <div id="dağılım" className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className={`p-8 rounded-[32px] border transition-all min-h-[480px] h-auto ${isDarkMode ? 'bg-[#0f172a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
-                    <h3 className={`text-lg font-black mb-8 flex items-center gap-3 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                      <PieIcon size={20} className="text-blue-500" /> DAĞILIM
-                    </h3>
-                    <div className="relative">
-                      <DistributionChart cards={cards} transactions={transactions} isDarkMode={isDarkMode} categories={categories} />
+                    <div className={`p-6 sm:p-10 rounded-[40px] border transition-all ${isDarkMode ? 'bg-[#0f172a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                        <h3 className={`text-xl font-black flex items-center gap-4 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                          <ArrowUpRight size={24} className="text-blue-500" /> SON HAREKETLER
+                        </h3>
+                        {isSyncing && (
+                          <div className="flex items-center gap-2 text-[10px] font-black text-blue-500 uppercase tracking-widest bg-blue-500/10 px-4 py-2 rounded-full animate-pulse">
+                            <RefreshCw size={12} className="animate-spin" /> GÜNCELLENİYOR
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-4 sm:space-y-5">
+                        {sortedTransactions.length > 0 ? (
+                          <>
+                            {sortedTransactions.slice(0, 5).map(tx => {
+                              const catColor = categories.find(c => c.name.toLocaleLowerCase('tr-TR') === tx.category.toLocaleLowerCase('tr-TR'))?.color || '#3B82F6';
+                              const isSpending = tx.type === 'spending';
+
+                              return (
+                                <div key={tx.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 rounded-[24px] sm:rounded-[28px] transition-all group border border-transparent ${isDarkMode ? 'hover:bg-slate-800/30 hover:border-slate-700' : 'hover:bg-slate-50 hover:border-slate-100 shadow-sm hover:shadow-md'}`}>
+                                  <div className="flex items-center gap-4 sm:gap-5 mb-3 sm:mb-0">
+                                    <div
+                                      className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-colors ${isSpending
+                                        ? 'bg-rose-500/10 text-rose-500'
+                                        : 'bg-emerald-500/10 text-emerald-500'
+                                        }`}
+                                    >
+                                      {isSpending ? <ShoppingBag size={20} /> : <PaymentIcon size={20} />}
+                                    </div>
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <p className={`font-black text-sm sm:text-base tracking-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{tx.description || (isSpending ? 'HARCAMA' : 'ÖDEME')}</p>
+                                        {tx.confirmationUrl && (
+                                          <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="p-1 rounded-md text-blue-500 hover:bg-blue-500/10 transition-colors" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={14} /></a>
+                                        )}
+                                      </div>
+                                      <div className="flex flex-col mt-0.5">
+                                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.15em]">{tx.cardName}</p>
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{formatDateDisplay(tx.date)}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center justify-between sm:justify-end gap-6">
+                                    <p
+                                      className={`font-black text-lg sm:text-xl tracking-tighter transition-colors ${isSpending ? 'text-rose-500' : 'text-emerald-500'
+                                        }`}
+                                    >
+                                      {isSpending ? '-' : '+'} TL {tx.amount.toLocaleString('tr-TR')}
+                                    </p>
+                                    <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <button onClick={() => startEditTransaction(tx)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-400 hover:text-blue-400 hover:bg-slate-700' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-200'}`}><Edit2 size={16} /></button>
+                                      <button onClick={() => setTransactionToDelete(tx)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-400 hover:text-rose-400 hover:bg-slate-700' : 'text-slate-400 hover:text-rose-600 hover:bg-slate-200'}`}><Trash2 size={16} /></button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                            {sortedTransactions.length > 5 && (
+                              <button
+                                onClick={() => handleViewChange('analysis')}
+                                className={`w-full mt-4 p-5 rounded-3xl border border-dashed font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3 ${isDarkMode
+                                  ? 'border-slate-800 text-slate-500 hover:bg-slate-800/30 hover:text-blue-400 hover:border-blue-500/50'
+                                  : 'border-slate-200 text-slate-400 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200'
+                                  }`}
+                              >
+                                <span>Daha fazla hareket göster</span>
+                                <ChevronRight size={16} />
+                              </button>
+                            )}
+                          </>
+                        ) : (
+                          <div className="py-20 text-center text-slate-500 font-bold italic">İşlem geçmişi bulunmuyor.</div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div id="odemeler" className={`p-8 rounded-[32px] border transition-all ${isDarkMode ? 'bg-[#0f172a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
-                    <h3 className={`text-lg font-black mb-8 flex items-center gap-3 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                      <Calendar size={20} className="text-blue-500" /> ÖDEMELER
-                    </h3>
-                    <div className="space-y-4">
-                      {cards.length > 0 ? [...cards].sort((a, b) => a.dueDay - b.dueDay).map(card => (
-                        <div key={card.id} className={`group flex items-center justify-between p-4 sm:p-5 rounded-[24px] transition-all border ${isDarkMode ? 'bg-slate-800/20 border-slate-800 hover:bg-slate-800/40 hover:border-slate-700' : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-blue-100 hover:shadow-sm'}`}>
-                          <div className="flex items-center gap-4">
-                            <div className="w-1.5 h-10 rounded-full shadow-sm" style={{ backgroundColor: card.color }} />
-                            <div>
-                              <p className={`font-black text-sm uppercase tracking-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{card.cardName}</p>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className={`text-[9px] font-black px-2 py-0.5 rounded-md ${isDarkMode ? 'bg-slate-700 text-slate-400' : 'bg-white text-slate-500 shadow-xs'}`}>AYIN {card.dueDay}. GÜNÜ</span>
+
+                    <div id="dağılım" className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className={`p-8 rounded-[32px] border transition-all min-h-[480px] h-auto ${isDarkMode ? 'bg-[#0f172a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                        <h3 className={`text-lg font-black mb-8 flex items-center gap-3 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                          <PieIcon size={20} className="text-blue-500" /> DAĞILIM
+                        </h3>
+                        <div className="relative">
+                          <DistributionChart cards={cards} transactions={transactions} isDarkMode={isDarkMode} categories={categories} />
+                        </div>
+                      </div>
+                      <div id="odemeler" className={`p-8 rounded-[32px] border transition-all ${isDarkMode ? 'bg-[#0f172a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                        <h3 className={`text-lg font-black mb-8 flex items-center gap-3 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                          <Calendar size={20} className="text-blue-500" /> ÖDEMELER
+                        </h3>
+                        <div className="space-y-4">
+                          {cards.length > 0 ? [...cards].sort((a, b) => a.dueDay - b.dueDay).map(card => (
+                            <div key={card.id} className={`group flex items-center justify-between p-4 sm:p-5 rounded-[24px] transition-all border ${isDarkMode ? 'bg-slate-800/20 border-slate-800 hover:bg-slate-800/40 hover:border-slate-700' : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-blue-100 hover:shadow-sm'}`}>
+                              <div className="flex items-center gap-4">
+                                <div className="w-1.5 h-10 rounded-full shadow-sm" style={{ backgroundColor: card.color }} />
+                                <div>
+                                  <p className={`font-black text-sm uppercase tracking-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{card.cardName}</p>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-md ${isDarkMode ? 'bg-slate-700 text-slate-400' : 'bg-white text-slate-500 shadow-xs'}`}>AYIN {card.dueDay}. GÜNÜ</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3 sm:gap-4">
+                                <div className="text-right">
+                                  <p className={`font-black text-base sm:text-lg tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                                    ₺{Math.max(0, card.balance).toLocaleString('tr-TR')}
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={() => handleAddToCalendarClick(card)}
+                                  className={`p-2 rounded-xl transition-all scale-100 sm:scale-0 group-hover:scale-100 ${isDarkMode ? 'bg-slate-700 text-blue-400 hover:bg-blue-600 hover:text-white' : 'bg-white text-blue-600 hover:bg-blue-600 hover:text-white border border-slate-200 shadow-sm'}`}
+                                  title="Takvime Ekle"
+                                >
+                                  <CalendarPlus size={18} />
+                                </button>
                               </div>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-3 sm:gap-4">
-                            <div className="text-right">
-                              <p className={`font-black text-base sm:text-lg tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                                ₺{Math.max(0, card.balance).toLocaleString('tr-TR')}
-                              </p>
-                            </div>
-                            <button
-                              onClick={() => handleAddToCalendarClick(card)}
-                              className={`p-2 rounded-xl transition-all scale-100 sm:scale-0 group-hover:scale-100 ${isDarkMode ? 'bg-slate-700 text-blue-400 hover:bg-blue-600 hover:text-white' : 'bg-white text-blue-600 hover:bg-blue-600 hover:text-white border border-slate-200 shadow-sm'}`}
-                              title="Takvime Ekle"
-                            >
-                              <CalendarPlus size={18} />
-                            </button>
-                          </div>
+                          )) : <div className="py-12 flex flex-col items-center justify-center text-slate-500 italic text-sm opacity-40">
+                            <Calendar size={24} className="mb-2" />
+                            Henüz bir ödeme planı yok
+                          </div>}
                         </div>
-                      )) : <div className="py-12 flex flex-col items-center justify-center text-slate-500 italic text-sm opacity-40">
-                        <Calendar size={24} className="mb-2" />
-                        Henüz bir ödeme planı yok
-                      </div>}
-                    </div>
-                  </div>
-                </div>
-
-                <MonthlyAnalysis transactions={transactions} cards={cards} isDarkMode={isDarkMode} categories={categories} />
-              </div>
-            </div>
-          </>
-        ) : view === 'cards' ? (
-          <CardsListView cards={cards} transactions={transactions} isDarkMode={isDarkMode} onEdit={startEdit} onDelete={setCardToDelete} onAddToCalendar={handleAddToCalendarClick} onShowStatement={handleShowStatementClick} onAddCard={() => setModalMode('add')} onBack={() => setView('dashboard')} onEditTransaction={startEditTransaction} onDeleteTransaction={setTransactionToDelete} />
-        ) : view === 'analysis' ? (
-          <AnalysisView
-            cards={cards}
-            transactions={transactions}
-            isDarkMode={isDarkMode}
-            onBack={() => setView('dashboard')}
-            onEditTransaction={startEditTransaction}
-            onDeleteTransaction={setTransactionToDelete}
-            categories={categories}
-          />
-        ) : (
-          <SettingsView
-            isDarkMode={isDarkMode}
-            onThemeToggle={() => setIsDarkMode(!isDarkMode)}
-            onResetAll={() => setModalMode('reset_confirm')}
-            onBack={() => setView('dashboard')}
-            categories={categories}
-            setCategories={setCategories}
-          />
-        )}
-      </main>
-
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center">
-        {isFabOpen && (
-          <div className="mb-4 flex flex-col gap-3 min-w-[210px] animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <button onClick={() => { setModalMode('spending'); setIsFabOpen(false); }} className={`p-4 rounded-[24px] shadow-2xl flex items-center gap-4 font-black uppercase text-[10px] tracking-widest transition-all border active:scale-95 group ${isDarkMode ? 'bg-slate-900 border-slate-800 text-white hover:bg-slate-800' : 'bg-white border-slate-100 text-slate-800 hover:bg-slate-50'}`}>
-              <div className="bg-rose-500/10 text-rose-500 p-2.5 rounded-xl group-hover:rotate-45 transition-transform"><ArrowUpRight size={16} /></div>
-              <span>HARCAMA EKLE</span>
-            </button>
-            <button onClick={() => { setModalMode('payment'); setIsFabOpen(false); }} className={`p-4 rounded-[24px] shadow-2xl flex items-center gap-4 font-black uppercase text-[10px] tracking-widest transition-all border active:scale-95 group ${isDarkMode ? 'bg-slate-900 border-slate-800 text-white hover:bg-slate-800' : 'bg-white border-slate-100 text-slate-800 hover:bg-slate-50'}`}>
-              <div className="bg-emerald-500/10 text-emerald-500 p-2.5 rounded-xl group-hover:-rotate-45 transition-transform"><ArrowDownRight size={16} /></div>
-              <span>ÖDEME YAP</span>
-            </button>
-            <button onClick={() => { setModalMode('add'); setIsFabOpen(false); }} className={`p-4 rounded-[24px] shadow-2xl flex items-center gap-4 font-black uppercase text-[10px] tracking-widest transition-all border active:scale-95 group ${isDarkMode ? 'bg-slate-900 border-slate-800 text-white hover:bg-slate-800' : 'bg-white border-slate-100 text-slate-800 hover:bg-slate-50'}`}>
-              <div className="bg-blue-500/10 text-blue-500 p-2.5 rounded-xl group-hover:scale-110 transition-transform"><Plus size={16} /></div>
-              <span>YENİ KART EKLE</span>
-            </button>
-          </div>
-        )}
-
-        <div className={`flex items-center gap-1 sm:gap-2 p-1.5 sm:p-2 rounded-[28px] sm:rounded-[32px] border shadow-2xl backdrop-blur-2xl transition-all ${isDarkMode ? 'bg-[#0f172a]/80 border-slate-800 shadow-black' : 'bg-white/80 border-slate-200'}`}>
-          <div className="flex items-center px-0.5 sm:px-1">
-            <a href="#" onClick={(e) => { e.preventDefault(); handleViewChange('dashboard'); }} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'dashboard' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`}><LayoutDashboard size={18} className="sm:w-5 sm:h-5" /></a>
-            <a href="#" onClick={(e) => { e.preventDefault(); handleViewChange('cards'); }} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'cards' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`}><CardIcon size={18} className="sm:w-5 sm:h-5" /></a>
-            <a href="#" onClick={(e) => { e.preventDefault(); handleViewChange('analysis'); }} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'analysis' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`}><BarChart3 size={18} className="sm:w-5 sm:h-5" /></a>
-          </div>
-          <button onClick={() => setIsFabOpen(!isFabOpen)} className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-white shadow-xl transition-all transform hover:scale-105 active:scale-95 border-[3px] sm:border-4 ${isDarkMode ? 'border-[#0a1224]' : 'border-white'} ${isFabOpen ? 'bg-slate-800 rotate-45' : 'bg-blue-600 shadow-blue-600/30'}`}><Plus size={24} className="sm:w-8 sm:h-8" strokeWidth={3} /></button>
-          <div className="flex items-center px-0.5 sm:px-1">
-            <button onClick={() => setIsAIPanelOpen(true)} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${isDarkMode ? 'text-slate-400 hover:text-amber-400 hover:bg-slate-800' : 'text-slate-500 hover:text-amber-600 hover:bg-slate-100'}`}><Sparkles size={18} className="sm:w-5 sm:h-5" /></button>
-            <a href="#" onClick={(e) => { e.preventDefault(); handleViewChange('settings'); }} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'settings' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`}><SettingsIcon size={18} className="sm:w-5 sm:h-5" /></a>
-            <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${isDarkMode ? 'text-slate-400 hover:text-yellow-400 hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100'}`}>
-              {isDarkMode ? <Sun size={18} className="sm:w-5 sm:h-5" /> : <Moon size={18} className="sm:w-5 sm:h-5" />}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {isNotificationPanelOpen && (
-        <div className="fixed inset-0 z-[110] flex justify-end">
-          <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsNotificationPanelOpen(false)} />
-          <div className="relative w-full md:w-[480px] h-full bg-[#fdfdfe] dark:bg-[#0b101d] shadow-[0_0_100px_rgba(0,0,0,0.6)] flex flex-col animate-in slide-in-from-right duration-500 border-l border-white/5">
-            <div className="relative px-8 pt-10 pb-8">
-              <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-600/10 blur-[100px] rounded-full pointer-events-none"></div>
-              <div className="relative flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-600/10 rounded-[18px] flex items-center justify-center text-blue-600 shadow-inner">
-                    <Bell size={24} />
-                  </div>
-                  <div>
-                    <h2 className={`font-black text-2xl tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Bildirimler</h2>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${unreadCount > 0 ? 'text-blue-500' : 'text-slate-400'}`}>
-                        {unreadCount > 0 ? `${unreadCount} YENİ` : 'GÜNCEL'}
-                      </span>
-                      {unreadCount > 0 && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>}
-                    </div>
-                  </div>
-                </div>
-                <button onClick={() => setIsNotificationPanelOpen(false)} className="p-3 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 transition-all active:scale-90"><X size={20} /></button>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-6 space-y-4 custom-scrollbar pb-10">
-              {notificationHistory.length > 0 ? notificationHistory.map((item) => (
-                <div
-                  key={item.id}
-                  className={`relative group p-6 rounded-[28px] border transition-all flex gap-5 shadow-sm ${item.read
-                    ? (isDarkMode ? 'bg-[#151b2b] border-slate-800 opacity-50 grayscale-[0.3]' : 'bg-[#f1f5f9] border-slate-200 opacity-60 grayscale-[0.3]')
-                    : (item.type === 'warning'
-                      ? (isDarkMode ? 'bg-rose-500/10 border-rose-500/40 shadow-[0_10px_30px_rgba(244,63,94,0.15)]' : 'bg-rose-50 border-rose-200 shadow-md')
-                      : (isDarkMode ? 'bg-[#1a2235] border-blue-500/30 shadow-[0_10px_30px_rgba(59,130,246,0.1)]' : 'bg-white border-blue-100 shadow-md')
-                    )
-                    }`}
-                >
-                  {!item.read && (
-                    <div className={`absolute top-6 right-6 w-3 h-3 rounded-full animate-pulse ${item.type === 'warning' ? 'bg-rose-500 ring-4 ring-rose-500/20' : 'bg-emerald-500 ring-4 ring-emerald-500/20'
-                      }`}></div>
-                  )}
-
-                  {/* Bireysel Okundu Toggle Butonu */}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); toggleNotificationRead(item.id); }}
-                    title={item.read ? "Okunmamış olarak işaretle" : "Okundu olarak işaretle"}
-                    className={`shrink-0 w-12 h-12 rounded-[20px] flex items-center justify-center shadow-md transform transition-all active:scale-90 ${item.read
-                      ? 'bg-slate-200 dark:bg-slate-800 text-slate-400'
-                      : (item.type === 'warning' ? 'bg-rose-500 text-white hover:bg-rose-600' : 'bg-blue-600 text-white hover:bg-blue-700')
-                      }`}
-                  >
-                    {item.read ? <Check size={22} /> : item.type === 'warning' ? <AlertTriangle size={22} /> : <Bell size={22} />}
-                  </button>
-
-                  <div className="flex-1">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-2">
-                      <Clock size={10} /> {item.timestamp}
-                    </span>
-                    <p className={`text-sm leading-relaxed tracking-tight ${item.read ? 'font-medium' : 'font-black'} ${isDarkMode ? 'text-white' : 'text-slate-900'
-                      }`}>
-                      {item.message}
-                    </p>
-                    {(item.cardColor || item.cardName) && (
-                      <div className="mt-4 flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.cardColor || '#ccc' }}></div>
-                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest italic">{item.cardName}</span>
                       </div>
-                    )}
+                    </div>
+
+                    <MonthlyAnalysis transactions={transactions} cards={cards} isDarkMode={isDarkMode} categories={categories} />
                   </div>
                 </div>
-              )) : <div className="flex flex-col items-center justify-center py-40 text-center"><Inbox size={40} className="text-slate-300 dark:text-slate-700 mb-6" /><h3 className={`font-black text-lg ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Bildirim kutunuz boş</h3></div>}
-            </div>
+              </>
+            ) : view === 'cards' ? (
+              <CardsListView cards={cards} transactions={transactions} isDarkMode={isDarkMode} onEdit={startEdit} onDelete={setCardToDelete} onAddToCalendar={handleAddToCalendarClick} onShowStatement={handleShowStatementClick} onAddCard={() => setModalMode('add')} onBack={() => setView('dashboard')} onEditTransaction={startEditTransaction} onDeleteTransaction={setTransactionToDelete} />
+            ) : view === 'analysis' ? (
+              <AnalysisView
+                cards={cards}
+                transactions={transactions}
+                isDarkMode={isDarkMode}
+                onBack={() => setView('dashboard')}
+                onEditTransaction={startEditTransaction}
+                onDeleteTransaction={setTransactionToDelete}
+                categories={categories}
+              />
+            ) : (
+              <SettingsView
+                isDarkMode={isDarkMode}
+                onThemeToggle={() => setIsDarkMode(!isDarkMode)}
+                onResetAll={() => setModalMode('reset_confirm')}
+                onBack={() => setView('dashboard')}
+                categories={categories}
+                setCategories={setCategories}
+              />
+            )}
+          </main>
 
-            {notificationHistory.length > 0 && (
-              <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/40 backdrop-blur-xl">
-                <button onClick={markAllAsRead} className="w-full py-5 rounded-[22px] bg-blue-600 text-white text-xs font-black uppercase tracking-[0.2em] shadow-xl hover:bg-blue-700 transition-all active:scale-[0.98] flex items-center justify-center gap-3"><CheckCircle2 size={18} /> TÜMÜNÜ OKUNDU İŞARETLE</button>
+          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center">
+            {isFabOpen && (
+              <div className="mb-4 flex flex-col gap-3 min-w-[210px] animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <button onClick={() => { setModalMode('spending'); setIsFabOpen(false); }} className={`p-4 rounded-[24px] shadow-2xl flex items-center gap-4 font-black uppercase text-[10px] tracking-widest transition-all border active:scale-95 group ${isDarkMode ? 'bg-slate-900 border-slate-800 text-white hover:bg-slate-800' : 'bg-white border-slate-100 text-slate-800 hover:bg-slate-50'}`}>
+                  <div className="bg-rose-500/10 text-rose-500 p-2.5 rounded-xl group-hover:rotate-45 transition-transform"><ArrowUpRight size={16} /></div>
+                  <span>HARCAMA EKLE</span>
+                </button>
+                <button onClick={() => { setModalMode('payment'); setIsFabOpen(false); }} className={`p-4 rounded-[24px] shadow-2xl flex items-center gap-4 font-black uppercase text-[10px] tracking-widest transition-all border active:scale-95 group ${isDarkMode ? 'bg-slate-900 border-slate-800 text-white hover:bg-slate-800' : 'bg-white border-slate-100 text-slate-800 hover:bg-slate-50'}`}>
+                  <div className="bg-emerald-500/10 text-emerald-500 p-2.5 rounded-xl group-hover:-rotate-45 transition-transform"><ArrowDownRight size={16} /></div>
+                  <span>ÖDEME YAP</span>
+                </button>
+                <button onClick={() => { setModalMode('add'); setIsFabOpen(false); }} className={`p-4 rounded-[24px] shadow-2xl flex items-center gap-4 font-black uppercase text-[10px] tracking-widest transition-all border active:scale-95 group ${isDarkMode ? 'bg-slate-900 border-slate-800 text-white hover:bg-slate-800' : 'bg-white border-slate-100 text-slate-800 hover:bg-slate-50'}`}>
+                  <div className="bg-blue-500/10 text-blue-500 p-2.5 rounded-xl group-hover:scale-110 transition-transform"><Plus size={16} /></div>
+                  <span>YENİ KART EKLE</span>
+                </button>
               </div>
             )}
-          </div>
-        </div>
-      )}
 
-      {isAIPanelOpen && (
-        <div className="fixed inset-0 z-[100] flex justify-end">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsAIPanelOpen(false)} />
-          <div className={`relative w-full md:w-[450px] h-full border-l shadow-2xl flex flex-col animate-in slide-in-from-right duration-500 overflow-hidden ${isDarkMode ? 'bg-[#0a0f1c] border-slate-800' : 'bg-white border-slate-200'}`}>
-
-            {/* Header */}
-            <div className={`p-8 border-b flex items-center justify-between ${isDarkMode ? 'bg-[#111827] border-slate-800' : 'bg-slate-50/50 border-slate-100'}`}>
-              <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-2xl shadow-xl ${isDarkMode ? 'bg-amber-400 text-slate-950 shadow-amber-400/20' : 'bg-amber-500 text-white shadow-amber-500/20'}`}>
-                  <Zap fill="currentColor" size={24} />
-                </div>
-                <div>
-                  <h2 className={`font-black text-xl tracking-tight leading-none italic uppercase ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Smart Advisor</h2>
-                  <div className="flex items-center gap-2 mt-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                    <span className={`text-[10px] font-bold uppercase tracking-widest ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Asistan Hazır</span>
-                  </div>
-                </div>
+            <div className={`flex items-center gap-1 sm:gap-2 p-1.5 sm:p-2 rounded-[28px] sm:rounded-[32px] border shadow-2xl backdrop-blur-2xl transition-all ${isDarkMode ? 'bg-[#0f172a]/80 border-slate-800 shadow-black' : 'bg-white/80 border-slate-200'}`}>
+              <div className="flex items-center px-0.5 sm:px-1">
+                <a href="#" onClick={(e) => { e.preventDefault(); handleViewChange('dashboard'); }} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'dashboard' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`}><LayoutDashboard size={18} className="sm:w-5 sm:h-5" /></a>
+                <a href="#" onClick={(e) => { e.preventDefault(); handleViewChange('cards'); }} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'cards' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`}><CardIcon size={18} className="sm:w-5 sm:h-5" /></a>
+                <a href="#" onClick={(e) => { e.preventDefault(); handleViewChange('analysis'); }} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'analysis' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`}><BarChart3 size={18} className="sm:w-5 sm:h-5" /></a>
               </div>
-              <button
-                onClick={() => setIsAIPanelOpen(false)}
-                className={`p-3 rounded-full transition-all hover:rotate-90 ${isDarkMode ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}
-              >
-                <X size={24} />
-              </button>
+              <button onClick={() => setIsFabOpen(!isFabOpen)} className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-white shadow-xl transition-all transform hover:scale-105 active:scale-95 border-[3px] sm:border-4 ${isDarkMode ? 'border-[#0a1224]' : 'border-white'} ${isFabOpen ? 'bg-slate-800 rotate-45' : 'bg-blue-600 shadow-blue-600/30'}`}><Plus size={24} className="sm:w-8 sm:h-8" strokeWidth={3} /></button>
+              <div className="flex items-center px-0.5 sm:px-1">
+                <button onClick={() => setIsAIPanelOpen(true)} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${isDarkMode ? 'text-slate-400 hover:text-amber-400 hover:bg-slate-800' : 'text-slate-500 hover:text-amber-600 hover:bg-slate-100'}`}><Sparkles size={18} className="sm:w-5 sm:h-5" /></button>
+                <a href="#" onClick={(e) => { e.preventDefault(); handleViewChange('settings'); }} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'settings' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`}><SettingsIcon size={18} className="sm:w-5 sm:h-5" /></a>
+                <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${isDarkMode ? 'text-slate-400 hover:text-yellow-400 hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100'}`}>
+                  {isDarkMode ? <Sun size={18} className="sm:w-5 sm:h-5" /> : <Moon size={18} className="sm:w-5 sm:h-5" />}
+                </button>
+              </div>
             </div>
+          </div>
 
-            {/* Chat Area */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar scrolling-touch relative">
-              {/* Initial Welcome */}
-              <div className={`p-8 rounded-[32px] border transition-all ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-blue-50/50 border-blue-100/50'}`}>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className={`p-1.5 rounded-lg ${isDarkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-600/10 text-blue-600'}`}>
-                    <MessageSquare size={14} />
-                  </div>
-                  <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>BAŞLANGIÇ</p>
-                </div>
-                <p className={`text-base leading-relaxed font-semibold tracking-tight ${isDarkMode ? 'text-indigo-50' : 'text-slate-700'}`}>
-                  Merhaba! Harcama verinizi analiz edebilir, borç kapatma stratejileri sunabilir veya finansal sorularınızı yanıtlayabilirim.
-                </p>
-              </div>
-
-              {/* Chat History */}
-              <div className="space-y-6">
-                {chatHistory.map((chat, idx) => (
-                  <div key={idx} className={`flex ${chat.role === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2 duration-300`}>
-                    <div className={`max-w-[85%] group`}>
-                      <div className={`flex items-center gap-2 mb-1.5 px-2 ${chat.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        {chat.role === 'assistant' && <Bot size={10} className="text-amber-500" />}
-                        <span className={`text-[9px] font-black uppercase tracking-widest opacity-40 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                          {chat.role === 'user' ? 'SİZ' : 'ADVISOR'}
-                        </span>
-                        {chat.role === 'user' && <UserIcon size={10} className="opacity-40" />}
+          {
+            isNotificationPanelOpen && (
+              <div className="fixed inset-0 z-[110] flex justify-end">
+                <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsNotificationPanelOpen(false)} />
+                <div className="relative w-full md:w-[480px] h-full bg-[#fdfdfe] dark:bg-[#0b101d] shadow-[0_0_100px_rgba(0,0,0,0.6)] flex flex-col animate-in slide-in-from-right duration-500 border-l border-white/5">
+                  <div className="relative px-8 pt-10 pb-8">
+                    <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-600/10 blur-[100px] rounded-full pointer-events-none"></div>
+                    <div className="relative flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-blue-600/10 rounded-[18px] flex items-center justify-center text-blue-600 shadow-inner">
+                          <Bell size={24} />
+                        </div>
+                        <div>
+                          <h2 className={`font-black text-2xl tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Bildirimler</h2>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${unreadCount > 0 ? 'text-blue-500' : 'text-slate-400'}`}>
+                              {unreadCount > 0 ? `${unreadCount} YENİ` : 'GÜNCEL'}
+                            </span>
+                            {unreadCount > 0 && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>}
+                          </div>
+                        </div>
                       </div>
-                      <div className={`px-6 py-4 rounded-[26px] shadow-sm transition-all ${chat.role === 'user'
-                        ? 'bg-blue-600 text-white rounded-tr-none'
-                        : (isDarkMode
-                          ? 'bg-[#1a2235] border border-slate-800 text-slate-100 rounded-tl-none'
-                          : 'bg-slate-100 border border-slate-200/50 text-slate-800 rounded-tl-none')
-                        }`}>
-                        <p className="text-[15px] leading-relaxed font-medium whitespace-pre-wrap">{chat.content}</p>
-                      </div>
+                      <button onClick={() => setIsNotificationPanelOpen(false)} className="p-3 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 transition-all active:scale-90"><X size={20} /></button>
                     </div>
                   </div>
-                ))}
-              </div>
 
-              {isAIThinking && (
-                <div className="flex justify-start animate-in fade-in duration-300 pl-2">
-                  <div className={`p-4 rounded-[20px] rounded-tl-none flex gap-1.5 items-center ${isDarkMode ? 'bg-slate-800/50' : 'bg-slate-100'}`}>
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce"></div>
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce [animation-delay:-0.15s]"></div>
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce [animation-delay:-0.3s]"></div>
+                  <div className="flex-1 overflow-y-auto px-6 space-y-4 custom-scrollbar pb-10">
+                    {notificationHistory.length > 0 ? notificationHistory.map((item) => (
+                      <div
+                        key={item.id}
+                        className={`relative group p-6 rounded-[28px] border transition-all flex gap-5 shadow-sm ${item.read
+                          ? (isDarkMode ? 'bg-[#151b2b] border-slate-800 opacity-50 grayscale-[0.3]' : 'bg-[#f1f5f9] border-slate-200 opacity-60 grayscale-[0.3]')
+                          : (item.type === 'warning'
+                            ? (isDarkMode ? 'bg-rose-500/10 border-rose-500/40 shadow-[0_10px_30px_rgba(244,63,94,0.15)]' : 'bg-rose-50 border-rose-200 shadow-md')
+                            : (isDarkMode ? 'bg-[#1a2235] border-blue-500/30 shadow-[0_10px_30px_rgba(59,130,246,0.1)]' : 'bg-white border-blue-100 shadow-md')
+                          )
+                          }`}
+                      >
+                        {!item.read && (
+                          <div className={`absolute top-6 right-6 w-3 h-3 rounded-full animate-pulse ${item.type === 'warning' ? 'bg-rose-500 ring-4 ring-rose-500/20' : 'bg-emerald-500 ring-4 ring-emerald-500/20'
+                            }`}></div>
+                        )}
+
+                        {/* Bireysel Okundu Toggle Butonu */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleNotificationRead(item.id); }}
+                          title={item.read ? "Okunmamış olarak işaretle" : "Okundu olarak işaretle"}
+                          className={`shrink-0 w-12 h-12 rounded-[20px] flex items-center justify-center shadow-md transform transition-all active:scale-90 ${item.read
+                            ? 'bg-slate-200 dark:bg-slate-800 text-slate-400'
+                            : (item.type === 'warning' ? 'bg-rose-500 text-white hover:bg-rose-600' : 'bg-blue-600 text-white hover:bg-blue-700')
+                            }`}
+                        >
+                          {item.read ? <Check size={22} /> : item.type === 'warning' ? <AlertTriangle size={22} /> : <Bell size={22} />}
+                        </button>
+
+                        <div className="flex-1">
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-2">
+                            <Clock size={10} /> {item.timestamp}
+                          </span>
+                          <p className={`text-sm leading-relaxed tracking-tight ${item.read ? 'font-medium' : 'font-black'} ${isDarkMode ? 'text-white' : 'text-slate-900'
+                            }`}>
+                            {item.message}
+                          </p>
+                          {(item.cardColor || item.cardName) && (
+                            <div className="mt-4 flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.cardColor || '#ccc' }}></div>
+                              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest italic">{item.cardName}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )) : <div className="flex flex-col items-center justify-center py-40 text-center"><Inbox size={40} className="text-slate-300 dark:text-slate-700 mb-6" /><h3 className={`font-black text-lg ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Bildirim kutunuz boş</h3></div>}
+                  </div>
+
+                  {notificationHistory.length > 0 && (
+                    <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/40 backdrop-blur-xl">
+                      <button onClick={markAllAsRead} className="w-full py-5 rounded-[22px] bg-blue-600 text-white text-xs font-black uppercase tracking-[0.2em] shadow-xl hover:bg-blue-700 transition-all active:scale-[0.98] flex items-center justify-center gap-3"><CheckCircle2 size={18} /> TÜMÜNÜ OKUNDU İŞARETLE</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          }
+
+          {
+            isAIPanelOpen && (
+              <div className="fixed inset-0 z-[100] flex justify-end">
+                <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsAIPanelOpen(false)} />
+                <div className={`relative w-full md:w-[450px] h-full border-l shadow-2xl flex flex-col animate-in slide-in-from-right duration-500 overflow-hidden ${isDarkMode ? 'bg-[#0a0f1c] border-slate-800' : 'bg-white border-slate-200'}`}>
+
+                  {/* Header */}
+                  <div className={`p-8 border-b flex items-center justify-between ${isDarkMode ? 'bg-[#111827] border-slate-800' : 'bg-slate-50/50 border-slate-100'}`}>
+                    <div className="flex items-center gap-4">
+                      <div className={`p-3 rounded-2xl shadow-xl ${isDarkMode ? 'bg-amber-400 text-slate-950 shadow-amber-400/20' : 'bg-amber-500 text-white shadow-amber-500/20'}`}>
+                        <Zap fill="currentColor" size={24} />
+                      </div>
+                      <div>
+                        <h2 className={`font-black text-xl tracking-tight leading-none italic uppercase ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Smart Advisor</h2>
+                        <div className="flex items-center gap-2 mt-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                          <span className={`text-[10px] font-bold uppercase tracking-widest ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Asistan Hazır</span>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setIsAIPanelOpen(false)}
+                      className={`p-3 rounded-full transition-all hover:rotate-90 ${isDarkMode ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}
+                    >
+                      <X size={24} />
+                    </button>
+                  </div>
+
+                  {/* Chat Area */}
+                  <div className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar scrolling-touch relative">
+                    {/* Initial Welcome */}
+                    <div className={`p-8 rounded-[32px] border transition-all ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-blue-50/50 border-blue-100/50'}`}>
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className={`p-1.5 rounded-lg ${isDarkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-600/10 text-blue-600'}`}>
+                          <MessageSquare size={14} />
+                        </div>
+                        <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>BAŞLANGIÇ</p>
+                      </div>
+                      <p className={`text-base leading-relaxed font-semibold tracking-tight ${isDarkMode ? 'text-indigo-50' : 'text-slate-700'}`}>
+                        Merhaba! Harcama verinizi analiz edebilir, borç kapatma stratejileri sunabilir veya finansal sorularınızı yanıtlayabilirim.
+                      </p>
+                    </div>
+
+                    {/* Chat History */}
+                    <div className="space-y-6">
+                      {chatHistory.map((chat, idx) => (
+                        <div key={idx} className={`flex ${chat.role === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2 duration-300`}>
+                          <div className={`max-w-[85%] group`}>
+                            <div className={`flex items-center gap-2 mb-1.5 px-2 ${chat.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                              {chat.role === 'assistant' && <Bot size={10} className="text-amber-500" />}
+                              <span className={`text-[9px] font-black uppercase tracking-widest opacity-40 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                                {chat.role === 'user' ? 'SİZ' : 'ADVISOR'}
+                              </span>
+                              {chat.role === 'user' && <UserIcon size={10} className="opacity-40" />}
+                            </div>
+                            <div className={`px-6 py-4 rounded-[26px] shadow-sm transition-all ${chat.role === 'user'
+                              ? 'bg-blue-600 text-white rounded-tr-none'
+                              : (isDarkMode
+                                ? 'bg-[#1a2235] border border-slate-800 text-slate-100 rounded-tl-none'
+                                : 'bg-slate-100 border border-slate-200/50 text-slate-800 rounded-tl-none')
+                              }`}>
+                              <p className="text-[15px] leading-relaxed font-medium whitespace-pre-wrap">{chat.content}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {isAIThinking && (
+                      <div className="flex justify-start animate-in fade-in duration-300 pl-2">
+                        <div className={`p-4 rounded-[20px] rounded-tl-none flex gap-1.5 items-center ${isDarkMode ? 'bg-slate-800/50' : 'bg-slate-100'}`}>
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce"></div>
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce [animation-delay:-0.15s]"></div>
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce [animation-delay:-0.3s]"></div>
+                        </div>
+                      </div>
+                    )}
+                    <div ref={chatEndRef} className="h-4" />
+                  </div>
+
+                  {/* Input Area */}
+                  <div className={`p-8 border-t flex flex-col gap-5 ${isDarkMode ? 'bg-[#111827] border-slate-800' : 'bg-white border-slate-100'}`}>
+                    <div className="flex flex-wrap items-center justify-center gap-2">
+                      {[
+                        { label: "💡 Strateji", text: "Borç kapatma stratejisi öner" },
+                        { label: "📊 Analiz", text: "En yüksek borçlu kartım hangisi?" },
+                        { label: "💰 limitler", text: "Kalan limitlerimi özetle" }
+                      ].map((s, i) => (
+                        <button
+                          key={i}
+                          onClick={() => { setUserMessage(s.text); }}
+                          className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border ${isDarkMode
+                            ? 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800'
+                            : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-100'
+                            }`}
+                        >
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <form onSubmit={handleSendMessage} className="relative group">
+                      <input
+                        type="text"
+                        value={userMessage}
+                        onChange={(e) => setUserMessage(e.target.value)}
+                        placeholder="Mesajınızı buraya yazın..."
+                        className={`w-full py-5 pl-8 pr-16 rounded-[24px] text-sm focus:outline-none transition-all font-semibold shadow-inner border ${isDarkMode
+                          ? 'bg-[#0f172a] border-slate-700 text-white focus:border-blue-500/50 placeholder:text-slate-600'
+                          : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-blue-400 placeholder:text-slate-400'
+                          }`}
+                      />
+                      <button
+                        type="submit"
+                        disabled={!userMessage.trim() || isAIThinking}
+                        className={`absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 rounded-[18px] flex items-center justify-center transition-all active:scale-90 shadow-xl disabled:opacity-30 ${isDarkMode
+                          ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/20'
+                          : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/10'
+                          }`}
+                      >
+                        <Send size={20} />
+                      </button>
+                    </form>
                   </div>
                 </div>
-              )}
-              <div ref={chatEndRef} className="h-4" />
-            </div>
-
-            {/* Input Area */}
-            <div className={`p-8 border-t flex flex-col gap-5 ${isDarkMode ? 'bg-[#111827] border-slate-800' : 'bg-white border-slate-100'}`}>
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                {[
-                  { label: "💡 Strateji", text: "Borç kapatma stratejisi öner" },
-                  { label: "📊 Analiz", text: "En yüksek borçlu kartım hangisi?" },
-                  { label: "💰 limitler", text: "Kalan limitlerimi özetle" }
-                ].map((s, i) => (
-                  <button
-                    key={i}
-                    onClick={() => { setUserMessage(s.text); }}
-                    className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border ${isDarkMode
-                      ? 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800'
-                      : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-100'
-                      }`}
-                  >
-                    {s.label}
-                  </button>
-                ))}
               </div>
+            )
+          }
 
-              <form onSubmit={handleSendMessage} className="relative group">
-                <input
-                  type="text"
-                  value={userMessage}
-                  onChange={(e) => setUserMessage(e.target.value)}
-                  placeholder="Mesajınızı buraya yazın..."
-                  className={`w-full py-5 pl-8 pr-16 rounded-[24px] text-sm focus:outline-none transition-all font-semibold shadow-inner border ${isDarkMode
-                    ? 'bg-[#0f172a] border-slate-700 text-white focus:border-blue-500/50 placeholder:text-slate-600'
-                    : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-blue-400 placeholder:text-slate-400'
-                    }`}
-                />
-                <button
-                  type="submit"
-                  disabled={!userMessage.trim() || isAIThinking}
-                  className={`absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 rounded-[18px] flex items-center justify-center transition-all active:scale-90 shadow-xl disabled:opacity-30 ${isDarkMode
-                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/20'
-                    : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/10'
-                    }`}
-                >
-                  <Send size={20} />
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
+          {
+            cardToDelete && (
+              <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[130] flex items-center justify-center p-6 animate-in fade-in duration-300">
+                <div className={`p-10 rounded-[40px] max-w-sm w-full text-center border shadow-2xl animate-in zoom-in-95 duration-300 ${isDarkMode ? 'bg-[#0f172a] border-slate-800 text-white' : 'bg-white border-slate-100 text-slate-800'}`}>
+                  <div className="w-16 h-16 bg-rose-500/10 text-rose-500 rounded-3xl flex items-center justify-center mx-auto mb-8"><AlertTriangle size={32} /></div>
+                  <h3 className="text-xl font-black mb-4 uppercase tracking-tight">KARTI SİL?</h3>
+                  <p className="text-sm font-medium text-slate-500 mb-10 leading-relaxed"><span className="font-black text-rose-500 uppercase">{cardToDelete.cardName}</span> kartını silmek üzeresiniz.</p>
+                  <div className="flex flex-col gap-3"><button onClick={deleteCard} className="w-full bg-rose-500 text-white py-4 rounded-[24px] font-black uppercase tracking-[0.2em] text-[10px] hover:bg-rose-600 transition-all active:scale-95 shadow-xl">KALICI OLARAK SİL</button><button onClick={() => setCardToDelete(null)} className="w-full py-4 rounded-[24px] font-black uppercase tracking-[0.2em] text-[10px] text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">VAZGEÇ</button></div>
+                </div>
+              </div>
+            )
+          }
+
+          {
+            transactionToDelete && (
+              <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[130] flex items-center justify-center p-6 animate-in fade-in duration-300">
+                <div className={`p-10 rounded-[40px] max-w-sm w-full text-center border shadow-2xl animate-in zoom-in-95 duration-300 ${isDarkMode ? 'bg-[#0f172a] border-slate-800 text-white' : 'bg-white border-slate-100 text-slate-800'}`}>
+                  <div className="w-16 h-16 bg-blue-500/10 text-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-8"><AlertTriangle size={32} /></div>
+                  <h3 className="text-xl font-black mb-4 uppercase tracking-tight">İŞLEMİ SİL?</h3>
+                  <p className="text-sm font-medium text-slate-500 mb-10 leading-relaxed"><span className="font-black text-blue-500 uppercase">{transactionToDelete.description || (transactionToDelete.type === 'spending' ? 'Harcama' : 'Ödeme')}</span> işlemini silmek istediğinize emin misiniz?</p>
+                  <div className="flex flex-col gap-3"><button onClick={deleteTransaction} className="w-full bg-blue-600 text-white py-4 rounded-[24px] font-black uppercase tracking-[0.2em] text-[10px] hover:bg-blue-700 transition-all active:scale-95 shadow-xl">İŞLEMİ SİL</button><button onClick={() => setTransactionToDelete(null)} className="w-full py-4 rounded-[24px] font-black uppercase tracking-[0.2em] text-[10px] text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">VAZGEÇ</button></div>
+                </div>
+              </div>
+            )
+          }
+
+          {
+            modalMode === 'reset_confirm' && (
+              <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-[200] flex items-center justify-center p-6 animate-in fade-in duration-300">
+                <div className="p-12 rounded-[56px] max-w-md w-full text-center border border-rose-500/30 bg-[#0f172a] shadow-[0_0_100px_rgba(244,63,94,0.1)]">
+                  <div className="w-24 h-24 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-10 ring-4 ring-rose-500/5"><AlertTriangle size={48} /></div>
+                  <h3 className="text-3xl font-black mb-6 text-white tracking-tight italic uppercase">HER ŞEYİ SİL?</h3>
+                  <p className="text-slate-400 font-medium mb-12 leading-relaxed">Bu işlem tüm kartlarınızı, harcamalarınızı ve ayarlarınızı kalıcı olarak silecektir. Bu işlemin geri dönüşü yoktur.</p>
+                  <div className="flex flex-col gap-4">
+                    <button onClick={resetAllData} className="w-full bg-rose-600 text-white py-5 rounded-3xl font-black uppercase tracking-[0.3em] text-xs hover:bg-rose-700 transition-all active:scale-95 shadow-2xl shadow-rose-600/20">VERİLERİ TAMAMEN SIFIRLA</button>
+                    <button onClick={() => setModalMode(null)} className="w-full py-5 rounded-3xl font-black uppercase tracking-[0.3em] text-xs text-slate-500 hover:bg-slate-800/50 transition-all">VAZGEÇ</button>
+                  </div>
+                </div>
+              </div>
+            )
+          }
+
+          {
+            (modalMode === 'add' || modalMode === 'edit') && (
+              <CardModal title={modalMode === 'add' ? 'Yeni Kart Ekle' : 'Kartı Düzenle'} initialData={editingCard} onClose={() => { setModalMode(null); setEditingCard(undefined); }} onSave={handleSaveCard} />
+            )
+          }
+          {
+            (modalMode === 'spending' || modalMode === 'payment' || modalMode === 'edit_transaction') && cards.length > 0 && (
+              <TransactionModal type={modalMode === 'edit_transaction' ? (editingTransaction?.type || 'spending') : (modalMode as 'spending' | 'payment')} cards={cards} initialData={editingTransaction} onClose={() => { setModalMode(null); setEditingTransaction(undefined); }} onSave={handleTransaction} categories={categories} />
+            )
+          }
+          {
+            modalMode === 'calendar' && selectedCardForAction && (
+              <CalendarReminderModal card={selectedCardForAction} onClose={() => { setModalMode(null); setSelectedCardForAction(null); }} onAdd={handleCalendarEntry} />
+            )
+          }
+          {
+            modalMode === 'statement' && selectedCardForAction && (
+              <StatementModal card={selectedCardForAction} transactions={transactions} isDarkMode={isDarkMode} onClose={() => { setModalMode(null); setSelectedCardForAction(null); }} />
+            )
+          }
+          {
+            (modalMode === 'spending' || modalMode === 'payment') && cards.length === 0 && (
+              <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-6 z-50 backdrop-blur-xl"><div className={`p-10 rounded-[48px] max-w-sm text-center border ${isDarkMode ? 'bg-[#0f172a] border-slate-800 text-white' : 'bg-white border-slate-100 shadow-2xl'}`}><div className="w-20 h-20 bg-blue-100 rounded-3xl flex items-center justify-center mx-auto mb-8 text-blue-600"><CardIcon size={40} /></div><p className="font-black text-xl mb-10 leading-tight uppercase">İşlem yapabilmek için önce bir kart eklemelisiniz.</p><button onClick={() => setModalMode('add')} className="w-full bg-blue-600 text-white py-4.5 rounded-[24px] font-black uppercase tracking-[0.2em] text-[10px] hover:bg-blue-700">İLK KARTIMI EKLE</button></div></div>
+            )
+          }
+          {/* Welcome / Initial Loading Screen */}
+          {
+            isInitialLoading && (
+              <div className={`fixed inset-0 z-[500] flex flex-col items-center justify-center p-6 ${isDarkMode ? 'bg-[#070b14]' : 'bg-[#f8fafc]'}`}>
+                <div className="animate-in fade-in zoom-in duration-1000 flex flex-col items-center">
+                  <Logo isDarkMode={isDarkMode} isAnimated={true} />
+                  <div className="mt-12 w-48 h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden relative">
+                    <div className="absolute inset-0 bg-blue-600 animate-loading-bar rounded-full"></div>
+                  </div>
+                  <div className="mt-12 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-500">
+                    <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.5em] mb-2 animate-pulse">BAŞLATILIYOR</span>
+                    <h2 className={`text-2xl font-black tracking-tighter uppercase ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                      HOŞGELDİN, {localStorage.getItem('user_name')?.toLocaleUpperCase('tr-TR') || 'KULLANICI'}
+                    </h2>
+                  </div>
+                </div>
+              </div>
+            )
+          }
+
+          {/* View Transition Overlay */}
+          {
+            isChangingView && (
+              <div className={`fixed inset-0 z-[400] flex flex-col items-center justify-center p-6 animate-in fade-in duration-300 ${isDarkMode ? 'bg-[#070b14]' : 'bg-white'}`}>
+                <div className="flex flex-col items-center animate-in zoom-in-95 duration-500">
+                  <div className="scale-110">
+                    <Logo isDarkMode={isDarkMode} isAnimated={true} />
+                  </div>
+                </div>
+              </div>
+            )
+          }
+        </>
       )}
 
-      {cardToDelete && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[130] flex items-center justify-center p-6 animate-in fade-in duration-300">
-          <div className={`p-10 rounded-[40px] max-w-sm w-full text-center border shadow-2xl animate-in zoom-in-95 duration-300 ${isDarkMode ? 'bg-[#0f172a] border-slate-800 text-white' : 'bg-white border-slate-100 text-slate-800'}`}>
-            <div className="w-16 h-16 bg-rose-500/10 text-rose-500 rounded-3xl flex items-center justify-center mx-auto mb-8"><AlertTriangle size={32} /></div>
-            <h3 className="text-xl font-black mb-4 uppercase tracking-tight">KARTI SİL?</h3>
-            <p className="text-sm font-medium text-slate-500 mb-10 leading-relaxed"><span className="font-black text-rose-500 uppercase">{cardToDelete.cardName}</span> kartını silmek üzeresiniz.</p>
-            <div className="flex flex-col gap-3"><button onClick={deleteCard} className="w-full bg-rose-500 text-white py-4 rounded-[24px] font-black uppercase tracking-[0.2em] text-[10px] hover:bg-rose-600 transition-all active:scale-95 shadow-xl">KALICI OLARAK SİL</button><button onClick={() => setCardToDelete(null)} className="w-full py-4 rounded-[24px] font-black uppercase tracking-[0.2em] text-[10px] text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">VAZGEÇ</button></div>
-          </div>
-        </div>
-      )}
-
-      {transactionToDelete && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[130] flex items-center justify-center p-6 animate-in fade-in duration-300">
-          <div className={`p-10 rounded-[40px] max-w-sm w-full text-center border shadow-2xl animate-in zoom-in-95 duration-300 ${isDarkMode ? 'bg-[#0f172a] border-slate-800 text-white' : 'bg-white border-slate-100 text-slate-800'}`}>
-            <div className="w-16 h-16 bg-blue-500/10 text-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-8"><AlertTriangle size={32} /></div>
-            <h3 className="text-xl font-black mb-4 uppercase tracking-tight">İŞLEMİ SİL?</h3>
-            <p className="text-sm font-medium text-slate-500 mb-10 leading-relaxed"><span className="font-black text-blue-500 uppercase">{transactionToDelete.description || (transactionToDelete.type === 'spending' ? 'Harcama' : 'Ödeme')}</span> işlemini silmek istediğinize emin misiniz?</p>
-            <div className="flex flex-col gap-3"><button onClick={deleteTransaction} className="w-full bg-blue-600 text-white py-4 rounded-[24px] font-black uppercase tracking-[0.2em] text-[10px] hover:bg-blue-700 transition-all active:scale-95 shadow-xl">İŞLEMİ SİL</button><button onClick={() => setTransactionToDelete(null)} className="w-full py-4 rounded-[24px] font-black uppercase tracking-[0.2em] text-[10px] text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">VAZGEÇ</button></div>
-          </div>
-        </div>
-      )}
-
-      {modalMode === 'reset_confirm' && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-[200] flex items-center justify-center p-6 animate-in fade-in duration-300">
-          <div className="p-12 rounded-[56px] max-w-md w-full text-center border border-rose-500/30 bg-[#0f172a] shadow-[0_0_100px_rgba(244,63,94,0.1)]">
-            <div className="w-24 h-24 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-10 ring-4 ring-rose-500/5"><AlertTriangle size={48} /></div>
-            <h3 className="text-3xl font-black mb-6 text-white tracking-tight italic uppercase">HER ŞEYİ SİL?</h3>
-            <p className="text-slate-400 font-medium mb-12 leading-relaxed">Bu işlem tüm kartlarınızı, harcamalarınızı ve ayarlarınızı kalıcı olarak silecektir. Bu işlemin geri dönüşü yoktur.</p>
-            <div className="flex flex-col gap-4">
-              <button onClick={resetAllData} className="w-full bg-rose-600 text-white py-5 rounded-3xl font-black uppercase tracking-[0.3em] text-xs hover:bg-rose-700 transition-all active:scale-95 shadow-2xl shadow-rose-600/20">VERİLERİ TAMAMEN SIFIRLA</button>
-              <button onClick={() => setModalMode(null)} className="w-full py-5 rounded-3xl font-black uppercase tracking-[0.3em] text-xs text-slate-500 hover:bg-slate-800/50 transition-all">VAZGEÇ</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {(modalMode === 'add' || modalMode === 'edit') && (
-        <CardModal title={modalMode === 'add' ? 'Yeni Kart Ekle' : 'Kartı Düzenle'} initialData={editingCard} onClose={() => { setModalMode(null); setEditingCard(undefined); }} onSave={handleSaveCard} />
-      )}
-      {(modalMode === 'spending' || modalMode === 'payment' || modalMode === 'edit_transaction') && cards.length > 0 && (
-        <TransactionModal type={modalMode === 'edit_transaction' ? (editingTransaction?.type || 'spending') : (modalMode as 'spending' | 'payment')} cards={cards} initialData={editingTransaction} onClose={() => { setModalMode(null); setEditingTransaction(undefined); }} onSave={handleTransaction} categories={categories} />
-      )}
-      {modalMode === 'calendar' && selectedCardForAction && (
-        <CalendarReminderModal card={selectedCardForAction} onClose={() => { setModalMode(null); setSelectedCardForAction(null); }} onAdd={handleCalendarEntry} />
-      )}
-      {modalMode === 'statement' && selectedCardForAction && (
-        <StatementModal card={selectedCardForAction} transactions={transactions} isDarkMode={isDarkMode} onClose={() => { setModalMode(null); setSelectedCardForAction(null); }} />
-      )}
-      {(modalMode === 'spending' || modalMode === 'payment') && cards.length === 0 && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-6 z-50 backdrop-blur-xl"><div className={`p-10 rounded-[48px] max-w-sm text-center border ${isDarkMode ? 'bg-[#0f172a] border-slate-800 text-white' : 'bg-white border-slate-100 shadow-2xl'}`}><div className="w-20 h-20 bg-blue-100 rounded-3xl flex items-center justify-center mx-auto mb-8 text-blue-600"><CardIcon size={40} /></div><p className="font-black text-xl mb-10 leading-tight uppercase">İşlem yapabilmek için önce bir kart eklemelisiniz.</p><button onClick={() => setModalMode('add')} className="w-full bg-blue-600 text-white py-4.5 rounded-[24px] font-black uppercase tracking-[0.2em] text-[10px] hover:bg-blue-700">İLK KARTIMI EKLE</button></div></div>
-      )}
-      {/* Welcome / Initial Loading Screen */}
-      {isInitialLoading && (
-        <div className={`fixed inset-0 z-[500] flex flex-col items-center justify-center p-6 ${isDarkMode ? 'bg-[#070b14]' : 'bg-[#f8fafc]'}`}>
-          <div className="animate-in fade-in zoom-in duration-1000 flex flex-col items-center">
-            <Logo isDarkMode={isDarkMode} isAnimated={true} />
-            <div className="mt-12 w-48 h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden relative">
-              <div className="absolute inset-0 bg-blue-600 animate-loading-bar rounded-full"></div>
-            </div>
-            <div className="mt-12 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-500">
-              <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.5em] mb-2 animate-pulse">BAŞLATILIYOR</span>
-              <h2 className={`text-2xl font-black tracking-tighter uppercase ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                HOŞGELDİN, {localStorage.getItem('user_name')?.toLocaleUpperCase('tr-TR') || 'KULLANICI'}
-              </h2>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* View Transition Overlay */}
-      {isChangingView && (
-        <div className={`fixed inset-0 z-[400] flex flex-col items-center justify-center p-6 animate-in fade-in duration-300 ${isDarkMode ? 'bg-[#070b14]' : 'bg-white'}`}>
-          <div className="flex flex-col items-center animate-in zoom-in-95 duration-500">
-            <div className="scale-110">
-              <Logo isDarkMode={isDarkMode} isAnimated={true} />
-            </div>
-          </div>
-        </div>
-      )}
       <AuthModal
         isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
+        onClose={() => { if (user) setIsAuthModalOpen(false); }}
         isDarkMode={isDarkMode}
       />
-    </div>
+    </div >
   );
 };
 
 export default App;
+

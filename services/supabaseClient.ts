@@ -1,10 +1,13 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL;
+const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('Supabase URL veya Anon Key eksik. Lütfen .env.local dosyasını kontrol edin.');
+export const supabase: SupabaseClient | null = (supabaseUrl && supabaseAnonKey)
+    ? createClient(supabaseUrl, supabaseAnonKey)
+    : null;
+
+if (!supabase) {
+    console.warn('Supabase configuration missing or invalid. Cloud sync features will be disabled.');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
