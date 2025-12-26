@@ -423,7 +423,7 @@ const App: React.FC = () => {
                 }
 
                 setTimeout(async () => {
-                  const { data: freshCard } = await dataSyncService.supabase
+                  const { data: freshCard } = await supabase
                     .from('cards')
                     .select('*')
                     .eq('id', oldRec.card_id)
