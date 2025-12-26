@@ -228,6 +228,7 @@ const App: React.FC = () => {
   const [scrollY, setScrollY] = useState(0);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isChangingView, setIsChangingView] = useState(false);
+  const [realtimeRetryTrigger, setRealtimeRetryTrigger] = useState(0);
   const [transitionData, setTransitionData] = useState<{ from: string, to: string } | null>(null);
 
   // Auth States
@@ -531,7 +532,7 @@ const App: React.FC = () => {
       clearInterval(reconnectTimeout);
       if (activeChannel) supabase.removeChannel(activeChannel);
     };
-  }, [user]);
+  }, [user, realtimeRetryTrigger]);
 
   // --- MOBILE SYNC FIX: REFETCH ON FOCUS & SAFARI OPTIMIZATION ---
   useEffect(() => {
@@ -556,10 +557,7 @@ const App: React.FC = () => {
         const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
         if (isSafari) {
           console.log("[App] Safari detected, forcing Realtime reconnect...");
-          // This will trigger the main useEffect to re-run because we depend on 'user' 
-          // but we can't easily force re-run of that hook. 
-          // Instead, rely on the data fetch above which is the most important part.
-          // The existing connection might still be valid or will reconnect on its own.
+          setRealtimeRetryTrigger(prev => prev + 1);
         }
       }
     };

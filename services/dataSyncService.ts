@@ -56,8 +56,14 @@ export const dataSyncService = {
             .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_history' }, (p) => {
                 onEvent('chat_history', p);
             })
-            .subscribe((status) => {
+            .subscribe((status, err) => {
                 console.log(`[Realtime] Status for ${userId}:`, status);
+                if (status === 'CHANNEL_ERROR') {
+                    console.error('[Realtime] Connection Error:', err);
+                }
+                if (status === 'TIMED_OUT') {
+                    console.warn('[Realtime] Connection Timed Out');
+                }
             });
 
         return channel;
