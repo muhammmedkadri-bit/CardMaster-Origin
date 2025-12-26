@@ -140,7 +140,8 @@ export const dataSyncService = {
 
     async deleteNotification(notificationId: string) {
         if (!supabase) return;
-        return await supabase.from('notifications').delete().eq('id', notificationId);
+        // Soft delete: keep the record to prevent re-triggering, but hide from UI
+        return await supabase.from('notifications').update({ is_deleted: true }).eq('id', notificationId);
     },
 
     async saveNotification(userId: string, notification: NotificationItem) {
@@ -153,7 +154,9 @@ export const dataSyncService = {
             read: notification.read,
             date_key: notification.dateKey,
             card_color: notification.cardColor,
-            card_name: notification.cardName
+            card_name: notification.cardName,
+            is_mandatory: notification.isMandatory,
+            is_deleted: notification.isDeleted
         });
     },
 
@@ -215,7 +218,9 @@ export const dataSyncService = {
             read: n.read,
             dateKey: n.date_key,
             cardColor: n.card_color,
-            cardName: n.card_name
+            cardName: n.card_name,
+            isMandatory: n.is_mandatory,
+            isDeleted: n.is_deleted
         };
     },
 

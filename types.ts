@@ -47,6 +47,8 @@ export interface NotificationItem {
   dateKey?: string;
   cardColor?: string;
   cardName?: string;
+  isMandatory?: boolean;
+  isDeleted?: boolean;
 }
 
 export interface ChatMessage {

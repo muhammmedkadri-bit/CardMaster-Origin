@@ -32,7 +32,8 @@ import {
   Check,
   CalendarRange,
   Inbox,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  ShieldCheck
 } from 'lucide-react';
 import { CreditCard, AIInsight, Transaction, Category, NotificationItem, ChatMessage } from './types';
 import CardVisual from './components/CardVisual';
@@ -605,60 +606,73 @@ const App: React.FC = () => {
     const today = now.getDate();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
-    const dateKey = `${currentYear}-${currentMonth}-${today}`;
+    const dateKeyToday = `${currentYear}-${currentMonth}-${today}`;
 
     cards.forEach(card => {
       const balanceVal = Math.max(0, card.balance).toLocaleString('tr-TR');
       const balanceStr = balanceVal !== '0' ? `(Borç: ₺${balanceVal})` : '';
 
-      // Skip if balance is 0 unless it's a specific case (usually we only notify for debt)
-      if (card.balance <= 0) return;
-
-      // Overdue
-      if (today > card.dueDay) {
+      // Rule 1: Statement Day Notification (Only on that day)
+      if (today === card.statementDay) {
         addFinancialAlert(
-          `${card.cardName} ödemesi gecikti! ${balanceStr}`,
-          'warning',
-          `overdue-${card.id}-${dateKey}`,
+          `${card.cardName} hesap kesim günü bugün. ${balanceStr}`,
+          'info',
+          `statement-${card.id}-${dateKeyToday}`,
           card.color,
           card.cardName
         );
       }
 
-      // Due Today
+      // Rule 2: Due Day Notification (Only on that day)
       if (today === card.dueDay) {
         addFinancialAlert(
-          `Bugün ${card.cardName} son ödeme günü. ${balanceStr}`,
+          `Bugün ${card.cardName} son ödeme günü! ${balanceStr}`,
           'warning',
-          `due-today-${card.id}-${dateKey}`,
+          `due-today-${card.id}-${dateKeyToday}`,
           card.color,
           card.cardName
         );
       }
 
-      // 3 Days Before
-      const dueInThree = (today + 3);
-      if (dueInThree === card.dueDay) {
+      // Rule 3: Mandatory Debt Notification (Repeat until paid)
+      const mandatoryKey = `mandatory-debt-${card.id}`;
+      if (card.balance > 0) {
+        const minPayment = (card.balance * (card.minPaymentRatio / 100)).toLocaleString('tr-TR');
         addFinancialAlert(
-          `${card.cardName} ödemesine 3 gün kaldı. ${balanceStr}`,
-          'info',
-          `due-3days-${card.id}-${dateKey}`,
+          `${card.cardName} ödenmesi gereken borç bulunuyor. Asgari: ₺${minPayment}.`,
+          'warning',
+          mandatoryKey,
           card.color,
-          card.cardName
+          card.cardName,
+          true // isMandatory
         );
+      } else {
+        // Auto-remove mandatory notification if balance is 0
+        const mandatoryItem = notificationHistory.find(n => n.dateKey === mandatoryKey && !n.isDeleted);
+        if (mandatoryItem) {
+          handleDeleteNotification(null, mandatoryItem.id);
+        }
       }
     });
   };
 
-  const addFinancialAlert = async (message: string, type: 'warning' | 'info' | 'success', uniqueKey: string, cardColor?: string, cardName?: string) => {
+  const addFinancialAlert = async (message: string, type: 'warning' | 'info' | 'success', uniqueKey: string, cardColor?: string, cardName?: string, isMandatory: boolean = false) => {
     if (!user) return;
 
-    // Check local history first
-    if (notificationHistory.some(n => n.dateKey === uniqueKey)) return;
+    // 1. Check if it exists in history (including deleted ones)
+    const existing = notificationHistory.find(n => n.dateKey === uniqueKey);
 
-    // Check session ref to prevent double-triggering before sync
+    // If it's mandatory and it was deleted or doesn't exist, we re-create it or ignore deletion
+    // However, if it ALREADY exists and is NOT deleted, we don't need to do anything
+    if (isMandatory) {
+      if (existing && !existing.isDeleted) return;
+    } else {
+      // For non-mandatory: if it ever existed (even if deleted), don't recreate
+      if (existing) return;
+    }
+
+    // 2. Check session ref to prevent double-triggering before sync
     if (processedAlertKeysRef.current.has(uniqueKey)) return;
-
     processedAlertKeysRef.current.add(uniqueKey);
 
     const id = Date.now().toString();
@@ -678,7 +692,9 @@ const App: React.FC = () => {
       read: false,
       dateKey: uniqueKey,
       cardColor,
-      cardName
+      cardName,
+      isMandatory,
+      isDeleted: false
     };
 
     // 1. Update local state
@@ -762,12 +778,12 @@ const App: React.FC = () => {
     }, 250);
   };
 
-  const handleDeleteNotification = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation(); // Don't toggle any other clicks
+  const handleDeleteNotification = async (e: React.MouseEvent | null, id: string) => {
+    if (e) e.stopPropagation(); // Don't toggle any other clicks
     if (!user) return;
 
     // Optimistic UI update
-    setNotificationHistory(prev => prev.filter(n => n.id !== id));
+    setNotificationHistory(prev => prev.map(n => n.id === id ? { ...n, isDeleted: true } : n));
 
     try {
       await dataSyncService.deleteNotification(id);
@@ -801,7 +817,7 @@ const App: React.FC = () => {
     }
   };
 
-  const unreadCount = useMemo(() => notificationHistory.filter(n => !n.read).length, [notificationHistory]);
+  const unreadCount = useMemo(() => notificationHistory.filter(n => !n.read && !n.isDeleted).length, [notificationHistory]);
 
   const syncWithBank = async (notify: boolean = false) => {
     if (cards.length === 0 || isSyncing) return;
@@ -1321,7 +1337,7 @@ const App: React.FC = () => {
                               const isSpending = tx.type === 'spending';
 
                               return (
-                                <div key={tx.id} className={`relative flex items-center justify-between p-3 sm:p-5 rounded-[24px] sm:rounded-[28px] transition-all group border border-transparent ${isDarkMode ? 'bg-slate-800/20 hover:bg-slate-800/40 hover:border-slate-700' : 'bg-white hover:bg-slate-50 hover:border-slate-100 shadow-sm hover:shadow-md'}`}>
+                                <div key={tx.id} className={`relative flex items-center justify-between p-3 sm:p-5 rounded-[24px] sm:rounded-[28px] transition-all group border border-transparent ${isDarkMode ? 'bg-slate-800/20 hover:bg-slate-800/40 hover:border-slate-700' : 'bg-white hover:bg-slate-50 hover:bg-slate-50 hover:border-slate-100 shadow-sm hover:shadow-md'}`}>
                                   {/* Left: Icon & Details */}
                                   <div className="flex items-center gap-3 sm:gap-5 flex-1 min-w-0">
                                     <div
@@ -1527,7 +1543,7 @@ const App: React.FC = () => {
                   </div>
 
                   <div className="flex-1 overflow-y-auto px-6 space-y-4 custom-scrollbar pb-10">
-                    {notificationHistory.length > 0 ? notificationHistory.map((item) => (
+                    {notificationHistory.filter(n => !n.isDeleted).length > 0 ? notificationHistory.filter(n => !n.isDeleted).map((item) => (
                       <div
                         key={item.id}
                         className={`relative group p-6 rounded-[28px] border transition-all flex gap-5 shadow-sm ${item.read
@@ -1543,23 +1559,9 @@ const App: React.FC = () => {
                             }`}></div>
                         )}
 
-                        {/* Bildirim Silme Butonu */}
-                        <div className="flex flex-col gap-2 shrink-0">
-                          <button
-                            onClick={(e) => handleDeleteNotification(e, item.id)}
-                            title="Bildirimi sil"
-                            className={`w-12 h-12 rounded-[20px] flex items-center justify-center transform transition-all active:scale-90 ${item.type === 'warning'
-                              ? 'bg-rose-500 text-white hover:bg-rose-600 shadow-md'
-                              : 'bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white border border-rose-500/20 shadow-sm shadow-rose-500/5'
-                              }`}
-                          >
-                            <Trash2 size={20} />
-                          </button>
-                        </div>
-
                         <div className="flex-1">
                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-2">
-                            <Clock size={10} /> {item.timestamp}
+                            <Clock size={10} /> {item.timestamp} {item.isMandatory && <span className="bg-amber-500/10 text-amber-500 text-[8px] px-1.5 py-0.5 rounded ml-1 border border-amber-500/20">ZORUNLU</span>}
                           </span>
                           <p className={`text-sm leading-relaxed tracking-tight ${item.read ? 'font-medium' : 'font-black'} ${isDarkMode ? 'text-white' : 'text-slate-900'
                             }`}>
@@ -1572,11 +1574,31 @@ const App: React.FC = () => {
                             </div>
                           )}
                         </div>
+
+                        {/* Actions Area */}
+                        <div className="flex flex-col gap-2 shrink-0">
+                          {!item.isMandatory ? (
+                            <button
+                              onClick={(e) => handleDeleteNotification(e, item.id)}
+                              title="Sil"
+                              className={`w-12 h-12 rounded-[20px] flex items-center justify-center transform transition-all active:scale-90 ${item.type === 'warning'
+                                ? 'bg-rose-500 text-white hover:bg-rose-600 shadow-lg'
+                                : 'bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white border border-rose-500/20'
+                                }`}
+                            >
+                              <Trash2 size={20} />
+                            </button>
+                          ) : (
+                            <div className="w-12 h-12 rounded-[20px] border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-600 bg-slate-100/50 dark:bg-slate-800/30" title="Borç ödenmeden silinemez">
+                              <ShieldCheck size={20} />
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )) : <div className="flex flex-col items-center justify-center py-40 text-center"><Inbox size={40} className="text-slate-300 dark:text-slate-700 mb-6" /><h3 className={`font-black text-lg ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Bildirim kutunuz boş</h3></div>}
                   </div>
 
-                  {notificationHistory.length > 0 && (
+                  {notificationHistory.filter(n => !n.isDeleted && !n.isMandatory).length > 0 && (
                     <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/40 backdrop-blur-xl">
                       <button onClick={handleDeleteAllNotifications} className="w-full py-5 rounded-[22px] bg-rose-600 text-white text-xs font-black uppercase tracking-[0.2em] shadow-xl hover:bg-rose-700 transition-all active:scale-[0.98] flex items-center justify-center gap-3"><Trash2 size={18} /> TÜMÜNÜ SİL</button>
                     </div>
