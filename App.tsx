@@ -431,8 +431,19 @@ const App: React.FC = () => {
         supabase.removeChannel(realtimeChannelRef.current);
       }
 
-      const channel = dataSyncService.subscribeToChanges(user.id, async (table) => {
-        console.log(`[Realtime] Change detected in ${table}, syncing...`);
+      const channel = dataSyncService.subscribeToChanges(user.id, async (table, payload) => {
+        console.log(`[Realtime] Event on ${table}:`, payload.eventType);
+
+        // Incremental Update for Notifications (Fast & Reliable)
+        if (table === 'notifications' && payload.new) {
+          const updatedNotif = dataSyncService.mapNotificationFromDB(payload.new);
+          setNotificationHistory(prev =>
+            prev.map(n => n.id === updatedNotif.id ? { ...n, read: updatedNotif.read } : n)
+          );
+          return; // No need for full sync if it's just a status change
+        }
+
+        // For other changes, do a full sync
         await syncAll();
       });
 
@@ -705,11 +716,13 @@ const App: React.FC = () => {
     // Broadcast to other devices
     dataSyncService.sendSyncSignal(user.id);
 
-    // Force immediate refresh to ensure consistency
-    const data = await dataSyncService.fetchAllData(user.id);
-    if (data) {
-      setNotificationHistory(data.notifications);
-    }
+    // Wait a bit for DB to settle before refetching (Prevents race conditions)
+    setTimeout(async () => {
+      const data = await dataSyncService.fetchAllData(user.id);
+      if (data) {
+        setNotificationHistory(data.notifications);
+      }
+    }, 250);
   };
 
   const unreadCount = useMemo(() => notificationHistory.filter(n => !n.read).length, [notificationHistory]);
