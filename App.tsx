@@ -844,10 +844,10 @@ const App: React.FC = () => {
             {/* Realtime Status Indicator */}
             <div
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] font-black tracking-widest uppercase transition-all shadow-sm ${realtimeStatus === 'connected'
-                  ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                  : realtimeStatus === 'connecting'
-                    ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20 animate-pulse'
-                    : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
+                ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                : realtimeStatus === 'connecting'
+                  ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20 animate-pulse'
+                  : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
                 }`}
             >
               <div className={`w-1.5 h-1.5 rounded-full ${realtimeStatus === 'connected' ? 'bg-emerald-500 animate-pulse' : realtimeStatus === 'connecting' ? 'bg-amber-500' : 'bg-rose-500'
@@ -896,7 +896,34 @@ const App: React.FC = () => {
 
       {/* Login Gate / Welcome Screen */}
       {!user ? (
-        <div className="fixed inset-0 z-50 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-[#070b14] dark:to-[#0f172a]" />
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-[#070b14] dark:to-[#0f172a]">
+          <div className="animate-in fade-in zoom-in duration-1000 flex flex-col items-center max-w-sm text-center">
+            <div className="scale-125 mb-12">
+              <Logo isDarkMode={isDarkMode} isAnimated={true} />
+            </div>
+
+            <h1 className={`text-4xl sm:text-5xl font-black tracking-tighter mb-6 leading-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+              Finansal Özgürlüğe <span className="text-blue-600">Hoş Geldin.</span>
+            </h1>
+
+            <p className={`text-sm sm:text-base font-medium mb-10 leading-relaxed opacity-70 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+              Kartlarınızı yönetin, harcamalarınızı takip edin ve AI destekli asistanınızla bütçenizi kontrol altına alın.
+            </p>
+
+            <div className="flex flex-col gap-4 w-full">
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-[24px] font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-blue-600/20 transition-all active:scale-95 flex items-center justify-center gap-3"
+              >
+                HEMEN BAŞLAYIN <ArrowUpRight size={18} />
+              </button>
+
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-4">
+                Tüm verileriniz Supabase Realtime ile güvende.
+              </p>
+            </div>
+          </div>
+        </div>
       ) : (
         <>
           <main className="max-w-7xl mx-auto pt-24 px-4 sm:px-6 space-y-8 sm:space-y-12">
@@ -1462,39 +1489,36 @@ const App: React.FC = () => {
               <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-6 z-50 backdrop-blur-xl"><div className={`p-10 rounded-[48px] max-w-sm text-center border ${isDarkMode ? 'bg-[#0f172a] border-slate-800 text-white' : 'bg-white border-slate-100 shadow-2xl'}`}><div className="w-20 h-20 bg-blue-100 rounded-3xl flex items-center justify-center mx-auto mb-8 text-blue-600"><CardIcon size={40} /></div><p className="font-black text-xl mb-10 leading-tight uppercase">İşlem yapabilmek için önce bir kart eklemelisiniz.</p><button onClick={() => setModalMode('add')} className="w-full bg-blue-600 text-white py-4.5 rounded-[24px] font-black uppercase tracking-[0.2em] text-[10px] hover:bg-blue-700">İLK KARTIMI EKLE</button></div></div>
             )
           }
-          {/* Welcome / Initial Loading Screen */}
-          {
-            isInitialLoading && (
-              <div className={`fixed inset-0 z-[500] flex flex-col items-center justify-center p-6 ${isDarkMode ? 'bg-[#070b14]' : 'bg-[#f8fafc]'}`}>
-                <div className="animate-in fade-in zoom-in duration-1000 flex flex-col items-center">
-                  <Logo isDarkMode={isDarkMode} isAnimated={true} />
-                  <div className="mt-12 w-48 h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden relative">
-                    <div className="absolute inset-0 bg-blue-600 animate-loading-bar rounded-full"></div>
-                  </div>
-                  <div className="mt-12 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-500">
-                    <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.5em] mb-2 animate-pulse">BAŞLATILIYOR</span>
-                    <h2 className={`text-2xl font-black tracking-tighter uppercase ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                      HOŞGELDİN, {localStorage.getItem('user_name')?.toLocaleUpperCase('tr-TR') || 'KULLANICI'}
-                    </h2>
-                  </div>
-                </div>
-              </div>
-            )
-          }
-
-          {/* View Transition Overlay */}
-          {
-            isChangingView && (
-              <div className={`fixed inset-0 z-[400] flex flex-col items-center justify-center p-6 animate-in fade-in duration-300 ${isDarkMode ? 'bg-[#070b14]' : 'bg-white'}`}>
-                <div className="flex flex-col items-center animate-in zoom-in-95 duration-500">
-                  <div className="scale-110">
-                    <Logo isDarkMode={isDarkMode} isAnimated={true} />
-                  </div>
-                </div>
-              </div>
-            )
-          }
         </>
+      )}
+
+      {/* Welcome / Initial Loading Screen */}
+      {isInitialLoading && (
+        <div className={`fixed inset-0 z-[500] flex flex-col items-center justify-center p-6 ${isDarkMode ? 'bg-[#070b14]' : 'bg-[#f8fafc]'}`}>
+          <div className="animate-in fade-in zoom-in duration-1000 flex flex-col items-center">
+            <Logo isDarkMode={isDarkMode} isAnimated={true} />
+            <div className="mt-12 w-48 h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden relative">
+              <div className="absolute inset-0 bg-blue-600 animate-loading-bar rounded-full"></div>
+            </div>
+            <div className="mt-12 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-500">
+              <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.5em] mb-2 animate-pulse">BAŞLATILIYOR</span>
+              <h2 className={`text-2xl font-black tracking-tighter uppercase ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                HOŞGELDİN, {localStorage.getItem('user_name')?.toLocaleUpperCase('tr-TR') || 'KULLANICI'}
+              </h2>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Transition Overlay */}
+      {isChangingView && (
+        <div className={`fixed inset-0 z-[400] flex flex-col items-center justify-center p-6 animate-in fade-in duration-300 ${isDarkMode ? 'bg-[#070b14]' : 'bg-white'}`}>
+          <div className="flex flex-col items-center animate-in zoom-in-95 duration-500">
+            <div className="scale-110">
+              <Logo isDarkMode={isDarkMode} isAnimated={true} />
+            </div>
+          </div>
+        </div>
       )}
 
       <AuthModal
