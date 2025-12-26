@@ -165,6 +165,7 @@ const App: React.FC = () => {
   const realtimeChannelRef = useRef<any>(null);
   const lastSyncTimeRef = useRef<number>(Date.now());
   const shownNotificationsRef = useRef<Set<string>>(new Set());
+  const processedAlertKeysRef = useRef<Set<string>>(new Set());
 
   const [cards, setCards] = useState<CreditCard[]>(() => {
     const saved = localStorage.getItem('user_cards');
@@ -593,7 +594,7 @@ const App: React.FC = () => {
   };
 
   const checkFinancialDeadlines = () => {
-    if (cards.length === 0) return;
+    if (cards.length === 0 || !user) return;
 
     const now = new Date();
     const today = now.getDate();
@@ -603,9 +604,13 @@ const App: React.FC = () => {
 
     cards.forEach(card => {
       const balanceVal = Math.max(0, card.balance).toLocaleString('tr-TR');
-      const balanceStr = `(Borç: ₺${balanceVal})`;
+      const balanceStr = balanceVal !== '0' ? `(Borç: ₺${balanceVal})` : '';
 
-      if (today > card.dueDay && card.balance > 0) {
+      // Skip if balance is 0 unless it's a specific case (usually we only notify for debt)
+      if (card.balance <= 0) return;
+
+      // Overdue
+      if (today > card.dueDay) {
         addFinancialAlert(
           `${card.cardName} ödemesi gecikti! ${balanceStr}`,
           'warning',
@@ -615,6 +620,7 @@ const App: React.FC = () => {
         );
       }
 
+      // Due Today
       if (today === card.dueDay) {
         addFinancialAlert(
           `Bugün ${card.cardName} son ödeme günü. ${balanceStr}`,
@@ -625,6 +631,7 @@ const App: React.FC = () => {
         );
       }
 
+      // 3 Days Before
       const dueInThree = (today + 3);
       if (dueInThree === card.dueDay) {
         addFinancialAlert(
@@ -638,8 +645,16 @@ const App: React.FC = () => {
     });
   };
 
-  const addFinancialAlert = (message: string, type: 'warning' | 'info' | 'success', uniqueKey: string, cardColor?: string, cardName?: string) => {
+  const addFinancialAlert = async (message: string, type: 'warning' | 'info' | 'success', uniqueKey: string, cardColor?: string, cardName?: string) => {
+    if (!user) return;
+
+    // Check local history first
     if (notificationHistory.some(n => n.dateKey === uniqueKey)) return;
+
+    // Check session ref to prevent double-triggering before sync
+    if (processedAlertKeysRef.current.has(uniqueKey)) return;
+
+    processedAlertKeysRef.current.add(uniqueKey);
 
     const id = Date.now().toString();
     showToast(message, type);
@@ -660,7 +675,18 @@ const App: React.FC = () => {
       cardColor,
       cardName
     };
+
+    // 1. Update local state
     setNotificationHistory(prev => [newItem, ...prev].slice(0, 50));
+
+    // 2. Save to database
+    try {
+      await dataSyncService.saveNotification(user.id, newItem);
+      // Optional: signal other devices
+      dataSyncService.sendSyncSignal(user.id);
+    } catch (err) {
+      console.error("Failed to save financial alert:", err);
+    }
   };
 
   const showToast = (message: string, type: 'warning' | 'info' | 'success') => {
@@ -1518,8 +1544,8 @@ const App: React.FC = () => {
                             onClick={(e) => handleDeleteNotification(e, item.id)}
                             title="Bildirimi sil"
                             className={`w-12 h-12 rounded-[20px] flex items-center justify-center transform transition-all active:scale-90 ${item.type === 'warning'
-                                ? 'bg-rose-500 text-white hover:bg-rose-600 shadow-md'
-                                : 'bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white border border-rose-500/20 shadow-sm shadow-rose-500/5'
+                              ? 'bg-rose-500 text-white hover:bg-rose-600 shadow-md'
+                              : 'bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white border border-rose-500/20 shadow-sm shadow-rose-500/5'
                               }`}
                           >
                             <Trash2 size={20} />

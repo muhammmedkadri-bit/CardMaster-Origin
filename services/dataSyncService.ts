@@ -143,6 +143,20 @@ export const dataSyncService = {
         return await supabase.from('notifications').delete().eq('id', notificationId);
     },
 
+    async saveNotification(userId: string, notification: NotificationItem) {
+        if (!supabase) return;
+        return await supabase.from('notifications').insert({
+            user_id: userId,
+            message: notification.message,
+            type: notification.type,
+            timestamp: notification.timestamp,
+            read: notification.read,
+            date_key: notification.dateKey,
+            card_color: notification.cardColor,
+            card_name: notification.cardName
+        });
+    },
+
     async deleteAllNotifications(userId: string) {
         if (!supabase) return;
         return await supabase.from('notifications').delete().eq('user_id', userId);
@@ -193,7 +207,16 @@ export const dataSyncService = {
     },
 
     mapNotificationFromDB(n: any): NotificationItem {
-        return { id: n.id, message: n.message, type: n.type as any, timestamp: n.timestamp, read: n.read };
+        return {
+            id: n.id,
+            message: n.message,
+            type: n.type as any,
+            timestamp: n.timestamp,
+            read: n.read,
+            dateKey: n.date_key,
+            cardColor: n.card_color,
+            cardName: n.card_name
+        };
     },
 
     mapChatFromDB(m: any): ChatMessage {
