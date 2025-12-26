@@ -448,8 +448,29 @@ const App: React.FC = () => {
 
               return eventType === 'INSERT' ? [item, ...prev] : prev;
             });
-          } else if (eventType === 'DELETE') {
-            setTransactions(prev => prev.filter(p => p.id !== oldRec.id));
+
+            // --- KRİTİK: Kart Bakiyesini ve Özetleri Anında Güncelle ---
+            if (eventType === 'INSERT') {
+              setCards(prevCards => prevCards.map(c => {
+                if (c.id === item.cardId) {
+                  const newBalance = item.type === 'spending' ? c.balance + item.amount : c.balance - item.amount;
+                  return { ...c, balance: newBalance };
+                }
+                return c;
+              }));
+            }
+          } else if (eventType === 'DELETE' && oldRec) {
+            const item = dataSyncService.mapTransactionFromDB(oldRec);
+            setTransactions(prev => prev.filter(p => p.id !== item.id));
+
+            // Silinen işlemin etkisini geri al
+            setCards(prevCards => prevCards.map(c => {
+              if (c.id === item.cardId) {
+                const newBalance = item.type === 'spending' ? c.balance - item.amount : c.balance + item.amount;
+                return { ...c, balance: newBalance };
+              }
+              return c;
+            }));
           }
         } catch (e) { console.error("Realtime Tx Error:", e); }
       },
