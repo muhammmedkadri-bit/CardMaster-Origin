@@ -436,7 +436,8 @@ const App: React.FC = () => {
                   }));
                 }
 
-                setTimeout(async () => {
+                // 2. Fetch immediately (No timeout)
+                const fetchFreshCard = async () => {
                   const { data: freshCard } = await supabase
                     .from('cards')
                     .select('*')
@@ -447,7 +448,8 @@ const App: React.FC = () => {
                     const mappedCard = dataSyncService.mapCardFromDB(freshCard);
                     setCards(prev => prev.map(c => c.id === mappedCard.id ? mappedCard : c));
                   }
-                }, 500);
+                };
+                fetchFreshCard();
               }
             } else {
               const item = dataSyncService.mapTransactionFromDB(newRec);
@@ -478,12 +480,10 @@ const App: React.FC = () => {
                   }));
                 }
 
-                setTimeout(async () => {
+                // 2. Fetch immediately
+                const fetchFresh = async () => {
                   try {
-                    // Assuming supabase is available centrally or via import
-                    // If this fails, we catch it.
                     const { data: freshCard } = await supabase.from('cards').select('*').eq('id', item.cardId).single();
-
                     if (freshCard) {
                       const mappedCard = dataSyncService.mapCardFromDB(freshCard);
                       setCards(prev => prev.map(c => c.id === mappedCard.id ? mappedCard : c));
@@ -491,7 +491,8 @@ const App: React.FC = () => {
                   } catch (err) {
                     console.error("Error refetching card:", err);
                   }
-                }, 500);
+                };
+                fetchFresh();
               }
             }
           }
