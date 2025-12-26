@@ -692,6 +692,12 @@ const App: React.FC = () => {
       if (modalMode !== 'edit_transaction') {
         const related = cards.find(c => c.id === finalTx.cardId);
         setTransactions(prev => [{ ...finalTx, cardName: related?.cardName || '' }, ...prev]);
+
+        // Optimistic Balance Update
+        if (related) {
+          const impact = finalTx.type === 'spending' ? finalTx.amount : -finalTx.amount;
+          setCards(prev => prev.map(c => c.id === finalTx.cardId ? { ...c, balance: c.balance + impact } : c));
+        }
       }
       await dataSyncService.saveTransaction(user.id, finalTx);
     }
@@ -706,6 +712,14 @@ const App: React.FC = () => {
 
     // 1. Optimistic Update (Immediate Feedback)
     setTransactions(prev => prev.filter(t => t.id !== txId));
+
+    // Optimistic Balance Revert
+    const deletedTx = transactions.find(t => t.id === txId);
+    if (deletedTx) {
+      const reverseImpact = deletedTx.type === 'spending' ? -deletedTx.amount : deletedTx.amount;
+      setCards(prev => prev.map(c => c.id === deletedTx.cardId ? { ...c, balance: c.balance + reverseImpact } : c));
+    }
+
     setTransactionToDelete(null);
     showToast('İşlem siliniyor...', 'info');
 
