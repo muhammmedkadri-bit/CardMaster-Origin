@@ -138,6 +138,11 @@ export const dataSyncService = {
         return await supabase.from('notifications').update({ read: true }).eq('user_id', userId).eq('read', false);
     },
 
+    async deleteNotification(notificationId: string) {
+        if (!supabase) return;
+        return await supabase.from('notifications').delete().eq('id', notificationId);
+    },
+
     async saveChatMessage(userId: string, message: ChatMessage) {
         if (!supabase) return;
         return await supabase.from('chat_history').insert({

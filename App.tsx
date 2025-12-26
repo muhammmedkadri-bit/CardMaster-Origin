@@ -435,12 +435,18 @@ const App: React.FC = () => {
         console.log(`[Realtime] Event on ${table}:`, payload.eventType);
 
         // Incremental Update for Notifications (Fast & Reliable)
-        if (table === 'notifications' && payload.new) {
-          const updatedNotif = dataSyncService.mapNotificationFromDB(payload.new);
-          setNotificationHistory(prev =>
-            prev.map(n => n.id === updatedNotif.id ? { ...n, read: updatedNotif.read } : n)
-          );
-          return; // No need for full sync if it's just a status change
+        if (table === 'notifications') {
+          if (payload.eventType === 'UPDATE' && payload.new) {
+            const updatedNotif = dataSyncService.mapNotificationFromDB(payload.new);
+            setNotificationHistory(prev =>
+              prev.map(n => n.id === updatedNotif.id ? { ...n, read: updatedNotif.read } : n)
+            );
+            return;
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            const deletedId = payload.old.id;
+            setNotificationHistory(prev => prev.filter(n => n.id !== deletedId));
+            return;
+          }
         }
 
         // For other changes, do a full sync
@@ -723,6 +729,26 @@ const App: React.FC = () => {
         setNotificationHistory(data.notifications);
       }
     }, 250);
+  };
+
+  const handleDeleteNotification = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation(); // Don't toggle read status when clicking delete
+    if (!user) return;
+
+    // Optimistic UI update
+    setNotificationHistory(prev => prev.filter(n => n.id !== id));
+
+    try {
+      await dataSyncService.deleteNotification(id);
+      dataSyncService.sendSyncSignal(user.id);
+      showToast('Bildirim silindi.', 'info');
+    } catch (err) {
+      console.error("Failed to delete notification:", err);
+      showToast('Bildirim silinemedi.', 'warning');
+      // Revert if failed
+      const data = await dataSyncService.fetchAllData(user.id);
+      if (data) setNotificationHistory(data.notifications);
+    }
   };
 
   const unreadCount = useMemo(() => notificationHistory.filter(n => !n.read).length, [notificationHistory]);
@@ -1468,16 +1494,26 @@ const App: React.FC = () => {
                         )}
 
                         {/* Bireysel Okundu Toggle Butonu */}
-                        <button
-                          onClick={(e) => { e.stopPropagation(); toggleNotificationRead(item.id); }}
-                          title={item.read ? "Okunmamış olarak işaretle" : "Okundu olarak işaretle"}
-                          className={`shrink-0 w-12 h-12 rounded-[20px] flex items-center justify-center shadow-md transform transition-all active:scale-90 ${item.read
-                            ? 'bg-slate-200 dark:bg-slate-800 text-slate-400'
-                            : (item.type === 'warning' ? 'bg-rose-500 text-white hover:bg-rose-600' : 'bg-blue-600 text-white hover:bg-blue-700')
-                            }`}
-                        >
-                          {item.read ? <Check size={22} /> : item.type === 'warning' ? <AlertTriangle size={22} /> : <Bell size={22} />}
-                        </button>
+                        <div className="flex flex-col gap-2 shrink-0">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleNotificationRead(item.id); }}
+                            title={item.read ? "Okunmamış olarak işaretle" : "Okundu olarak işaretle"}
+                            className={`w-12 h-12 rounded-[20px] flex items-center justify-center shadow-md transform transition-all active:scale-90 ${item.read
+                              ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 font-black'
+                              : (item.type === 'warning' ? 'bg-rose-500 text-white hover:bg-rose-600' : 'bg-blue-600 text-white hover:bg-blue-700')
+                              }`}
+                          >
+                            {item.read ? <Check size={22} /> : item.type === 'warning' ? <AlertTriangle size={22} /> : <Bell size={22} />}
+                          </button>
+
+                          <button
+                            onClick={(e) => handleDeleteNotification(e, item.id)}
+                            title="Bildirimi sil"
+                            className="w-12 h-12 rounded-[20px] flex items-center justify-center bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white border border-rose-500/20 shadow-sm transition-all active:scale-90"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
 
                         <div className="flex-1">
                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-2">
