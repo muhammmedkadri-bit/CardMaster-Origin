@@ -431,7 +431,8 @@ const App: React.FC = () => {
         supabase.removeChannel(realtimeChannelRef.current);
       }
 
-      const channel = dataSyncService.subscribeToChanges(user.id, async () => {
+      const channel = dataSyncService.subscribeToChanges(user.id, async (table) => {
+        console.log(`[Realtime] Change detected in ${table}, syncing...`);
         await syncAll();
       });
 
@@ -439,6 +440,7 @@ const App: React.FC = () => {
       setRealtimeStatus('connected');
     };
 
+    // Initial sync
     syncAll();
     connectRealtime();
 
