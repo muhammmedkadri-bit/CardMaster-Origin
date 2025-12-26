@@ -973,32 +973,17 @@ const App: React.FC = () => {
 
           <div
             onClick={() => handleViewChange('dashboard')}
-            className="cursor-pointer transition-all duration-300 active:scale-95"
+            className="cursor-pointer transition-opacity duration-200 active:scale-95"
             style={{
               opacity: logoOpacity,
-              filter: `blur(${logoBlur}px)`,
-              transform: `translateY(${-scrollY * 0.1}px) scale(${1 - (scrollY / logoScrollThreshold) * 0.05})`
+              willChange: 'opacity',
             }}
           >
             <Logo isDarkMode={isDarkMode} />
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 pointer-events-auto">
-            {/* Realtime Status Indicator */}
-            <div
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 rounded-full text-[9px] font-black tracking-widest uppercase transition-all shadow-sm ${realtimeStatus === 'connected'
-                ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                : realtimeStatus === 'connecting'
-                  ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20 animate-pulse'
-                  : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
-                }`}
-            >
-              <div className={`w-1.5 h-1.5 rounded-full ${realtimeStatus === 'connected' ? 'bg-emerald-500 animate-pulse' : realtimeStatus === 'connecting' ? 'bg-amber-500' : 'bg-rose-500'
-                }`} />
-              <span className="hidden sm:inline">
-                {realtimeStatus === 'connected' ? 'CANLI' : realtimeStatus === 'connecting' ? 'BAĞLANIYOR' : 'KOPUK'}
-              </span>
-            </div>
+            {/* Realtime Status Indicator - Hidden per user request */}
 
             <button
               onClick={() => user ? handleLogout() : setIsAuthModalOpen(true)}
