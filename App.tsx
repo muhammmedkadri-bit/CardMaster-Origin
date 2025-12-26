@@ -633,12 +633,21 @@ const App: React.FC = () => {
   }, [transactions]);
 
   const handleSaveCard = async (savedCard: CreditCard) => {
+    // 1. Optimistic Update (Immediate Feedback)
+    setCards(prev => {
+      const exists = prev.find(c => c.id === savedCard.id);
+      if (exists) return prev.map(c => c.id === savedCard.id ? savedCard : c);
+      return [...prev, savedCard];
+    });
+
     showToast(`${savedCard.cardName} kaydediliyor...`, 'info');
+    setModalMode(null);
+    setEditingCard(undefined);
+
+    // 2. Server Sync
     if (user) {
       await dataSyncService.upsertCard(user.id, savedCard);
     }
-    setModalMode(null);
-    setEditingCard(undefined);
   };
 
   const handleTransaction = async (finalTx: Transaction) => {
