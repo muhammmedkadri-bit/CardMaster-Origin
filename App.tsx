@@ -633,21 +633,7 @@ const App: React.FC = () => {
 
   const handleViewChange = (newView: 'dashboard' | 'cards' | 'analysis' | 'settings') => {
     if (newView === view) return;
-
-    // Start transition animation
-    setIsChangingView(true);
-
-    // Short delay for the logo to appear, then switch content
-    setTimeout(() => {
-      React.startTransition(() => {
-        setView(newView);
-      });
-
-      // Keep overlay for a moment longer then fade out
-      setTimeout(() => {
-        setIsChangingView(false);
-      }, 400);
-    }, 300);
+    setView(newView);
   };
 
   const checkFinancialDeadlines = () => {
