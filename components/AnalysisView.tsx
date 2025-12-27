@@ -73,16 +73,12 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
       const date = new Date(dateStr);
       if (isNaN(date.getTime())) return dateStr;
 
-      const d = String(date.getDate()).padStart(2, '0');
-      const m = String(date.getMonth() + 1).padStart(2, '0');
-      const y = String(date.getFullYear()).slice(-2);
+      const hh = String(date.getHours()).padStart(2, '0');
+      const mm = String(date.getMinutes()).padStart(2, '0');
+      const monthName = date.toLocaleDateString('tr-TR', { month: 'long' });
+      const year = date.getFullYear();
 
-      if (dateStr.includes('T') || dateStr.includes(':')) {
-        const hh = String(date.getHours()).padStart(2, '0');
-        const mm = String(date.getMinutes()).padStart(2, '0');
-        return `${d}.${m}.${y} ${hh}.${mm}`;
-      }
-      return `${d}.${m}.${y}`;
+      return `${date.getDate()} ${monthName} ${year} - ${hh}:${mm}`;
     } catch (e) {
       return dateStr;
     }
@@ -596,9 +592,9 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                             {tx.type === 'spending' ? <ShoppingBag size={20} /> : <PaymentIcon size={20} />}
                           </div>
 
-                          {/* Description & Date */}
+                          {/* Description */}
                           <div className="min-w-0 flex-1 py-0.5">
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex items-center gap-2">
                               <p className={`text-sm font-black tracking-tight leading-tight break-words ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
                                 {tx.description || tx.category}
                               </p>
@@ -606,7 +602,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                                 <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 transition-colors shrink-0" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={14} /></a>
                               )}
                             </div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{formatDateDisplay(tx.date)}</p>
                           </div>
                         </div>
 
@@ -633,22 +628,29 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between pt-4 border-t border-slate-200/10 dark:border-white/5 mt-auto gap-4">
-                        <div className="flex flex-wrap gap-2 items-center overflow-hidden">
-                          <div className="px-3 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest whitespace-nowrap" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
-                            {cardName}
+                      <div className="flex flex-col gap-4 pt-4 border-t border-slate-200/10 dark:border-white/5 mt-auto">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex flex-wrap gap-2 items-center overflow-hidden">
+                            <div className="px-3 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest whitespace-nowrap" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
+                              {cardName}
+                            </div>
+                            <div className="flex items-center gap-1.5 bg-slate-500/10 px-3 py-1.5 rounded-full whitespace-nowrap">
+                              <div className="w-1.5 h-1.5 rounded-full bg-slate-400"></div>
+                              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                {tx.category || 'Diğer'}
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1.5 bg-slate-500/10 px-3 py-1.5 rounded-full whitespace-nowrap">
-                            <div className="w-1.5 h-1.5 rounded-full bg-slate-400"></div>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
-                              {tx.category || 'Diğer'}
-                            </span>
-                          </div>
+                          <p className={`text-lg font-black tracking-tighter ${tx.type === 'spending' ? 'text-rose-500' : 'text-emerald-500'} whitespace-nowrap shrink-0 flex items-center`}>
+                            <span className="opacity-70 mr-1">{tx.type === 'spending' ? '-' : '+'}</span>
+                            <span>₺{tx.amount.toLocaleString('tr-TR')}</span>
+                          </p>
                         </div>
-                        <p className={`text-lg font-black tracking-tighter ${tx.type === 'spending' ? 'text-rose-500' : 'text-emerald-500'} whitespace-nowrap shrink-0 flex items-center`}>
-                          <span className="opacity-70 mr-1">{tx.type === 'spending' ? '-' : '+'}</span>
-                          <span>₺{tx.amount.toLocaleString('tr-TR')}</span>
-                        </p>
+
+                        <div className="flex items-center gap-2 opacity-60">
+                          <Clock size={12} className="text-slate-400" />
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{formatDateDisplay(tx.date)}</p>
+                        </div>
                       </div>
                     </div>
                   );
