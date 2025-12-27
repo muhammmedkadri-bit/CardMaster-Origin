@@ -26,7 +26,7 @@ const CardVisual: React.FC<CardVisualProps> = ({ card, onAddToCalendar, onEdit, 
   const valueStyle = "font-mono font-black text-white drop-shadow-md";
 
   return (
-    <div className="card-container group w-full max-w-[400px] mx-auto cursor-pointer">
+    <div className="card-container group w-full max-w-[400px] mx-auto cursor-pointer p-4">
       <div
         className="card-inner relative aspect-[1.586/1] w-full rounded-[20px] sm:rounded-[28px] p-3.5 sm:p-6 text-white overflow-hidden flex flex-col card-texture-brushed transition-all duration-500 group-hover:translate-y-[-4px]"
         style={{
