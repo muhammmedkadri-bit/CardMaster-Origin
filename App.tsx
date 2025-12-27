@@ -1516,22 +1516,21 @@ const App: React.FC = () => {
         <div key="bottom-nav-morph-v6" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[2100] flex flex-col items-center w-full max-w-[380px] sm:max-w-none sm:w-auto pointer-events-none animate-morph-reveal">
           <div className="pointer-events-auto flex flex-col items-center w-full">
             {isFabOpen && (
-              <div className="mb-6 flex flex-col gap-4 min-w-[240px]">
+              <div className="mb-6 flex flex-col gap-3 min-w-[220px]">
                 {[
-                  { mode: 'spending', label: 'Harcama Ekle', icon: <ArrowUpRight size={22} />, color: 'rose', gradient: 'from-rose-500 to-pink-600', delay: '0ms' },
-                  { mode: 'payment', label: 'Ödeme Yap', icon: <ArrowDownRight size={22} />, color: 'emerald', gradient: 'from-emerald-500 to-teal-600', delay: '75ms' },
-                  { mode: 'add', label: 'Yeni Kart Ekle', icon: <Plus size={22} />, color: 'blue', gradient: 'from-blue-500 to-indigo-600', delay: '150ms' }
+                  { mode: 'spending', label: 'Harcama Ekle', icon: <ArrowUpRight size={20} />, color: 'rose', gradient: 'from-rose-500 to-pink-600' },
+                  { mode: 'payment', label: 'Ödeme Yap', icon: <ArrowDownRight size={20} />, color: 'emerald', gradient: 'from-emerald-500 to-teal-600' },
+                  { mode: 'add', label: 'Yeni Kart Ekle', icon: <Plus size={20} />, color: 'blue', gradient: 'from-blue-500 to-indigo-600' }
                 ].map((item) => (
                   <button
                     key={item.mode}
                     onClick={() => { setModalMode(item.mode as any); setIsFabOpen(false); }}
-                    style={{ animationDelay: item.delay }}
-                    className={`group animate-fab-item-spring p-5 rounded-[28px] shadow-2xl flex items-center gap-5 font-black uppercase text-xs tracking-[0.15em] transition-all border backdrop-blur-xl active:scale-95 fill-mode-both hover:shadow-[0_20px_60px_-15px] ${isDarkMode
-                        ? `bg-gradient-to-br ${item.gradient} bg-opacity-10 border-white/10 text-white hover:border-white/20 hover:bg-opacity-20`
-                        : `bg-white/80 border-${item.color}-100 text-slate-800 hover:bg-white hover:shadow-${item.color}-500/20`
+                    className={`group p-4 rounded-[24px] shadow-2xl flex items-center gap-4 font-black uppercase text-xs tracking-[0.15em] transition-all border backdrop-blur-xl active:scale-95 hover:shadow-[0_20px_60px_-15px] ${isDarkMode
+                      ? `bg-gradient-to-br ${item.gradient} bg-opacity-10 border-white/10 text-white hover:border-white/20 hover:bg-opacity-20`
+                      : `bg-white/80 border-${item.color}-100 text-slate-800 hover:bg-white hover:shadow-${item.color}-500/20`
                       }`}
                   >
-                    <div className={`bg-gradient-to-br ${item.gradient} p-3.5 rounded-2xl shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
+                    <div className={`bg-gradient-to-br ${item.gradient} p-3 rounded-2xl shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
                       <div className="text-white">{item.icon}</div>
                     </div>
                     <span className="flex-1 text-left">{item.label}</span>
