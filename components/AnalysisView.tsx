@@ -106,10 +106,14 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
       end.setHours(23, 59, 59);
     }
 
-    return cardFiltered.filter(t => {
-      const d = new Date(t.date);
-      return d >= start && d <= end;
-    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    // Pre-map dates to timestamps for faster comparison and sorting
+    const startMs = start.getTime();
+    const endMs = end.getTime();
+
+    return cardFiltered
+      .map(t => ({ ...t, _ts: new Date(t.date).getTime() }))
+      .filter(t => t._ts >= startMs && t._ts <= endMs)
+      .sort((a, b) => b._ts - a._ts);
   }, [selectedCardId, transactions, timeRange, customStart, customEnd, lastUpdate]);
 
   const cardStats = useMemo(() => {
@@ -153,12 +157,14 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
     start.setHours(0, 0, 0, 0);
     end.setHours(23, 59, 59, 999);
 
+    const monthNames = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+
     // Initialize data with all dates in range to ensure a continuous line
     const tempDate = new Date(start);
     while (tempDate <= end) {
       const label = timeRange === 'year'
-        ? tempDate.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })
-        : tempDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
+        ? `${monthNames[tempDate.getMonth()]} ${tempDate.getFullYear()}`
+        : `${tempDate.getDate()} ${monthNames[tempDate.getMonth()]}`;
 
       if (!data[label]) {
         data[label] = { label, spending: 0, payment: 0, net: 0, timestamp: tempDate.getTime() };
@@ -174,8 +180,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
     filteredTransactions.forEach(t => {
       const d = new Date(t.date);
       const label = timeRange === 'year'
-        ? d.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })
-        : d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
+        ? `${monthNames[d.getMonth()]} ${d.getFullYear()}`
+        : `${d.getDate()} ${monthNames[d.getMonth()]}`;
 
       if (data[label]) {
         if (t.type === 'spending') data[label].spending += t.amount;
@@ -185,7 +191,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
     });
 
     return Object.values(data).sort((a, b) => a.timestamp - b.timestamp);
-  }, [filteredTransactions, timeRange, customStart, customEnd, lastUpdate]);
+  }, [filteredTransactions, timeRange, lastUpdate]);
 
   const categoryData = useMemo(() => {
     const data: Record<string, number> = {};

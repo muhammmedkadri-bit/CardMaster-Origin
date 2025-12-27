@@ -644,15 +644,15 @@ const App: React.FC = () => {
     setTransitionData({ from: view, to: newView });
     setIsChangingView(true);
 
-    // Adaptive duration based on view complexity (e.g., analysis takes longer)
-    const duration = newView === 'analysis' || view === 'analysis' ? 600 : 400;
+    // Reduced duration for much snappier response
+    const duration = newView === 'analysis' || view === 'analysis' ? 200 : 150;
 
     setTimeout(() => {
       setView(newView);
       setTimeout(() => {
         setIsChangingView(false);
         setTransitionData(null);
-      }, 300);
+      }, 150);
     }, duration);
   };
 
@@ -1567,20 +1567,21 @@ const App: React.FC = () => {
 
               <div className={`flex items-center gap-1 sm:gap-2 p-1.5 sm:p-2 rounded-[28px] sm:rounded-[32px] border shadow-2xl backdrop-blur-2xl transition-all ${isDarkMode ? 'bg-[#0b0f1a]/90 border-slate-800 shadow-black' : 'bg-white/90 border-slate-200 shadow-blue-900/10'}`}>
                 <div className="flex items-center px-0.5 sm:px-1 gap-1">
-                  <a href="#" onClick={(e) => { e.preventDefault(); handleViewChange('dashboard'); }} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'dashboard' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`}><LayoutDashboard size={20} className="sm:w-5 sm:h-5" /></a>
-                  <a href="#" onClick={(e) => { e.preventDefault(); handleViewChange('cards'); }} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'cards' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`}><CardIcon size={20} className="sm:w-5 sm:h-5" /></a>
-                  <a href="#" onClick={(e) => { e.preventDefault(); handleViewChange('analysis'); }} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'analysis' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`}><BarChart3 size={20} className="sm:w-5 sm:h-5" /></a>
+                  <button onClick={() => handleViewChange('dashboard')} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'dashboard' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`} aria-label="Dashboard"><LayoutDashboard size={20} className="sm:w-5 sm:h-5" /></button>
+                  <button onClick={() => handleViewChange('cards')} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'cards' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`} aria-label="Cards"><CardIcon size={20} className="sm:w-5 sm:h-5" /></button>
+                  <button onClick={() => handleViewChange('analysis')} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'analysis' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`} aria-label="Analysis"><BarChart3 size={20} className="sm:w-5 sm:h-5" /></button>
                 </div>
-                <button onClick={() => setIsFabOpen(!isFabOpen)} className={`shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-white shadow-xl transition-all transform hover:scale-105 active:scale-95 border-[3px] sm:border-4 ${isDarkMode ? 'border-[#0a1224]' : 'border-white'} ${isFabOpen ? 'bg-slate-800 rotate-45' : 'bg-blue-600 shadow-blue-600/30'}`}><Plus size={24} className="sm:w-8 sm:h-8" strokeWidth={3} /></button>
+                <button onClick={() => setIsFabOpen(!isFabOpen)} className={`shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-white shadow-xl transition-all transform hover:scale-105 active:scale-95 border-[3px] sm:border-4 ${isDarkMode ? 'border-[#0a1224]' : 'border-white'} ${isFabOpen ? 'bg-slate-800 rotate-45' : 'bg-blue-600 shadow-blue-600/30'}`} aria-label="New Transaction"><Plus size={24} className="sm:w-8 sm:h-8" strokeWidth={3} /></button>
                 <div className="flex items-center px-0.5 sm:px-1 gap-1">
-                  <a href="#" onClick={(e) => { e.preventDefault(); handleViewChange('settings'); }} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'settings' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`}><SettingsIcon size={20} className="sm:w-5 sm:h-5" /></a>
-                  <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${isDarkMode ? 'text-slate-400 hover:text-yellow-400 hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100'}`}>
+                  <button onClick={() => handleViewChange('settings')} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'settings' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`} aria-label="Settings"><SettingsIcon size={20} className="sm:w-5 sm:h-5" /></button>
+                  <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${isDarkMode ? 'text-slate-400 hover:text-yellow-400 hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100'}`} aria-label="Toggle Theme">
                     {isDarkMode ? <Sun size={20} className="sm:w-5 sm:h-5" /> : <Moon size={20} className="sm:w-5 sm:h-5" />}
                   </button>
                   <button
                     onClick={() => user ? handleLogout() : setIsAuthModalOpen(true)}
                     className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${isDarkMode ? 'text-slate-400 hover:text-rose-400 hover:bg-slate-800' : 'text-slate-500 hover:text-rose-600 hover:bg-slate-100'}`}
                     title={user ? `${user.email} - Çıkış Yap` : 'Giriş Yap'}
+                    aria-label={user ? "Logout" : "Login"}
                   >
                     {user ? <LogOut size={20} className="sm:w-5 sm:h-5" /> : <LoginIcon size={20} className="sm:w-5 sm:h-5" />}
                   </button>
