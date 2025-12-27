@@ -582,72 +582,74 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                   const card = cards.find(c => c.id === tx.cardId);
                   const cardColor = card?.color || '#3b82f6';
                   const cardName = card?.cardName || tx.cardName || 'Bilinmeyen Kart';
-                  return (
-                    <div key={tx.id} className={`p-6 rounded-[32px] border flex flex-col gap-6 ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50/50 border-slate-100'}`}>
-                      {/* Top Row: Icon, Description, and Actions */}
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-start gap-4 min-w-0 flex-1">
-                          {/* Icon */}
-                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${tx.type === 'spending' ? 'bg-rose-500/10 text-rose-500 shadow-lg shadow-rose-500/10' : 'bg-emerald-500/10 text-emerald-500 shadow-lg shadow-emerald-500/10'}`}>
-                            {tx.type === 'spending' ? <ShoppingBag size={20} /> : <PaymentIcon size={20} />}
-                          </div>
+                  const isSpending = tx.type === 'spending';
 
-                          {/* Description */}
-                          <div className="min-w-0 flex-1 py-0.5">
-                            <div className="flex items-center gap-2">
-                              <p className={`text-sm font-black tracking-tight leading-tight break-words ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-                                {tx.description || tx.category}
-                              </p>
-                              {tx.confirmationUrl && (
-                                <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 transition-colors shrink-0" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={14} /></a>
-                              )}
-                            </div>
-                          </div>
+                  return (
+                    <div key={tx.id} className={`p-6 rounded-[32px] border flex flex-col gap-4 ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50/50 border-slate-100'}`}>
+                      {/* Header: Type Indicator, Category and Actions */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {/* Type Indicator (Vertical Pill) */}
+                          <div className={`w-1.5 h-6 rounded-full ${isSpending ? 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.4)]' : 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]'}`} />
+
+                          {/* Category */}
+                          <span className={`text-[11px] font-black uppercase tracking-[0.15em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                            {tx.category || 'Diğer'}
+                          </span>
                         </div>
 
                         {/* Actions */}
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => onEditTransaction?.(tx)}
                             className={`p-2.5 rounded-xl transition-all active:scale-95 ${isDarkMode
-                              ? 'bg-blue-500/20 text-blue-400 border border-blue-500/20'
-                              : 'bg-blue-50 text-blue-600 border border-blue-100 shadow-sm shadow-blue-500/5'
+                              ? 'bg-blue-500/10 text-blue-400 border border-blue-500/10'
+                              : 'bg-blue-50 text-blue-600 border border-blue-100'
                               }`}
                           >
-                            <Edit2 size={15} />
+                            <Edit2 size={14} />
                           </button>
                           <button
                             onClick={() => onDeleteTransaction?.(tx)}
                             className={`p-2.5 rounded-xl transition-all active:scale-95 ${isDarkMode
-                              ? 'bg-rose-500/20 text-rose-400 border border-rose-500/20'
-                              : 'bg-rose-50 text-rose-600 border border-rose-100 shadow-sm shadow-rose-500/5'
+                              ? 'bg-rose-500/10 text-rose-400 border border-rose-500/10'
+                              : 'bg-rose-50 text-rose-600 border border-rose-100'
                               }`}
                           >
-                            <Trash2 size={15} />
+                            <Trash2 size={14} />
                           </button>
                         </div>
                       </div>
 
-                      <div className="flex flex-col gap-4 pt-4 border-t border-slate-200/10 dark:border-white/5 mt-auto">
+                      {/* Description Area */}
+                      <div className="py-1">
+                        <div className="flex items-center gap-2">
+                          <p className={`text-[15px] font-black tracking-tight leading-relaxed break-words ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+                            {tx.description || tx.category}
+                          </p>
+                          {tx.confirmationUrl && (
+                            <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 transition-colors shrink-0" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={14} /></a>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Footer: Card Name, Amount and Date */}
+                      <div className="flex flex-col gap-4 pt-4 border-t border-slate-200/10 dark:border-white/5">
                         <div className="flex items-center justify-between gap-4">
-                          <div className="flex flex-wrap gap-2 items-center overflow-hidden">
-                            <div className="px-3 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest whitespace-nowrap" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
-                              {cardName}
-                            </div>
-                            <div className="flex items-center gap-1.5 bg-slate-500/10 px-3 py-1.5 rounded-full whitespace-nowrap">
-                              <div className="w-1.5 h-1.5 rounded-full bg-slate-400"></div>
-                              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
-                                {tx.category || 'Diğer'}
-                              </span>
-                            </div>
+                          {/* Card Name Pill */}
+                          <div className="px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-widest whitespace-nowrap" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
+                            {cardName}
                           </div>
-                          <p className={`text-lg font-black tracking-tighter ${tx.type === 'spending' ? 'text-rose-500' : 'text-emerald-500'} whitespace-nowrap shrink-0 flex items-center`}>
-                            <span className="opacity-70 mr-1">{tx.type === 'spending' ? '-' : '+'}</span>
+
+                          {/* Amount */}
+                          <p className={`text-xl font-black tracking-tighter ${isSpending ? 'text-rose-500' : 'text-emerald-500'} whitespace-nowrap shrink-0 flex items-center`}>
+                            <span className="opacity-70 mr-1">{isSpending ? '-' : '+'}</span>
                             <span>₺{tx.amount.toLocaleString('tr-TR')}</span>
                           </p>
                         </div>
 
-                        <div className="flex items-center gap-2 opacity-60">
+                        {/* Date and Time */}
+                        <div className="flex items-center gap-2 opacity-50">
                           <Clock size={12} className="text-slate-400" />
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{formatDateDisplay(tx.date)}</p>
                         </div>
