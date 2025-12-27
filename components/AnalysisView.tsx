@@ -414,7 +414,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+      <div className="mb-12">
         <div className={`p-10 rounded-[40px] border ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-sm'}`}>
           <div className="flex items-center gap-4 mb-10">
             <div className="w-1.5 h-6 bg-rose-500 rounded-full"></div>
@@ -504,41 +504,10 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
             </ResponsiveContainer>
           </div>
         </div>
-
-        <div className={`p-10 rounded-[40px] border ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-sm'}`}>
-          <div className="flex items-center gap-4 mb-10">
-            <div className="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
-            <h3 className={`text-xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>KATEGORİ DAĞILIMI</h3>
-          </div>
-          <div className="space-y-6 max-h-[300px] overflow-y-auto pr-4 no-scrollbar">
-            {categoryData.length > 0 ? categoryData.map((cat, idx) => (
-              <div key={idx} className="space-y-2">
-                <div className="flex justify-between items-end">
-                  <span className="text-xs font-black uppercase tracking-widest text-slate-500">{cat.name}</span>
-                  <RollingNumber
-                    value={cat.value}
-                    className={`text-sm font-black ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}
-                  />
-                </div>
-                <div className="h-3 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-blue-600 rounded-full transition-all duration-1000"
-                    style={{ width: `${(cat.value / cardStats.spending) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-            )) : (
-              <div className="h-full flex flex-col items-center justify-center py-10 opacity-30">
-                <PieIcon size={48} className="mb-4" />
-                <p className="font-black text-[10px] tracking-widest">VERİ BULUNAMADI</p>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Transactions Table Section */}
-      <div className={`p-8 sm:p-12 rounded-[40px] border transition-all ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-sm'}`}>
+      <div className={`p-8 sm:p-12 rounded-[40px] border transition-all mb-12 ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-sm'}`}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-8 mb-12">
           <div className="flex items-center gap-4">
             <div className="w-1.5 h-10 bg-blue-600 rounded-full"></div>
@@ -617,6 +586,38 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
             <p className="text-slate-500 font-black uppercase tracking-[0.3em] text-sm animate-pulse italic">KAYIT BULUNAMADI</p>
           </div>
         )}
+      </div>
+
+      {/* Category Distribution Section - Moved to bottom */}
+      <div className={`p-10 rounded-[40px] border mb-16 ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-sm'}`}>
+        <div className="flex items-center gap-4 mb-10">
+          <div className="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
+          <h3 className={`text-xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>KATEGORİ DAĞILIMI</h3>
+        </div>
+        <div className="space-y-6 max-h-[400px] overflow-y-auto pr-4 no-scrollbar">
+          {categoryData.length > 0 ? categoryData.map((cat, idx) => (
+            <div key={idx} className="space-y-2">
+              <div className="flex justify-between items-end">
+                <span className="text-xs font-black uppercase tracking-widest text-slate-500">{cat.name}</span>
+                <RollingNumber
+                  value={cat.value}
+                  className={`text-sm font-black ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}
+                />
+              </div>
+              <div className="h-3 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-600 rounded-full transition-all duration-1000"
+                  style={{ width: `${(cat.value / cardStats.spending) * 100}%` }}
+                ></div>
+              </div>
+            </div>
+          )) : (
+            <div className="h-full flex flex-col items-center justify-center py-10 opacity-30">
+              <PieIcon size={48} className="mb-4" />
+              <p className="font-black text-[10px] tracking-widest">VERİ BULUNAMADI</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
