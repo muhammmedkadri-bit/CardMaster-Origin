@@ -442,21 +442,51 @@ const App: React.FC = () => {
         console.log(`[Realtime] Event on ${table}:`, payload.eventType);
 
         // Incremental Update for Notifications (Fast & Reliable)
+        // Optimized realtime handling for instant updates
         if (table === 'notifications') {
-          if (payload.eventType === 'UPDATE' && payload.new) {
-            const updatedNotif = dataSyncService.mapNotificationFromDB(payload.new);
+          if (payload.eventType === 'INSERT' && payload.new) {
             setNotificationHistory(prev =>
-              prev.map(n => n.id === updatedNotif.id ? { ...n, read: updatedNotif.read } : n)
+              [dataSyncService.mapNotificationFromDB(payload.new), ...prev].slice(0, 50)
+            );
+            return;
+          } else if (payload.eventType === 'UPDATE' && payload.new) {
+            setNotificationHistory(prev =>
+              prev.map(n => n.id === payload.new.id ? dataSyncService.mapNotificationFromDB(payload.new) : n)
             );
             return;
           } else if (payload.eventType === 'DELETE' && payload.old) {
-            const deletedId = payload.old.id;
-            setNotificationHistory(prev => prev.filter(n => n.id !== deletedId));
+            setNotificationHistory(prev => prev.filter(n => n.id !== payload.old.id));
+            return;
+          }
+        }
+
+        if (table === 'transactions') {
+          if (payload.eventType === 'DELETE' && payload.old) {
+            setTransactions(prev => prev.filter(t => t.id !== payload.old.id));
+            // Cards will be synced separately, no need for full sync
+            return;
+          } else if (payload.eventType === 'INSERT' && payload.new) {
+            setTransactions(prev => [dataSyncService.mapTransactionFromDB(payload.new), ...prev]);
+            return;
+          }
+        }
+
+        if (table === 'cards') {
+          if (payload.eventType === 'UPDATE' && payload.new) {
+            setCards(prev => prev.map(c => c.id === payload.new.id ? dataSyncService.mapCardFromDB(payload.new) : c));
+            setLastUpdate(Date.now());
+            return;
+          } else if (payload.eventType === 'INSERT' && payload.new) {
+            setCards(prev => [...prev, dataSyncService.mapCardFromDB(payload.new)]);
+            return;
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            setCards(prev => prev.filter(c => c.id !== payload.old.id));
             return;
           }
         }
 
         // For other changes, do a full sync
+        console.log(`[Realtime] Full sync triggered by ${table} change`);
         await syncAll();
       });
 
@@ -485,13 +515,13 @@ const App: React.FC = () => {
       window.addEventListener('pageshow', handleVisibilityChange);
       window.addEventListener('focus', handleVisibilityChange);
 
-      // Continuous polling as backup (3s for background sync)
-      // We reduced this from 500ms as it was causing heavy UI thread lag on mobile
+      // Continuous polling as backup (1s for faster updates)
+      // Balance between responsiveness and performance
       pollInterval = setInterval(() => {
         if (document.visibilityState === 'visible') {
           syncAll();
         }
-      }, 3000);
+      }, 1000);
 
       return () => {
         window.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -932,43 +962,44 @@ const App: React.FC = () => {
     const txId = transactionToDelete.id;
     const deletedTx = transactions.find(t => t.id === txId);
 
-    // 1. ANINDA ARAYÜZ GÜNCELLEME
+    if (!deletedTx) return;
 
-    // A) Listeden Sil
+    // 1. Calculate new balance
+    const reverseImpact = deletedTx.type === 'spending' ? -deletedTx.amount : deletedTx.amount;
+    const affectedCard = cards.find(c => c.id === deletedTx.cardId);
+
+    if (!affectedCard) return;
+
+    const updatedCard = { ...affectedCard, balance: affectedCard.balance + reverseImpact };
+
+    // 2. IMMEDIATE UI UPDATE
     setTransactions(prev => prev.filter(t => t.id !== txId));
-
-    // B) Bakiyeyi Geri Al (Reverse Math)
-    if (deletedTx) {
-      setCards(prev => prev.map(c => {
-        if (c.id === deletedTx.cardId) {
-          // Silinen Harcama -> Borç Azalır (-)
-          // Silinen Ödeme -> Borç Artar (+)
-          // impact'in tersini alıyoruz.
-          const reverseImpact = deletedTx.type === 'spending' ? -deletedTx.amount : deletedTx.amount;
-          return { ...c, balance: c.balance + reverseImpact };
-        }
-        return c;
-      }));
-    }
-
+    setCards(prev => prev.map(c => c.id === deletedTx.cardId ? updatedCard : c));
     setTransactionToDelete(null);
     showToast('İşlem silindi', 'success');
 
-    // 2. ARKA PLAN SENKRONİZASYONU
+    // 3. IMMEDIATE DATABASE SYNC (CRITICAL FOR CROSS-DEVICE)
     try {
-      await dataSyncService.deleteTransaction(txId);
+      // Delete transaction and update card balance in parallel
+      await Promise.all([
+        dataSyncService.deleteTransaction(txId),
+        dataSyncService.upsertCard(user.id, updatedCard)
+      ]);
 
-      // SEND SYNC SIGNAL
-      dataSyncService.sendSyncSignal(user.id);
+      // Broadcast sync signal to other devices
+      await dataSyncService.sendSyncSignal(user.id);
 
-      // Sessiz doğrulama
+      console.log('[Delete] Transaction deleted and card balance updated in DB');
+    } catch (error) {
+      console.error('[Delete] Failed to sync:', error);
+      showToast('Senkronizasyon hatası', 'warning');
+
+      // Revert on error
       const data = await dataSyncService.fetchAllData(user.id);
       if (data) {
         setCards(data.cards);
         setTransactions(data.transactions);
       }
-    } catch (error) {
-      console.error(error);
     }
   };
 
