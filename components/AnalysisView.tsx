@@ -563,8 +563,9 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                           </td>
                           <td className={`py-6 px-6 text-right first:rounded-l-[32px] last:rounded-r-[32px]`}>
                             <div className="flex flex-col items-end gap-2">
-                              <p className={`text-xl sm:text-2xl font-black tracking-tighter ${tx.type === 'spending' ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                {tx.type === 'spending' ? '-' : '+'} ₺{tx.amount.toLocaleString('tr-TR')}
+                              <p className={`text-xl sm:text-2xl font-black tracking-tighter ${tx.type === 'spending' ? 'text-rose-500' : 'text-emerald-500'} whitespace-nowrap flex items-center justify-end`}>
+                                <span className="opacity-70 mr-1">{tx.type === 'spending' ? '-' : '+'}</span>
+                                <span>₺{tx.amount.toLocaleString('tr-TR')}</span>
                               </p>
                               <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button onClick={() => onEditTransaction?.(tx)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-400 hover:text-blue-400 hover:bg-slate-700' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-100'}`}><Edit2 size={16} /></button>
@@ -592,36 +593,37 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                           <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${tx.type === 'spending' ? 'bg-rose-500/10 text-rose-500 shadow-lg shadow-rose-500/10' : 'bg-emerald-500/10 text-emerald-500 shadow-lg shadow-emerald-500/10'}`}>
                             {tx.type === 'spending' ? <ShoppingBag size={20} /> : <PaymentIcon size={20} />}
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <div className="flex items-center gap-2 mb-1">
-                              <p className={`text-sm font-black tracking-tight leading-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{tx.description || tx.category}</p>
+                              <p className={`text-sm font-black tracking-tight leading-tight truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{tx.description || tx.category}</p>
                               {tx.confirmationUrl && (
-                                <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 transition-colors" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={14} /></a>
+                                <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 transition-colors flex-shrink-0" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={14} /></a>
                               )}
                             </div>
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{formatDateDisplay(tx.date)}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 shrink-0">
                           <button onClick={() => onEditTransaction?.(tx)} className={`p-2.5 rounded-xl transition-colors ${isDarkMode ? 'text-slate-400 bg-slate-800/50' : 'text-slate-400 bg-white shadow-sm'}`}><Edit2 size={14} /></button>
                           <button onClick={() => onDeleteTransaction?.(tx)} className={`p-2.5 rounded-xl transition-colors ${isDarkMode ? 'text-slate-400 bg-slate-800/50' : 'text-slate-400 bg-white shadow-sm'}`}><Trash2 size={14} /></button>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between pt-4 border-t border-slate-200/10 dark:border-white/5 mt-auto">
-                        <div className="flex flex-wrap gap-2 items-center">
-                          <div className="px-3 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
+                      <div className="flex items-center justify-between pt-4 border-t border-slate-200/10 dark:border-white/5 mt-auto gap-4">
+                        <div className="flex flex-wrap gap-2 items-center overflow-hidden">
+                          <div className="px-3 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest whitespace-nowrap" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
                             {cardName}
                           </div>
-                          <div className="flex items-center gap-1.5 bg-slate-500/10 px-3 py-1.5 rounded-full">
+                          <div className="flex items-center gap-1.5 bg-slate-500/10 px-3 py-1.5 rounded-full whitespace-nowrap">
                             <div className="w-1.5 h-1.5 rounded-full bg-slate-400"></div>
                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
                               {tx.category || 'Diğer'}
                             </span>
                           </div>
                         </div>
-                        <p className={`text-lg font-black tracking-tighter ${tx.type === 'spending' ? 'text-rose-500' : 'text-emerald-500'}`}>
-                          {tx.type === 'spending' ? '-' : '+'} ₺{tx.amount.toLocaleString('tr-TR')}
+                        <p className={`text-lg font-black tracking-tighter ${tx.type === 'spending' ? 'text-rose-500' : 'text-emerald-500'} whitespace-nowrap shrink-0 flex items-center`}>
+                          <span className="opacity-70 mr-1">{tx.type === 'spending' ? '-' : '+'}</span>
+                          <span>₺{tx.amount.toLocaleString('tr-TR')}</span>
                         </p>
                       </div>
                     </div>
