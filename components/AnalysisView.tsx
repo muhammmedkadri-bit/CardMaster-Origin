@@ -587,25 +587,49 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                   const cardColor = card?.color || '#3b82f6';
                   const cardName = card?.cardName || tx.cardName || 'Bilinmeyen Kart';
                   return (
-                    <div key={tx.id} className={`p-6 rounded-[32px] border flex flex-col gap-5 ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50/50 border-slate-100'}`}>
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-4">
+                    <div key={tx.id} className={`p-6 rounded-[32px] border flex flex-col gap-6 ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50/50 border-slate-100'}`}>
+                      {/* Top Row: Icon, Description, and Actions */}
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-4 min-w-0 flex-1">
+                          {/* Icon */}
                           <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${tx.type === 'spending' ? 'bg-rose-500/10 text-rose-500 shadow-lg shadow-rose-500/10' : 'bg-emerald-500/10 text-emerald-500 shadow-lg shadow-emerald-500/10'}`}>
                             {tx.type === 'spending' ? <ShoppingBag size={20} /> : <PaymentIcon size={20} />}
                           </div>
-                          <div className="min-w-0">
+
+                          {/* Description & Date */}
+                          <div className="min-w-0 flex-1 py-0.5">
                             <div className="flex items-center gap-2 mb-1">
-                              <p className={`text-sm font-black tracking-tight leading-tight truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{tx.description || tx.category}</p>
+                              <p className={`text-sm font-black tracking-tight leading-tight break-words ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+                                {tx.description || tx.category}
+                              </p>
                               {tx.confirmationUrl && (
-                                <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 transition-colors flex-shrink-0" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={14} /></a>
+                                <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 transition-colors shrink-0" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={14} /></a>
                               )}
                             </div>
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{formatDateDisplay(tx.date)}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button onClick={() => onEditTransaction?.(tx)} className={`p-2.5 rounded-xl transition-colors ${isDarkMode ? 'text-slate-400 bg-slate-800/50' : 'text-slate-400 bg-white shadow-sm'}`}><Edit2 size={14} /></button>
-                          <button onClick={() => onDeleteTransaction?.(tx)} className={`p-2.5 rounded-xl transition-colors ${isDarkMode ? 'text-slate-400 bg-slate-800/50' : 'text-slate-400 bg-white shadow-sm'}`}><Trash2 size={14} /></button>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            onClick={() => onEditTransaction?.(tx)}
+                            className={`p-2.5 rounded-xl transition-all active:scale-95 ${isDarkMode
+                              ? 'bg-blue-500/20 text-blue-400 border border-blue-500/20'
+                              : 'bg-blue-50 text-blue-600 border border-blue-100 shadow-sm shadow-blue-500/5'
+                              }`}
+                          >
+                            <Edit2 size={15} />
+                          </button>
+                          <button
+                            onClick={() => onDeleteTransaction?.(tx)}
+                            className={`p-2.5 rounded-xl transition-all active:scale-95 ${isDarkMode
+                              ? 'bg-rose-500/20 text-rose-400 border border-rose-500/20'
+                              : 'bg-rose-50 text-rose-600 border border-rose-100 shadow-sm shadow-rose-500/5'
+                              }`}
+                          >
+                            <Trash2 size={15} />
+                          </button>
                         </div>
                       </div>
 
