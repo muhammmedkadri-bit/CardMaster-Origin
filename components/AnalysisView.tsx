@@ -535,7 +535,9 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                   </thead>
                   <tbody>
                     {filteredTransactions.map(tx => {
-                      const cardColor = cards.find(c => c.id === tx.cardId)?.color;
+                      const card = cards.find(c => c.id === tx.cardId);
+                      const cardColor = card?.color || '#3b82f6';
+                      const cardName = card?.cardName || tx.cardName || 'Bilinmeyen Kart';
                       return (
                         <tr key={tx.id} className={`group transition-all ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}>
                           <td className="py-6 px-6 first:rounded-l-[32px] last:rounded-r-[32px]">
@@ -556,7 +558,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                           </td>
                           <td className="py-6 px-6">
                             <span className="px-4 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest whitespace-nowrap" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}05` }}>
-                              {tx.cardName}
+                              {cardName}
                             </span>
                           </td>
                           <td className={`py-6 px-6 text-right first:rounded-l-[32px] last:rounded-r-[32px]`}>
@@ -580,8 +582,9 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
               {/* Mobile Card List View */}
               <div className="sm:hidden space-y-4">
                 {filteredTransactions.map(tx => {
-                  const cardColor = cards.find(c => c.id === tx.cardId)?.color;
-                  const catColor = categories.find(c => c.name.toLocaleLowerCase('tr-TR') === tx.category?.toLocaleLowerCase('tr-TR'))?.color || '#3B82F6';
+                  const card = cards.find(c => c.id === tx.cardId);
+                  const cardColor = card?.color || '#3b82f6';
+                  const cardName = card?.cardName || tx.cardName || 'Bilinmeyen Kart';
                   return (
                     <div key={tx.id} className={`p-6 rounded-[32px] border flex flex-col gap-5 ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50/50 border-slate-100'}`}>
                       <div className="flex items-start justify-between">
@@ -606,13 +609,16 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                       </div>
 
                       <div className="flex items-center justify-between pt-4 border-t border-slate-200/10 dark:border-white/5 mt-auto">
-                        <div className="flex flex-wrap gap-2">
-                          <span className="px-3 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}10` }}>
-                            {tx.cardName}
-                          </span>
-                          <span className="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest opacity-60 bg-slate-500/10 text-slate-500">
-                            {tx.category || 'Diğer'}
-                          </span>
+                        <div className="flex flex-wrap gap-2 items-center">
+                          <div className="px-3 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
+                            {cardName}
+                          </div>
+                          <div className="flex items-center gap-1.5 bg-slate-500/10 px-3 py-1.5 rounded-full">
+                            <div className="w-1.5 h-1.5 rounded-full bg-slate-400"></div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                              {tx.category || 'Diğer'}
+                            </span>
+                          </div>
                         </div>
                         <p className={`text-lg font-black tracking-tighter ${tx.type === 'spending' ? 'text-rose-500' : 'text-emerald-500'}`}>
                           {tx.type === 'spending' ? '-' : '+'} ₺{tx.amount.toLocaleString('tr-TR')}
