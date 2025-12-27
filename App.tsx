@@ -1516,7 +1516,7 @@ const App: React.FC = () => {
         <div key="bottom-nav-morph-v6" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[2100] flex flex-col items-center w-full max-w-[380px] sm:max-w-none sm:w-auto pointer-events-none animate-morph-reveal">
           <div className="pointer-events-auto flex flex-col items-center w-full">
             {isFabOpen && (
-              <div className="mb-6 flex flex-col gap-3 min-w-[220px]">
+              <div className="mb-6 flex flex-col gap-3 min-w-[220px] animate-fab-menu-reveal origin-bottom">
                 {[
                   { mode: 'spending', label: 'HARCAMA EKLE', icon: <ArrowUpRight size={18} />, color: 'rose', delay: '0ms' },
                   { mode: 'payment', label: 'ÖDEME YAP', icon: <ArrowDownRight size={18} />, color: 'emerald', delay: '50ms' },
@@ -1544,10 +1544,10 @@ const App: React.FC = () => {
 
               <button
                 onClick={() => setIsFabOpen(!isFabOpen)}
-                className={`shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-white shadow-2xl transition-all duration-500 animate-nav-item-fade [animation-delay:600ms] opacity-0 fill-mode-both active:scale-95 ${isFabOpen ? (isDarkMode ? 'bg-slate-700 rotate-[135deg] scale-90' : 'bg-slate-600 rotate-[135deg] scale-90') : 'bg-gradient-to-tr from-blue-700 to-blue-500 shadow-blue-500/40 hover:scale-105'}`}
+                className={`shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-white shadow-2xl transition-all duration-300 animate-nav-item-fade [animation-delay:600ms] opacity-0 fill-mode-both active:scale-95 ${isFabOpen ? (isDarkMode ? 'bg-slate-700 scale-90' : 'bg-slate-600 scale-90') : 'bg-gradient-to-tr from-blue-700 to-blue-500 shadow-blue-500/40 hover:scale-105'}`}
                 aria-label="New Transaction"
               >
-                <Plus size={28} className="sm:w-9 sm:h-9" strokeWidth={3} />
+                <Plus size={28} className={`sm:w-9 sm:h-9 transition-transform duration-400 ${isFabOpen ? 'rotate-[135deg]' : 'rotate-0'}`} strokeWidth={3} />
               </button>
 
               <div className="flex items-center px-1.5 sm:px-2 gap-1 sm:gap-2 animate-nav-item-fade [animation-delay:800ms] opacity-0 fill-mode-both">
