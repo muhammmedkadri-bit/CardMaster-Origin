@@ -498,47 +498,52 @@ const App: React.FC = () => {
     syncAll();
     connectRealtime();
 
-    // 2. HTTP Polling (fallback for mobile - checks every 2s when visible)
+    // 2. Visibility Change Handling (ALL PLATFORMS - Desktop + Mobile)
+    // Critical: Browser throttles/pauses Realtime when tab is in background
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log("[Visibility] Tab became active, syncing immediately...");
+        syncAll();
+      }
+    };
+
+    window.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pageshow', handleVisibilityChange);
+    window.addEventListener('focus', handleVisibilityChange);
+
+    // 3. HTTP Polling (Device-Specific Strategy)
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     let pollInterval: any;
 
     if (isMobile) {
-      // Immediate sync on visibility change (critical for PWA mode)
-      const handleVisibilityChange = () => {
-        if (document.visibilityState === 'visible') {
-          console.log("[PWA] App visible, syncing immediately...");
-          syncAll();
-        }
-      };
-
-      window.addEventListener('visibilitychange', handleVisibilityChange);
-      window.addEventListener('pageshow', handleVisibilityChange);
-      window.addEventListener('focus', handleVisibilityChange);
-
-      // Continuous polling as backup (1s for faster updates)
-      // Balance between responsiveness and performance
+      // Mobile: Aggressive 1s polling for PWA reliability
       pollInterval = setInterval(() => {
         if (document.visibilityState === 'visible') {
           syncAll();
         }
       }, 1000);
-
-      return () => {
-        window.removeEventListener('visibilitychange', handleVisibilityChange);
-        window.removeEventListener('pageshow', handleVisibilityChange);
-        window.removeEventListener('focus', handleVisibilityChange);
-      };
+    } else {
+      // Desktop: Conservative 5s polling to catch Realtime failures
+      pollInterval = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+          syncAll();
+        }
+      }, 5000);
     }
 
-    // 3. Connection health check
+    // 4. Connection health check
     const checkInterval = setInterval(() => {
       const isBroken = !realtimeChannelRef.current || realtimeChannelRef.current.state !== 'joined';
       if (isBroken) {
+        console.log("[Health] Realtime connection broken, reconnecting...");
         connectRealtime();
       }
     }, 5000);
 
     return () => {
+      window.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pageshow', handleVisibilityChange);
+      window.removeEventListener('focus', handleVisibilityChange);
       clearInterval(checkInterval);
       if (pollInterval) clearInterval(pollInterval);
       if (realtimeChannelRef.current) {
