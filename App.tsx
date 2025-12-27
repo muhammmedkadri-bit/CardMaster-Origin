@@ -1308,7 +1308,7 @@ const App: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    <div className="flex overflow-x-auto gap-4 px-4 pb-4 -mb-4 snap-x snap-mandatory no-scrollbar sm:px-0 sm:space-y-5 sm:block">
+                    <div className="flex overflow-x-auto gap-4 px-10 pb-4 -mb-4 snap-x snap-mandatory no-scrollbar sm:px-0 sm:space-y-5 sm:block">
                       {sortedTransactions.length > 0 ? (
                         <>
                           {sortedTransactions.slice(0, 10).map(tx => {
