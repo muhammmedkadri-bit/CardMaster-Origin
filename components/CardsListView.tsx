@@ -349,12 +349,12 @@ const CardsListView: React.FC<CardsListViewProps> = ({
               <CardIcon size={48} />
             </div>
             <h3 className={`text-xl font-black mb-2 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Henüz kart eklemediniz</h3>
-            <p className="text-slate-500 max-w-xs mx-auto mb-8 font-medium">Finansal takibe başlamak için hemen ilk kartınızı ekleyin.</p>
+            <p className="text-slate-500 max-w-xs mx-auto mb-8 font-medium">Finansal takibe başlamak için ilk kartınızı ekleyin.</p>
             <button
               onClick={onAddCard}
               className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-blue-700 transition-all active:scale-95"
             >
-              İLK KARTIMI EKLE
+              KART EKLE
             </button>
           </div>
         )}
