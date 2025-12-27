@@ -9,27 +9,12 @@ interface RollingNumberProps {
 
 const RollingNumber: React.FC<RollingNumberProps> = ({ value, currency = '₺', className = '' }) => {
     const [displayValue, setDisplayValue] = useState(0);
-    const [isMobile, setIsMobile] = useState(false);
-
     useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth < 768);
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
-
-    useEffect(() => {
-        // Remove artificial delay for mobile to prevent blocking
-        if (isMobile) {
-            setDisplayValue(value);
-            return;
-        }
-
         const timer = setTimeout(() => {
             setDisplayValue(value);
         }, 50);
         return () => clearTimeout(timer);
-    }, [value, isMobile]);
+    }, [value]);
 
     const isPercent = currency === '%';
     const formatOptions = isPercent
@@ -48,15 +33,6 @@ const RollingNumber: React.FC<RollingNumberProps> = ({ value, currency = '₺', 
                     if (!isDigit) {
                         return (
                             <span key={`char-${index}`} className="opacity-70 select-none px-[0.5px] leading-[1.2em]">
-                                {char}
-                            </span>
-                        );
-                    }
-
-                    // On mobile, just render the character to save DOM elements and CPU
-                    if (isMobile) {
-                        return (
-                            <span key={`digit-${index}`} className="leading-[1.2em]">
                                 {char}
                             </span>
                         );

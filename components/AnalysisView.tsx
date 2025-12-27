@@ -510,8 +510,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                   fill="url(#3dSpending)"
                   radius={[6, 6, 0, 0]}
                   maxBarSize={timeRange === 'year' ? 20 : 12}
-                  animationDuration={isMobile ? 0 : 800}
-
+                  animationDuration={800}
                 />
                 <Bar
                   dataKey="payment"
@@ -519,8 +518,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                   fill="url(#3dPayment)"
                   radius={[6, 6, 0, 0]}
                   maxBarSize={timeRange === 'year' ? 20 : 12}
-                  animationDuration={isMobile ? 0 : 800}
-
+                  animationDuration={800}
                 />
               </BarChart>
             </ResponsiveContainer>

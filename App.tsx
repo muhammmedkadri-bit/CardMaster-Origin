@@ -1547,7 +1547,7 @@ const App: React.FC = () => {
           </main>
 
           {!isInitialLoading && (
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[1000] flex flex-col items-center w-full max-w-[320px] sm:max-w-none pointer-events-none animate-in fade-in slide-in-from-bottom-20 zoom-in-95 duration-1000 delay-300 ease-out fill-mode-both">
+            <div key="bottom-nav" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[1000] flex flex-col items-center w-full max-w-[320px] sm:max-w-none pointer-events-none animate-in fade-in slide-in-from-bottom-[120px] zoom-in-75 duration-1000 ease-[cubic-bezier(0.34,1.56,0.64,1)] fill-mode-both">
               <div className="pointer-events-auto flex flex-col items-center">
                 {isFabOpen && (
                   <div className="mb-4 flex flex-col gap-3 min-w-[210px] animate-in fade-in slide-in-from-bottom-4 duration-300">

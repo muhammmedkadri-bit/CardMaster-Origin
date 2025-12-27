@@ -180,9 +180,9 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
               }}
               stroke="none"
               animationBegin={0}
-              animationDuration={isMobile ? 0 : 600}
+              animationDuration={600}
               animationEasing="ease-in-out"
-              isAnimationActive={!isMobile}
+              isAnimationActive={true}
             >
               {data.map((entry, index) => (
                 <Cell
