@@ -1525,9 +1525,9 @@ const App: React.FC = () => {
                   <button
                     key={item.mode}
                     onClick={() => { setModalMode(item.mode as any); setIsFabOpen(false); }}
-                    className={`group p-4 rounded-[24px] shadow-2xl flex items-center gap-4 font-black uppercase text-xs tracking-[0.15em] transition-all border backdrop-blur-xl active:scale-95 hover:shadow-[0_20px_60px_-15px] ${isDarkMode
-                      ? 'bg-[#0f172a]/80 border-slate-800 text-white hover:border-slate-700'
-                      : `bg-white/80 border-${item.color}-100 text-slate-800 hover:border-${item.color}-200`
+                    className={`group p-4 rounded-[24px] shadow-2xl flex items-center gap-4 font-black uppercase text-xs tracking-[0.15em] transition-all border backdrop-blur-xl active:scale-95 ${isDarkMode
+                      ? 'bg-[#0f172a]/80 border-slate-800 text-white'
+                      : `bg-white/80 border-${item.color}-100 text-slate-800`
                       }`}
                   >
                     <div className={`bg-gradient-to-br ${item.gradient} p-3 rounded-2xl shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
