@@ -147,9 +147,6 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
             <LayoutGrid size={14} /> KATEGORİ
           </button>
         </div>
-        <div className="hidden sm:flex text-[9px] font-black text-slate-400 gap-1 items-center uppercase tracking-tighter">
-          <Info size={12} /> Detaylar için dilimlere dokun
-        </div>
       </div>
 
       {/* Chart Container */}
@@ -241,21 +238,11 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
                   ₺{data[activeIndex].value.toLocaleString('tr-TR')}
                 </span>
 
-                {mode === 'cards' && (
-                  <div className="mt-1 flex flex-col items-center py-1.5 px-3 bg-amber-500/10 dark:bg-amber-500/20 rounded-xl border border-amber-500/20">
-                    <span className="text-[6px] font-black text-amber-600 uppercase tracking-[0.2em] leading-none mb-0.5">ASGARİ ÖDEME</span>
-                    <span className="text-sm font-black text-amber-500">₺{data[activeIndex].minPayment?.toLocaleString('tr-TR')}</span>
-                  </div>
-                )}
 
                 <div className="mt-2 flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700">
                   <span className="text-[9px] font-black text-blue-500">PAY: %{((data[activeIndex].value / totalValue) * 100).toFixed(0)}</span>
                 </div>
 
-                {/* Tap to close hint */}
-                <div className="mt-2 text-[7px] font-bold text-slate-400 uppercase opacity-60 animate-pulse">
-                  KAPAT → TIKLA
-                </div>
               </div>
             )}
           </div>
