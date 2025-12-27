@@ -1317,7 +1317,7 @@ const App: React.FC = () => {
                             const isSpending = tx.type === 'spending';
 
                             return (
-                              <div key={tx.id} className={`snap-center shrink-0 w-[320px] sm:w-auto relative p-5 sm:p-6 rounded-[32px] sm:rounded-[28px] transition-all group border ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                              <div key={tx.id} className={`snap-center shrink-0 w-[300px] sm:w-auto relative p-5 sm:p-6 rounded-[32px] sm:rounded-[28px] transition-all group border ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
                                 {/* Mobile: New Card Layout */}
                                 <div className="flex flex-col gap-4 sm:hidden">
                                   {/* Header: Indicator, Category, Actions */}
@@ -1403,7 +1403,7 @@ const App: React.FC = () => {
                           })}
                           <button
                             onClick={() => handleViewChange('analysis')}
-                            className={`snap-center shrink-0 w-[320px] sm:w-full sm:mt-4 p-6 sm:p-5 rounded-[32px] sm:rounded-3xl border-2 border-dashed font-black text-xs sm:text-[10px] uppercase tracking-[0.3em] transition-all flex flex-col sm:flex-row items-center justify-center gap-3 ${isDarkMode
+                            className={`snap-center shrink-0 w-[300px] sm:w-full sm:mt-4 p-6 sm:p-5 rounded-[32px] sm:rounded-3xl border-2 border-dashed font-black text-xs sm:text-[10px] uppercase tracking-[0.3em] transition-all flex flex-col sm:flex-row items-center justify-center gap-3 ${isDarkMode
                               ? 'border-slate-700 text-slate-400 hover:bg-slate-800/30 hover:text-blue-400 hover:border-blue-500/50'
                               : 'border-slate-200 text-slate-500 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200'
                               }`}
