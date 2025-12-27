@@ -461,21 +461,28 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                 />
                 <Tooltip
                   cursor={{ fill: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)' }}
-                  contentStyle={{
-                    borderRadius: '24px',
-                    border: 'none',
-                    backgroundColor: isDarkMode ? '#1e293b' : '#ffffff',
-                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                    padding: '16px',
-                    fontWeight: 700,
-                    backdropFilter: 'blur(10px)'
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className={`p-5 rounded-[24px] border-none shadow-2xl backdrop-blur-md transition-all duration-300 ${isDarkMode ? 'bg-[#1e293b]/90 border border-white/5' : 'bg-white/90 border border-slate-100'}`}>
+                          <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">{label}</p>
+                          <div className="space-y-2">
+                            {payload.map((entry: any, index: number) => (
+                              <div key={index} className="flex items-center justify-between gap-6">
+                                <span className={`text-[13px] font-bold ${entry.name === 'Harcamalar' ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                  {entry.name}:
+                                </span>
+                                <span className={`text-[13px] font-black ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                                  ₺{entry.value.toLocaleString('tr-TR')}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
                   }}
-                  itemStyle={{ fontSize: '13px', padding: '2px 0' }}
-                  labelStyle={{ color: '#94a3b8', marginBottom: '8px', fontSize: '11px', textTransform: 'uppercase' }}
-                  formatter={(value: number, name: string) => [
-                    `₺${value.toLocaleString('tr-TR')}`,
-                    name
-                  ]}
                 />
                 <Bar
                   dataKey="spending"
