@@ -28,10 +28,6 @@ const RollingNumber: React.FC<RollingNumberProps> = ({ value, currency = '₺', 
 
     return (
         <div className={`inline-flex items-baseline font-mono tabular-nums ${className}`} dir="ltr">
-            {currency && !isPercent && (
-                <span className="mr-1 opacity-70 shrink-0 select-none leading-[1.2em]">{currency}</span>
-            )}
-
             <div className="flex items-baseline leading-[1.2em]">
                 {chars.map((char, index) => {
                     const isDigit = /\d/.test(char);
@@ -46,7 +42,7 @@ const RollingNumber: React.FC<RollingNumberProps> = ({ value, currency = '₺', 
 
                     return (
                         <div
-                            key={`digit-${index}`} // Use stable key to keep the element and transition it
+                            key={`digit-${index}`}
                             className="relative w-[0.6em] h-[1.2em] overflow-hidden flex flex-col items-center"
                             style={{ height: '1.2em' }}
                         >
@@ -68,7 +64,8 @@ const RollingNumber: React.FC<RollingNumberProps> = ({ value, currency = '₺', 
                 })}
             </div>
 
-            {isPercent && (
+            {/* All currency symbols on the right */}
+            {currency && (
                 <span className="ml-1 opacity-70 shrink-0 select-none leading-[1.2em]">{currency}</span>
             )}
         </div>

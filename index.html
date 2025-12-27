@@ -148,6 +148,30 @@
       scrollbar-width: none;
     }
 
+    /* Fix: Remove blue outline on chart double-tap */
+    .recharts-wrapper,
+    .recharts-surface,
+    .recharts-layer,
+    .recharts-pie,
+    .recharts-sector,
+    svg,
+    g,
+    path,
+    text {
+      outline: none !important;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .recharts-wrapper *:focus,
+    .recharts-wrapper *:active {
+      outline: none !important;
+    }
+
+    /* Fix: Prevent pie chart center text from shifting */
+    .recharts-pie-label-text {
+      pointer-events: none !important;
+    }
+
     /* Realistic Card Textures */
     .card-texture-brushed {
       background-image: url("https://www.transparenttextures.com/patterns/brushed-alum.png");

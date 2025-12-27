@@ -1221,20 +1221,7 @@ const App: React.FC = () => {
               </span>
             </button>
 
-            <button
-              onClick={() => { setIsNotificationPanelOpen(true); }}
-              className={`relative p-2.5 sm:p-3.5 rounded-2xl transition-all border group ${isDarkMode ? 'bg-slate-900/40 border-slate-800 text-slate-400 hover:text-white' : 'bg-white/80 border-slate-100 text-slate-500 hover:text-blue-600 shadow-sm backdrop-blur-md'}`}
-            >
-              <Bell size={18} className="sm:w-5 sm:h-5 group-active:scale-90 transition-transform" />
-              {unreadCount > 0 && (
-                <>
-                  <span className="absolute top-2 right-2 sm:top-2.5 sm:right-2.5 w-4 h-4 sm:w-4.5 sm:h-4.5 bg-rose-500 border-2 border-white dark:border-[#0b101d] rounded-full flex items-center justify-center text-[7px] sm:text-[8px] font-black text-white shadow-sm z-10">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                  <span className="absolute top-2 right-2 sm:top-2.5 sm:right-2.5 w-4 h-4 sm:w-4.5 sm:h-4.5 bg-rose-500 rounded-full animate-ping opacity-20"></span>
-                </>
-              )}
-            </button>
+
           </div>
         </div>
       </header>
@@ -1578,97 +1565,7 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {
-            isNotificationPanelOpen && (
-              <div className="fixed inset-0 z-[110] flex justify-end">
-                <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsNotificationPanelOpen(false)} />
-                <div className="relative w-full md:w-[480px] h-full bg-[#fdfdfe] dark:bg-[#0b101d] shadow-[0_0_100px_rgba(0,0,0,0.6)] flex flex-col animate-in slide-in-from-right duration-500 border-l border-white/5">
-                  <div className="relative px-8 pt-10 pb-8">
-                    <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-600/10 blur-[100px] rounded-full pointer-events-none"></div>
-                    <div className="relative flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-blue-600/10 rounded-[18px] flex items-center justify-center text-blue-600 shadow-inner">
-                          <Bell size={24} />
-                        </div>
-                        <div>
-                          <h2 className={`font-black text-2xl tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Bildirimler</h2>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${unreadCount > 0 ? 'text-blue-500' : 'text-slate-400'}`}>
-                              {unreadCount > 0 ? `${unreadCount} YENİ` : 'GÜNCEL'}
-                            </span>
-                            {unreadCount > 0 && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>}
-                          </div>
-                        </div>
-                      </div>
-                      <button onClick={() => setIsNotificationPanelOpen(false)} className="p-3 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 transition-all active:scale-90"><X size={20} /></button>
-                    </div>
-                  </div>
 
-                  <div className="flex-1 overflow-y-auto px-6 space-y-4 custom-scrollbar pb-10">
-                    {notificationHistory.filter(n => !n.isDeleted).length > 0 ? notificationHistory.filter(n => !n.isDeleted).map((item) => (
-                      <div
-                        key={item.id}
-                        className={`relative group p-6 rounded-[28px] border transition-all flex gap-5 shadow-sm ${item.read
-                          ? (isDarkMode ? 'bg-[#151b2b] border-slate-800 opacity-50 grayscale-[0.3]' : 'bg-[#f1f5f9] border-slate-200 opacity-60 grayscale-[0.3]')
-                          : (item.type === 'warning'
-                            ? (isDarkMode ? 'bg-rose-500/10 border-rose-500/40 shadow-[0_10px_30px_rgba(244,63,94,0.15)]' : 'bg-rose-50 border-rose-200 shadow-md')
-                            : (isDarkMode ? 'bg-[#1a2235] border-blue-500/30 shadow-[0_10px_30px_rgba(59,130,246,0.1)]' : 'bg-white border-blue-100 shadow-md')
-                          )
-                          }`}
-                      >
-                        {!item.read && (
-                          <div className={`absolute top-6 right-6 w-3 h-3 rounded-full animate-pulse ${item.type === 'warning' ? 'bg-rose-500 ring-4 ring-rose-500/20' : 'bg-emerald-500 ring-4 ring-emerald-500/20'
-                            }`}></div>
-                        )}
-
-                        <div className="flex-1">
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-2">
-                            <Clock size={10} /> {item.timestamp} {item.isMandatory && <span className="bg-amber-500/10 text-amber-500 text-[8px] px-1.5 py-0.5 rounded ml-1 border border-amber-500/20">ZORUNLU</span>}
-                          </span>
-                          <p className={`text-sm leading-relaxed tracking-tight ${item.read ? 'font-medium' : 'font-black'} ${isDarkMode ? 'text-white' : 'text-slate-900'
-                            }`}>
-                            {item.message}
-                          </p>
-                          {(item.cardColor || item.cardName) && (
-                            <div className="mt-4 flex items-center gap-2">
-                              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.cardColor || '#ccc' }}></div>
-                              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest italic">{item.cardName}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Actions Area */}
-                        <div className="flex flex-col gap-2 shrink-0">
-                          {!item.isMandatory ? (
-                            <button
-                              onClick={(e) => handleDeleteNotification(e, item.id)}
-                              title="Sil"
-                              className={`w-12 h-12 rounded-[20px] flex items-center justify-center transform transition-all active:scale-90 ${item.type === 'warning'
-                                ? 'bg-rose-500 text-white hover:bg-rose-600 shadow-lg'
-                                : 'bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white border border-rose-500/20'
-                                }`}
-                            >
-                              <Trash2 size={20} />
-                            </button>
-                          ) : (
-                            <div className="w-12 h-12 rounded-[20px] border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-600 bg-slate-100/50 dark:bg-slate-800/30" title="Borç ödenmeden silinemez">
-                              <ShieldCheck size={20} />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )) : <div className="flex flex-col items-center justify-center py-40 text-center"><Inbox size={40} className="text-slate-300 dark:text-slate-700 mb-6" /><h3 className={`font-black text-lg ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Bildirim kutunuz boş</h3></div>}
-                  </div>
-
-                  {notificationHistory.filter(n => !n.isDeleted && !n.isMandatory).length > 0 && (
-                    <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/40 backdrop-blur-xl">
-                      <button onClick={handleDeleteAllNotifications} className="w-full py-5 rounded-[22px] bg-rose-600 text-white text-xs font-black uppercase tracking-[0.2em] shadow-xl hover:bg-rose-700 transition-all active:scale-[0.98] flex items-center justify-center gap-3"><Trash2 size={18} /> TÜMÜNÜ SİL</button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          }
 
           {
             isAIPanelOpen && (
