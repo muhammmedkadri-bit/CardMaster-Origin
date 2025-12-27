@@ -463,10 +463,23 @@ const App: React.FC = () => {
         if (table === 'transactions') {
           if (payload.eventType === 'DELETE' && payload.old) {
             setTransactions(prev => prev.filter(t => t.id !== payload.old.id));
-            // Cards will be synced separately, no need for full sync
             return;
           } else if (payload.eventType === 'INSERT' && payload.new) {
-            setTransactions(prev => [dataSyncService.mapTransactionFromDB(payload.new), ...prev]);
+            // Prevent duplicate: Check if transaction already exists (optimistic update)
+            const newTx = dataSyncService.mapTransactionFromDB(payload.new);
+            setTransactions(prev => {
+              const exists = prev.some(t => t.id === newTx.id);
+              if (exists) {
+                console.log('[Realtime] Transaction already exists locally, skipping duplicate');
+                return prev;
+              }
+              return [newTx, ...prev];
+            });
+            return;
+          } else if (payload.eventType === 'UPDATE' && payload.new) {
+            // Handle transaction updates
+            const updatedTx = dataSyncService.mapTransactionFromDB(payload.new);
+            setTransactions(prev => prev.map(t => t.id === updatedTx.id ? updatedTx : t));
             return;
           }
         }
@@ -477,7 +490,15 @@ const App: React.FC = () => {
             setLastUpdate(Date.now());
             return;
           } else if (payload.eventType === 'INSERT' && payload.new) {
-            setCards(prev => [...prev, dataSyncService.mapCardFromDB(payload.new)]);
+            const newCard = dataSyncService.mapCardFromDB(payload.new);
+            setCards(prev => {
+              const exists = prev.some(c => c.id === newCard.id);
+              if (exists) {
+                console.log('[Realtime] Card already exists locally, skipping duplicate');
+                return prev;
+              }
+              return [...prev, newCard];
+            });
             return;
           } else if (payload.eventType === 'DELETE' && payload.old) {
             setCards(prev => prev.filter(c => c.id !== payload.old.id));
