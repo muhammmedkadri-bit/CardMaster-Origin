@@ -1405,7 +1405,8 @@ const App: React.FC = () => {
                                       {/* Footer: Card, Amount, Date */}
                                       <div className="flex flex-col gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                                         <div className="flex items-center justify-between gap-4">
-                                          <div className="px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-widest" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
+                                          <div className="px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-widest flex items-center gap-2" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
+                                            <div className="w-1 h-1 rounded-full animate-pulse" style={{ backgroundColor: cardColor }}></div>
                                             {tx.cardName}
                                           </div>
                                           <p className={`text-xl font-black tracking-tighter ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
@@ -1435,7 +1436,10 @@ const App: React.FC = () => {
                                             )}
                                           </div>
                                           <div className="flex items-center gap-3 mt-1">
-                                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{tx.cardName}</p>
+                                            <div className="px-2.5 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
+                                              <div className="w-1 h-1 rounded-full" style={{ backgroundColor: cardColor }}></div>
+                                              {tx.cardName}
+                                            </div>
                                             <span className="text-[10px] text-slate-300 dark:text-slate-700">•</span>
                                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{formatDateDisplay(tx.date)}</p>
                                           </div>
