@@ -1403,7 +1403,7 @@ const App: React.FC = () => {
                                       </div>
 
                                       {/* Footer: Card, Amount, Date */}
-                                      <div className="flex flex-col gap-4 pt-4 border-t border-slate-200/10 dark:border-white/5">
+                                      <div className="flex flex-col gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                                         <div className="flex items-center justify-between gap-4">
                                           <div className="px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-widest" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
                                             {tx.cardName}
