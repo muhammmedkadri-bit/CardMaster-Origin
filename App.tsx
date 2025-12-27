@@ -1553,7 +1553,7 @@ const App: React.FC = () => {
           </main>
 
           {!isInitialLoading && (
-            <div key="bottom-nav-morph" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[2100] flex flex-col items-center w-full max-w-[340px] sm:max-w-none pointer-events-none animate-morph-reveal">
+            <div key="bottom-nav-morph-v2" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[2100] flex flex-col items-center w-full max-w-[340px] sm:max-w-none sm:w-auto pointer-events-none animate-morph-reveal">
               <div className="pointer-events-auto flex flex-col items-center w-full">
                 {isFabOpen && (
                   <div className="mb-4 flex flex-col gap-3 min-w-[210px] animate-in fade-in slide-in-from-bottom-4 duration-300">

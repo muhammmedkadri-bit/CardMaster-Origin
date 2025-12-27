@@ -30,9 +30,24 @@
           },
           keyframes: {
             'morph-reveal': {
-              '0%': { 'clip-path': 'circle(0% at 50% 50%)', opacity: '0', filter: 'blur(8px)', transform: 'translateX(-50%) translateY(30px) scale(0.9)' },
-              '20%': { 'clip-path': 'circle(10% at 50% 50%)', opacity: '1', filter: 'blur(0px)', transform: 'translateX(-50%) translateY(0) scale(1)' },
-              '100%': { 'clip-path': 'circle(150% at 50% 50%)', opacity: '1', transform: 'translateX(-50%) translateY(0) scale(1)' }
+              '0%': {
+                'clip-path': 'inset(45% 49% 45% 49% round 999px)',
+                opacity: '0',
+                transform: 'translateX(-50%) translateY(30px) scale(0.6)',
+                filter: 'blur(10px)'
+              },
+              '35%': {
+                'clip-path': 'inset(10% 41% 10% 41% round 999px)',
+                opacity: '1',
+                transform: 'translateX(-50%) translateY(0) scale(1.05)',
+                filter: 'blur(0px)'
+              },
+              '100%': {
+                'clip-path': 'inset(0% 0% 0% 0% round 32px)',
+                opacity: '1',
+                transform: 'translateX(-50%) translateY(0) scale(1)',
+                filter: 'blur(0px)'
+              }
             },
             'nav-item-fade': {
               '0%': { opacity: '0', transform: 'translateY(15px) scale(0.95)' },
