@@ -234,7 +234,7 @@ const App: React.FC = () => {
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
   const [toastNotifications, setToastNotifications] = useState<{ id: number; message: string; type: 'warning' | 'info' | 'success' }[]>([]);
   const [scrollY, setScrollY] = useState(0);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(false); // DISABLED - Direct access
   const [realtimeRetryTrigger, setRealtimeRetryTrigger] = useState(0);
   const [isChangingView, setIsChangingView] = useState(false);
   const [isExitingWelcome, setIsExitingWelcome] = useState(false);
