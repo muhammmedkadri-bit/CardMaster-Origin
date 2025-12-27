@@ -915,50 +915,48 @@ const App: React.FC = () => {
   const handleTransaction = async (finalTx: Transaction) => {
     if (!user) return;
 
-    // 1. ANINDA ARAYÜZ GÜNCELLEME (SPEED & MATH)
-    // Beklemek yok, anında sonuç.
-
-    // A) İşlem Listesini Güncelle
-    const related = cards.find(c => c.id === finalTx.cardId);
-    const optimisticTx = { ...finalTx, cardName: related?.cardName || '' };
-    setTransactions(prev => [optimisticTx, ...prev]);
-
-    // B) Bakiyeyi Anında Hesapla (User's Idea: Calculate instantly from action)
-    if (related) {
-      setCards(prev => prev.map(c => {
-        if (c.id === finalTx.cardId) {
-          // Harcama ise borç artar (+), Ödeme ise borç azalır (-)
-          const impact = finalTx.type === 'spending' ? finalTx.amount : -finalTx.amount;
-          return { ...c, balance: c.balance + impact };
-        }
-        return c;
-      }));
+    // 1. Find affected card and calculate new balance
+    const affectedCard = cards.find(c => c.id === finalTx.cardId);
+    if (!affectedCard) {
+      showToast('Kart bulunamadı', 'warning');
+      return;
     }
 
-    // C) Modalı Kapat ve Bildirim Ver
+    // Calculate balance impact
+    const impact = finalTx.type === 'spending' ? finalTx.amount : -finalTx.amount;
+    const updatedCard = { ...affectedCard, balance: affectedCard.balance + impact };
+
+    // 2. IMMEDIATE UI UPDATE
+    const optimisticTx = { ...finalTx, cardName: affectedCard.cardName };
+    setTransactions(prev => [optimisticTx, ...prev]);
+    setCards(prev => prev.map(c => c.id === finalTx.cardId ? updatedCard : c));
+
     setModalMode(null);
     setEditingTransaction(undefined);
     showToast('İşlem başarıyla eklendi', 'success');
 
-    // 2. ARKA PLAN SENKRONİZASYONU
+    // 3. IMMEDIATE DATABASE SYNC (CRITICAL FOR CROSS-DEVICE)
     try {
-      await dataSyncService.saveTransaction(user.id, finalTx);
+      // Save transaction AND update card balance in parallel
+      await Promise.all([
+        dataSyncService.saveTransaction(user.id, finalTx),
+        dataSyncService.upsertCard(user.id, updatedCard)
+      ]);
 
-      // SEND SYNC SIGNAL: Tell other devices to refresh (Critical for Safari Mobile)
-      dataSyncService.sendSyncSignal(user.id);
+      // Broadcast sync signal to other devices
+      await dataSyncService.sendSyncSignal(user.id);
 
-      // Sessizce doğrulama yap (Kullanıcıya hissettirmeden)
+      console.log('[Add] Transaction added and card balance updated in DB');
+    } catch (error) {
+      console.error('[Add] Failed to sync:', error);
+      showToast('Senkronizasyon hatası', 'warning');
+
+      // Revert on error
       const data = await dataSyncService.fetchAllData(user.id);
       if (data) {
-        // Verileri senkronize et ama UI titremesin diye dikkatli olabiliriz
-        // Şimdilik direkt set ediyoruz, çünkü veri doğruysa zaten aynı olacaktır.
         setCards(data.cards);
         setTransactions(data.transactions);
       }
-    } catch (error) {
-      console.error(error);
-      // Hata olursa kullanıcıyı uyar (Rollback mantığı eklenebilir ama şu an basit tutuyoruz)
-      showToast('Senkronizasyon hatası', 'warning');
     }
   };
 
