@@ -161,8 +161,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
     const tempDate = new Date(start);
     while (tempDate <= end) {
       const label = timeRange === 'year'
-        ? tempDate.toLocaleDateString('tr-TR', { month: 'short', year: '2-digit' })
-        : tempDate.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' });
+        ? tempDate.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })
+        : tempDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
 
       if (!data[label]) {
         data[label] = { label, spending: 0, payment: 0, net: 0, timestamp: tempDate.getTime() };
@@ -178,8 +178,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
     filteredTransactions.forEach(t => {
       const d = new Date(t.date);
       const label = timeRange === 'year'
-        ? d.toLocaleDateString('tr-TR', { month: 'short', year: '2-digit' })
-        : d.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' });
+        ? d.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })
+        : d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
 
       if (data[label]) {
         if (t.type === 'spending') data[label].spending += t.amount;
@@ -451,7 +451,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                   axisLine={false}
                   tickLine={false}
                   tick={{ fill: isDarkMode ? '#64748b' : '#94a3b8', fontSize: 10, fontWeight: 700 }}
-                  minTickGap={timeRange === 'year' ? 10 : 30}
+                  minTickGap={40}
                 />
                 <YAxis
                   axisLine={false}
@@ -474,12 +474,12 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                   labelStyle={{ color: '#94a3b8', marginBottom: '8px', fontSize: '11px', textTransform: 'uppercase' }}
                   formatter={(value: number, name: string) => [
                     `₺${value.toLocaleString('tr-TR')}`,
-                    name === 'spending' ? 'Harcama' : 'Ödeme'
+                    name
                   ]}
                 />
                 <Bar
                   dataKey="spending"
-                  name="Harcama"
+                  name="Harcamalar"
                   fill="url(#3dSpending)"
                   radius={[6, 6, 0, 0]}
                   maxBarSize={timeRange === 'year' ? 20 : 12}
@@ -487,7 +487,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                 />
                 <Bar
                   dataKey="payment"
-                  name="Ödeme"
+                  name="Ödemeler"
                   fill="url(#3dPayment)"
                   radius={[6, 6, 0, 0]}
                   maxBarSize={timeRange === 'year' ? 20 : 12}
