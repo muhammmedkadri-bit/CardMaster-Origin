@@ -1277,7 +1277,7 @@ const App: React.FC = () => {
                         <button onClick={() => scrollBy(400)} className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 cursor-pointer transition-colors active:scale-90"><ChevronRight size={20} /></button>
                       </div>
                     </div>
-                    <div ref={scrollContainerRef} onScroll={handleScroll} className="flex overflow-x-auto gap-4 sm:gap-10 pt-6 sm:pt-10 pb-10 sm:pb-14 -mb-10 sm:-mb-14 snap-x no-scrollbar scroll-smooth min-h-[200px] sm:min-h-[220px]">
+                    <div ref={scrollContainerRef} onScroll={handleScroll} className="flex overflow-x-auto gap-4 sm:gap-10 px-4 pt-6 sm:pt-10 pb-10 sm:pb-14 -mb-10 sm:-mb-14 snap-x no-scrollbar scroll-smooth min-h-[200px] sm:min-h-[220px]">
                       {cards.map((card, index) => {
                         const cardWidth = 380; const gap = 40; const cardCenter = index * (cardWidth + gap) + (cardWidth / 2);
                         const containerWidth = scrollContainerRef.current?.offsetWidth || 800; const viewportCenter = scrollX + (containerWidth / 2);
