@@ -1192,27 +1192,17 @@ const App: React.FC = () => {
 
       {/* Header with Revised Logo */}
       <header className="fixed top-0 left-0 right-0 z-40 pointer-events-none p-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between pointer-events-auto">
-          <div className="sm:hidden w-[42px] h-[42px]"></div>
-          <div className="hidden sm:block w-12 h-12"></div>
-
+        <div className="max-w-7xl mx-auto relative">
+          {/* Logo - Perfectly Centered */}
           <div
             onClick={() => handleViewChange('dashboard')}
-            className="cursor-pointer transition-opacity duration-200 active:scale-95"
+            className="absolute left-1/2 -translate-x-1/2 cursor-pointer transition-opacity duration-200 active:scale-95 pointer-events-auto"
             style={{
               opacity: logoOpacity,
               willChange: 'opacity',
             }}
           >
             <Logo isDarkMode={isDarkMode} />
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3 pointer-events-auto">
-            {/* Realtime Status Indicator - Hidden per user request */}
-
-
-
-
           </div>
         </div>
       </header>
