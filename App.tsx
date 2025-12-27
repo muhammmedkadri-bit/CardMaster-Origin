@@ -1210,16 +1210,7 @@ const App: React.FC = () => {
           <div className="flex items-center gap-2 sm:gap-3 pointer-events-auto">
             {/* Realtime Status Indicator - Hidden per user request */}
 
-            <button
-              onClick={() => user ? handleLogout() : setIsAuthModalOpen(true)}
-              className={`relative p-2.5 sm:p-3.5 rounded-2xl transition-all border group flex items-center gap-2 ${isDarkMode ? 'bg-slate-900/40 border-slate-800 text-slate-400 hover:text-white' : 'bg-white/80 border-slate-100 text-slate-500 hover:text-blue-600 shadow-sm backdrop-blur-md'}`}
-              title={user ? `${user.email} - Çıkış Yap` : 'Giriş Yap'}
-            >
-              {user ? <LogOut size={18} className="sm:w-5 sm:h-5" /> : <LoginIcon size={18} className="sm:w-5 sm:h-5" />}
-              <span className="hidden md:block text-[10px] font-black uppercase tracking-widest">
-                {user ? 'Çıkış' : 'Giriş Yap'}
-              </span>
-            </button>
+
 
 
           </div>
@@ -1555,10 +1546,16 @@ const App: React.FC = () => {
                 </div>
                 <button onClick={() => setIsFabOpen(!isFabOpen)} className={`shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-white shadow-xl transition-all transform hover:scale-105 active:scale-95 border-[3px] sm:border-4 ${isDarkMode ? 'border-[#0a1224]' : 'border-white'} ${isFabOpen ? 'bg-slate-800 rotate-45' : 'bg-blue-600 shadow-blue-600/30'}`}><Plus size={24} className="sm:w-8 sm:h-8" strokeWidth={3} /></button>
                 <div className="flex items-center px-0.5 sm:px-1 gap-1">
-                  <button onClick={() => setIsAIPanelOpen(true)} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${isDarkMode ? 'text-slate-400 hover:text-amber-400 hover:bg-slate-800' : 'text-slate-500 hover:text-amber-600 hover:bg-slate-100'}`}><Sparkles size={20} className="sm:w-5 sm:h-5" /></button>
                   <a href="#" onClick={(e) => { e.preventDefault(); handleViewChange('settings'); }} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'settings' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100')}`}><SettingsIcon size={20} className="sm:w-5 sm:h-5" /></a>
                   <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${isDarkMode ? 'text-slate-400 hover:text-yellow-400 hover:bg-slate-800' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100'}`}>
                     {isDarkMode ? <Sun size={20} className="sm:w-5 sm:h-5" /> : <Moon size={20} className="sm:w-5 sm:h-5" />}
+                  </button>
+                  <button
+                    onClick={() => user ? handleLogout() : setIsAuthModalOpen(true)}
+                    className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${isDarkMode ? 'text-slate-400 hover:text-rose-400 hover:bg-slate-800' : 'text-slate-500 hover:text-rose-600 hover:bg-slate-100'}`}
+                    title={user ? `${user.email} - Çıkış Yap` : 'Giriş Yap'}
+                  >
+                    {user ? <LogOut size={20} className="sm:w-5 sm:h-5" /> : <LoginIcon size={20} className="sm:w-5 sm:h-5" />}
                   </button>
                 </div>
               </div>
@@ -1566,135 +1563,6 @@ const App: React.FC = () => {
           </div>
 
 
-
-          {
-            isAIPanelOpen && (
-              <div className="fixed inset-0 z-[100] flex justify-end">
-                <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsAIPanelOpen(false)} />
-                <div className={`relative w-full md:w-[450px] h-full border-l shadow-2xl flex flex-col animate-in slide-in-from-right duration-500 overflow-hidden ${isDarkMode ? 'bg-[#0a0f1c] border-slate-800' : 'bg-white border-slate-200'}`}>
-
-                  {/* Header */}
-                  <div className={`p-8 border-b flex items-center justify-between ${isDarkMode ? 'bg-[#111827] border-slate-800' : 'bg-slate-50/50 border-slate-100'}`}>
-                    <div className="flex items-center gap-4">
-                      <div className={`p-3 rounded-2xl shadow-xl ${isDarkMode ? 'bg-amber-400 text-slate-950 shadow-amber-400/20' : 'bg-amber-500 text-white shadow-amber-500/20'}`}>
-                        <Zap fill="currentColor" size={24} />
-                      </div>
-                      <div>
-                        <h2 className={`font-black text-xl tracking-tight leading-none italic uppercase ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Smart Advisor</h2>
-                        <div className="flex items-center gap-2 mt-2">
-                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                          <span className={`text-[10px] font-bold uppercase tracking-widest ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Asistan Hazır</span>
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setIsAIPanelOpen(false)}
-                      className={`p-3 rounded-full transition-all hover:rotate-90 ${isDarkMode ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}
-                    >
-                      <X size={24} />
-                    </button>
-                  </div>
-
-                  {/* Chat Area */}
-                  <div className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar scrolling-touch relative">
-                    {/* Initial Welcome */}
-                    <div className={`p-8 rounded-[32px] border transition-all ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-blue-50/50 border-blue-100/50'}`}>
-                      <div className="flex items-center gap-2 mb-4">
-                        <div className={`p-1.5 rounded-lg ${isDarkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-600/10 text-blue-600'}`}>
-                          <MessageSquare size={14} />
-                        </div>
-                        <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>BAŞLANGIÇ</p>
-                      </div>
-                      <p className={`text-base leading-relaxed font-semibold tracking-tight ${isDarkMode ? 'text-indigo-50' : 'text-slate-700'}`}>
-                        Merhaba! Harcama verinizi analiz edebilir, borç kapatma stratejileri sunabilir veya finansal sorularınızı yanıtlayabilirim.
-                      </p>
-                    </div>
-
-                    {/* Chat History */}
-                    <div className="space-y-6">
-                      {chatHistory.map((chat, idx) => (
-                        <div key={idx} className={`flex ${chat.role === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2 duration-300`}>
-                          <div className={`max-w-[85%] group`}>
-                            <div className={`flex items-center gap-2 mb-1.5 px-2 ${chat.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                              {chat.role === 'assistant' && <Bot size={10} className="text-amber-500" />}
-                              <span className={`text-[9px] font-black uppercase tracking-widest opacity-40 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                                {chat.role === 'user' ? 'SİZ' : 'ADVISOR'}
-                              </span>
-                              {chat.role === 'user' && <UserIcon size={10} className="opacity-40" />}
-                            </div>
-                            <div className={`px-6 py-4 rounded-[26px] shadow-sm transition-all ${chat.role === 'user'
-                              ? 'bg-blue-600 text-white rounded-tr-none'
-                              : (isDarkMode
-                                ? 'bg-[#1a2235] border border-slate-800 text-slate-100 rounded-tl-none'
-                                : 'bg-slate-100 border border-slate-200/50 text-slate-800 rounded-tl-none')
-                              }`}>
-                              <p className="text-[15px] leading-relaxed font-medium whitespace-pre-wrap">{chat.content}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {isAIThinking && (
-                      <div className="flex justify-start animate-in fade-in duration-300 pl-2">
-                        <div className={`p-4 rounded-[20px] rounded-tl-none flex gap-1.5 items-center ${isDarkMode ? 'bg-slate-800/50' : 'bg-slate-100'}`}>
-                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce"></div>
-                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce [animation-delay:-0.15s]"></div>
-                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce [animation-delay:-0.3s]"></div>
-                        </div>
-                      </div>
-                    )}
-                    <div ref={chatEndRef} className="h-4" />
-                  </div>
-
-                  {/* Input Area */}
-                  <div className={`p-8 border-t flex flex-col gap-5 ${isDarkMode ? 'bg-[#111827] border-slate-800' : 'bg-white border-slate-100'}`}>
-                    <div className="flex flex-wrap items-center justify-center gap-2">
-                      {[
-                        { label: "💡 Strateji", text: "Borç kapatma stratejisi öner" },
-                        { label: "📊 Analiz", text: "En yüksek borçlu kartım hangisi?" },
-                        { label: "💰 limitler", text: "Kalan limitlerimi özetle" }
-                      ].map((s, i) => (
-                        <button
-                          key={i}
-                          onClick={() => { setUserMessage(s.text); }}
-                          className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border ${isDarkMode
-                            ? 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800'
-                            : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-100'
-                            }`}
-                        >
-                          {s.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    <form onSubmit={handleSendMessage} className="relative group">
-                      <input
-                        type="text"
-                        value={userMessage}
-                        onChange={(e) => setUserMessage(e.target.value)}
-                        placeholder="Mesajınızı buraya yazın..."
-                        className={`w-full py-5 pl-8 pr-16 rounded-[24px] text-sm focus:outline-none transition-all font-semibold shadow-inner border ${isDarkMode
-                          ? 'bg-[#0b0f1a] border-slate-700 text-white focus:border-blue-500/50 placeholder:text-slate-600'
-                          : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-blue-400 placeholder:text-slate-400'
-                          }`}
-                      />
-                      <button
-                        type="submit"
-                        disabled={!userMessage.trim() || isAIThinking}
-                        className={`absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 rounded-[18px] flex items-center justify-center transition-all active:scale-90 shadow-xl disabled:opacity-30 ${isDarkMode
-                          ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/20'
-                          : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/10'
-                          }`}
-                      >
-                        <Send size={20} />
-                      </button>
-                    </form>
-                  </div>
-                </div>
-              </div>
-            )
-          }
 
           {
             cardToDelete && (
