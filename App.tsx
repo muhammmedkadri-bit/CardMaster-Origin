@@ -1553,7 +1553,7 @@ const App: React.FC = () => {
           </main>
 
           {!isInitialLoading && (
-            <div key="bottom-nav-morph-v4" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[2100] flex flex-col items-center w-full max-w-[350px] sm:max-w-none sm:w-auto pointer-events-none animate-morph-reveal">
+            <div key="bottom-nav-morph-v5" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[2100] flex flex-col items-center w-full max-w-[330px] sm:max-w-none sm:w-auto pointer-events-none animate-morph-reveal">
               <div className="pointer-events-auto flex flex-col items-center w-full">
                 {isFabOpen && (
                   <div className="mb-6 flex flex-col gap-3 min-w-[220px]">
@@ -1575,33 +1575,33 @@ const App: React.FC = () => {
                   </div>
                 )}
 
-                <div className={`flex items-center gap-1.5 sm:gap-2.5 p-1.5 sm:p-2.5 rounded-[32px] sm:rounded-[40px] border shadow-2xl ${isDarkMode ? 'bg-[#0b0f1a]/95 border-slate-800 shadow-black' : 'bg-white/95 border-slate-200 shadow-blue-900/10'}`}>
-                  <div className="flex items-center px-1 sm:px-2 gap-1 sm:gap-1.5 animate-nav-item-fade [animation-delay:800ms] opacity-0 fill-mode-both">
-                    <button onClick={() => handleViewChange('dashboard')} className={`min-w-[44px] min-h-[44px] p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'dashboard' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Dashboard"><LayoutDashboard size={20} className="sm:w-5 sm:h-5" /></button>
-                    <button onClick={() => handleViewChange('cards')} className={`min-w-[44px] min-h-[44px] p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'cards' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Cards"><CardIcon size={20} className="sm:w-5 sm:h-5" /></button>
-                    <button onClick={() => handleViewChange('analysis')} className={`min-w-[44px] min-h-[44px] p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'analysis' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Analysis"><BarChart3 size={20} className="sm:w-5 sm:h-5" /></button>
+                <div className={`flex items-center gap-1 sm:gap-2.5 p-1 sm:p-2.5 rounded-[32px] sm:rounded-[40px] border shadow-2xl ${isDarkMode ? 'bg-[#0b0f1a]/95 border-slate-800 shadow-black' : 'bg-white/95 border-slate-200 shadow-blue-900/10'}`}>
+                  <div className="flex items-center px-0.5 sm:px-2 gap-0.5 sm:gap-1.5 animate-nav-item-fade [animation-delay:800ms] opacity-0 fill-mode-both">
+                    <button onClick={() => handleViewChange('dashboard')} className={`min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px] p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'dashboard' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Dashboard"><LayoutDashboard size={18} className="sm:w-5 sm:h-5" /></button>
+                    <button onClick={() => handleViewChange('cards')} className={`min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px] p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'cards' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Cards"><CardIcon size={18} className="sm:w-5 sm:h-5" /></button>
+                    <button onClick={() => handleViewChange('analysis')} className={`min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px] p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'analysis' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Analysis"><BarChart3 size={18} className="sm:w-5 sm:h-5" /></button>
                   </div>
 
                   <button
                     onClick={() => setIsFabOpen(!isFabOpen)}
-                    className={`shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-white shadow-2xl transition-all duration-500 animate-nav-item-fade [animation-delay:600ms] opacity-0 fill-mode-both active:scale-95 ${isFabOpen ? (isDarkMode ? 'bg-slate-700 rotate-[135deg] scale-90' : 'bg-slate-600 rotate-[135deg] scale-90') : 'bg-gradient-to-tr from-blue-700 to-blue-500 shadow-blue-500/40 hover:scale-105'}`}
+                    className={`shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-white shadow-2xl transition-all duration-500 animate-nav-item-fade [animation-delay:600ms] opacity-0 fill-mode-both active:scale-95 ${isFabOpen ? (isDarkMode ? 'bg-slate-700 rotate-[135deg] scale-90' : 'bg-slate-600 rotate-[135deg] scale-90') : 'bg-gradient-to-tr from-blue-700 to-blue-500 shadow-blue-500/40 hover:scale-105'}`}
                     aria-label="New Transaction"
                   >
-                    <Plus size={28} className="sm:w-9 sm:h-9" strokeWidth={3} />
+                    <Plus size={24} className="sm:w-9 sm:h-9" strokeWidth={3} />
                   </button>
 
-                  <div className="flex items-center px-1 sm:px-2 gap-1 sm:gap-1.5 animate-nav-item-fade [animation-delay:800ms] opacity-0 fill-mode-both">
-                    <button onClick={() => handleViewChange('settings')} className={`min-w-[44px] min-h-[44px] p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'settings' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Settings"><SettingsIcon size={20} className="sm:w-5 sm:h-5" /></button>
-                    <button onClick={() => setIsDarkMode(!isDarkMode)} className={`min-w-[44px] min-h-[44px] p-3 rounded-xl sm:rounded-2xl transition-all ${isDarkMode ? 'text-slate-400 active:text-yellow-400 active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100'}`} aria-label="Toggle Theme">
-                      {isDarkMode ? <Sun size={20} className="sm:w-5 sm:h-5" /> : <Moon size={20} className="sm:w-5 sm:h-5" />}
+                  <div className="flex items-center px-0.5 sm:px-2 gap-0.5 sm:gap-1.5 animate-nav-item-fade [animation-delay:800ms] opacity-0 fill-mode-both">
+                    <button onClick={() => handleViewChange('settings')} className={`min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px] p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'settings' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Settings"><SettingsIcon size={18} className="sm:w-5 sm:h-5" /></button>
+                    <button onClick={() => setIsDarkMode(!isDarkMode)} className={`min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px] p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${isDarkMode ? 'text-slate-400 active:text-yellow-400 active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100'}`} aria-label="Toggle Theme">
+                      {isDarkMode ? <Sun size={18} className="sm:w-5 sm:h-5" /> : <Moon size={18} className="sm:w-5 sm:h-5" />}
                     </button>
                     <button
                       onClick={() => user ? handleLogout() : setIsAuthModalOpen(true)}
-                      className={`min-w-[44px] min-h-[44px] p-3 rounded-xl sm:rounded-2xl transition-all ${isDarkMode ? 'text-slate-400 active:text-rose-400 active:bg-slate-800' : 'text-slate-500 active:text-rose-600 active:bg-slate-100'}`}
+                      className={`min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px] p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${isDarkMode ? 'text-slate-400 active:text-rose-400 active:bg-slate-800' : 'text-slate-500 active:text-rose-600 active:bg-slate-100'}`}
                       title={user ? `${user.email} - Çıkış Yap` : 'Giriş Yap'}
                       aria-label={user ? "Logout" : "Login"}
                     >
-                      {user ? <LogOut size={20} className="sm:w-5 sm:h-5" /> : <LoginIcon size={20} className="sm:w-5 sm:h-5" />}
+                      {user ? <LogOut size={18} className="sm:w-5 sm:h-5" /> : <LoginIcon size={18} className="sm:w-5 sm:h-5" />}
                     </button>
                   </div>
                 </div>
