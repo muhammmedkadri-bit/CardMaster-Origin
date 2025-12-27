@@ -422,18 +422,23 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
           </div>
           <div className="h-[320px] sm:h-[400px] -ml-4 sm:-ml-2">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
+              <BarChart
                 data={trendData}
                 margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                barGap={8}
               >
                 <defs>
-                  <linearGradient id="colorSpending" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+                  {/* 3D-like Gradients for Spending */}
+                  <linearGradient id="3dSpending" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#e11d48" />
+                    <stop offset="50%" stopColor="#fb7185" />
+                    <stop offset="100%" stopColor="#e11d48" />
                   </linearGradient>
-                  <linearGradient id="colorNet" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                  {/* 3D-like Gradients for Payments */}
+                  <linearGradient id="3dPayment" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#059669" />
+                    <stop offset="50%" stopColor="#34d399" />
+                    <stop offset="100%" stopColor="#059669" />
                   </linearGradient>
                 </defs>
                 <CartesianGrid
@@ -455,43 +460,40 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                   tickFormatter={(val) => `₺${val >= 1000 ? (val / 1000).toFixed(1) + 'k' : val}`}
                 />
                 <Tooltip
-                  cursor={{ stroke: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)', strokeWidth: 1 }}
+                  cursor={{ fill: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)' }}
                   contentStyle={{
                     borderRadius: '24px',
                     border: 'none',
                     backgroundColor: isDarkMode ? '#1e293b' : '#ffffff',
                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
                     padding: '16px',
-                    fontWeight: 700
+                    fontWeight: 700,
+                    backdropFilter: 'blur(10px)'
                   }}
                   itemStyle={{ fontSize: '13px', padding: '2px 0' }}
                   labelStyle={{ color: '#94a3b8', marginBottom: '8px', fontSize: '11px', textTransform: 'uppercase' }}
-                  formatter={(value: number) => [`₺${value.toLocaleString('tr-TR')}`, '']}
+                  formatter={(value: number, name: string) => [
+                    `₺${value.toLocaleString('tr-TR')}`,
+                    name === 'spending' ? 'Harcama' : 'Ödeme'
+                  ]}
                 />
-                <Area
-                  type="monotone"
+                <Bar
                   dataKey="spending"
                   name="Harcama"
-                  stroke="#f43f5e"
-                  strokeWidth={4}
-                  fillOpacity={1}
-                  fill="url(#colorSpending)"
-                  activeDot={{ r: 6, strokeWidth: 0, fill: '#f43f5e' }}
+                  fill="url(#3dSpending)"
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={timeRange === 'year' ? 20 : 12}
                   animationDuration={1500}
                 />
-                <Area
-                  type="monotone"
-                  dataKey="net"
-                  name="Net Durum"
-                  stroke="#3b82f6"
-                  strokeWidth={3}
-                  strokeDasharray="5 5"
-                  fillOpacity={1}
-                  fill="url(#colorNet)"
-                  activeDot={{ r: 5, strokeWidth: 0, fill: '#3b82f6' }}
+                <Bar
+                  dataKey="payment"
+                  name="Ödeme"
+                  fill="url(#3dPayment)"
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={timeRange === 'year' ? 20 : 12}
                   animationDuration={1500}
                 />
-              </AreaChart>
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
