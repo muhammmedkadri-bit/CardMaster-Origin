@@ -1553,7 +1553,7 @@ const App: React.FC = () => {
           </main>
 
           {!isInitialLoading && (
-            <div key="bottom-nav-morph-v5" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[2100] flex flex-col items-center w-full max-w-[330px] sm:max-w-none sm:w-auto pointer-events-none animate-morph-reveal">
+            <div key="bottom-nav-morph-v6" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[2100] flex flex-col items-center w-full max-w-[380px] sm:max-w-none sm:w-auto pointer-events-none animate-morph-reveal">
               <div className="pointer-events-auto flex flex-col items-center w-full">
                 {isFabOpen && (
                   <div className="mb-6 flex flex-col gap-3 min-w-[220px]">
@@ -1575,41 +1575,39 @@ const App: React.FC = () => {
                   </div>
                 )}
 
-                <div className={`flex items-center gap-1 sm:gap-2.5 p-1 px-3 sm:p-2.5 rounded-[32px] sm:rounded-[40px] border shadow-2xl ${isDarkMode ? 'bg-[#0b0f1a]/95 border-slate-800 shadow-black' : 'bg-white/95 border-slate-200 shadow-blue-900/10'}`}>
-                  <div className="flex items-center px-1.5 sm:px-2 gap-0.5 sm:gap-1.5 animate-nav-item-fade [animation-delay:800ms] opacity-0 fill-mode-both">
-                    <button onClick={() => handleViewChange('dashboard')} className={`min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px] p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'dashboard' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Dashboard"><LayoutDashboard size={18} className="sm:w-5 sm:h-5" /></button>
-                    <button onClick={() => handleViewChange('cards')} className={`min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px] p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'cards' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Cards"><CardIcon size={18} className="sm:w-5 sm:h-5" /></button>
-                    <button onClick={() => handleViewChange('analysis')} className={`min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px] p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'analysis' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Analysis"><BarChart3 size={18} className="sm:w-5 sm:h-5" /></button>
+                <div className={`flex items-center gap-2 sm:gap-3 p-2 px-4 sm:p-2.5 rounded-[32px] sm:rounded-[40px] border shadow-2xl ${isDarkMode ? 'bg-[#0b0f1a]/95 border-slate-800 shadow-black' : 'bg-white/95 border-slate-200 shadow-blue-900/10'}`}>
+                  <div className="flex items-center px-1.5 sm:px-2 gap-1 sm:gap-2 animate-nav-item-fade [animation-delay:800ms] opacity-0 fill-mode-both">
+                    <button onClick={() => handleViewChange('dashboard')} className={`min-w-[44px] min-h-[44px] p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'dashboard' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Dashboard"><LayoutDashboard size={20} className="sm:w-5 sm:h-5" /></button>
+                    <button onClick={() => handleViewChange('cards')} className={`min-w-[44px] min-h-[44px] p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'cards' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Cards"><CardIcon size={20} className="sm:w-5 sm:h-5" /></button>
+                    <button onClick={() => handleViewChange('analysis')} className={`min-w-[44px] min-h-[44px] p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'analysis' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Analysis"><BarChart3 size={20} className="sm:w-5 sm:h-5" /></button>
                   </div>
 
                   <button
                     onClick={() => setIsFabOpen(!isFabOpen)}
-                    className={`shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-white shadow-2xl transition-all duration-500 animate-nav-item-fade [animation-delay:600ms] opacity-0 fill-mode-both active:scale-95 ${isFabOpen ? (isDarkMode ? 'bg-slate-700 rotate-[135deg] scale-90' : 'bg-slate-600 rotate-[135deg] scale-90') : 'bg-gradient-to-tr from-blue-700 to-blue-500 shadow-blue-500/40 hover:scale-105'}`}
+                    className={`shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-white shadow-2xl transition-all duration-500 animate-nav-item-fade [animation-delay:600ms] opacity-0 fill-mode-both active:scale-95 ${isFabOpen ? (isDarkMode ? 'bg-slate-700 rotate-[135deg] scale-90' : 'bg-slate-600 rotate-[135deg] scale-90') : 'bg-gradient-to-tr from-blue-700 to-blue-500 shadow-blue-500/40 hover:scale-105'}`}
                     aria-label="New Transaction"
                   >
-                    <Plus size={24} className="sm:w-9 sm:h-9" strokeWidth={3} />
+                    <Plus size={28} className="sm:w-9 sm:h-9" strokeWidth={3} />
                   </button>
 
-                  <div className="flex items-center px-1.5 sm:px-2 gap-0.5 sm:gap-1.5 animate-nav-item-fade [animation-delay:800ms] opacity-0 fill-mode-both">
-                    <button onClick={() => handleViewChange('settings')} className={`min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px] p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'settings' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Settings"><SettingsIcon size={18} className="sm:w-5 sm:h-5" /></button>
-                    <button onClick={() => setIsDarkMode(!isDarkMode)} className={`min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px] p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${isDarkMode ? 'text-slate-400 active:text-yellow-400 active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100'}`} aria-label="Toggle Theme">
-                      {isDarkMode ? <Sun size={18} className="sm:w-5 sm:h-5" /> : <Moon size={18} className="sm:w-5 sm:h-5" />}
+                  <div className="flex items-center px-1.5 sm:px-2 gap-1 sm:gap-2 animate-nav-item-fade [animation-delay:800ms] opacity-0 fill-mode-both">
+                    <button onClick={() => handleViewChange('settings')} className={`min-w-[44px] min-h-[44px] p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'settings' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Settings"><SettingsIcon size={20} className="sm:w-5 sm:h-5" /></button>
+                    <button onClick={() => setIsDarkMode(!isDarkMode)} className={`min-w-[44px] min-h-[44px] p-3 rounded-xl sm:rounded-2xl transition-all ${isDarkMode ? 'text-slate-400 active:text-yellow-400 active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100'}`} aria-label="Toggle Theme">
+                      {isDarkMode ? <Sun size={20} className="sm:w-5 sm:h-5" /> : <Moon size={20} className="sm:w-5 sm:h-5" />}
                     </button>
                     <button
                       onClick={() => user ? handleLogout() : setIsAuthModalOpen(true)}
-                      className={`min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px] p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${isDarkMode ? 'text-slate-400 active:text-rose-400 active:bg-slate-800' : 'text-slate-500 active:text-rose-600 active:bg-slate-100'}`}
+                      className={`min-w-[44px] min-h-[44px] p-3 rounded-xl sm:rounded-2xl transition-all ${isDarkMode ? 'text-slate-400 active:text-rose-400 active:bg-slate-800' : 'text-slate-500 active:text-rose-600 active:bg-slate-100'}`}
                       title={user ? `${user.email} - Çıkış Yap` : 'Giriş Yap'}
                       aria-label={user ? "Logout" : "Login"}
                     >
-                      {user ? <LogOut size={18} className="sm:w-5 sm:h-5" /> : <LoginIcon size={18} className="sm:w-5 sm:h-5" />}
+                      {user ? <LogOut size={20} className="sm:w-5 sm:h-5" /> : <LoginIcon size={20} className="sm:w-5 sm:h-5" />}
                     </button>
                   </div>
                 </div>
               </div>
             </div>
           )}
-
-
 
           {
             cardToDelete && (
@@ -1678,50 +1676,54 @@ const App: React.FC = () => {
               <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-6 z-50 backdrop-blur-xl"><div className={`p-10 rounded-[48px] max-w-sm text-center border ${isDarkMode ? 'bg-[#0b0f1a] border-slate-800 text-white' : 'bg-white border-slate-100 shadow-2xl'}`}><div className="w-20 h-20 bg-blue-100 rounded-3xl flex items-center justify-center mx-auto mb-8 text-blue-600"><CardIcon size={40} /></div><p className="font-black text-xl mb-10 leading-tight uppercase">İşlem yapabilmek için önce bir kart eklemelisiniz.</p><button onClick={() => setModalMode('add')} className="w-full bg-blue-600 text-white py-4.5 rounded-[24px] font-black uppercase tracking-[0.2em] text-[10px] hover:bg-blue-700">İLK KARTIMI EKLE</button></div></div>
             )
           }
+
+          {/* Welcome / Initial Loading Screen */}
+          {
+            isInitialLoading && (
+              <div className={`fixed inset-0 z-[2500] flex flex-col items-center justify-center p-6 transition-all duration-700 ease-in-out ${isExitingWelcome ? 'opacity-0 scale-105 pointer-events-none' : 'opacity-100'} ${isDarkMode ? 'bg-[#070b14]' : 'bg-[#f8fafc]'}`}>
+                <div className={`flex flex-col items-center transition-transform duration-1000 ${isExitingWelcome ? 'scale-110 opacity-0 blur-xl' : 'scale-100'}`}>
+                  <div className="animate-in fade-in zoom-in duration-1000 flex flex-col items-center">
+                    <Logo isDarkMode={isDarkMode} isAnimated={true} />
+                    <div className="mt-12 w-48 h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden relative">
+                      <div className="absolute inset-0 bg-blue-600 animate-loading-bar rounded-full"></div>
+                    </div>
+                    <div className="mt-12 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-500">
+                      <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.5em] mb-2 animate-pulse">BAŞLATILIYOR</span>
+                      <h2 className={`text-2xl font-black tracking-tighter uppercase ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                        HOŞGELDİN, {localStorage.getItem('user_name')?.toLocaleUpperCase('tr-TR') || 'KULLANICI'}
+                      </h2>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          }
+
+          {/* Premium View Transition Overlay */}
+          {
+            isChangingView && (
+              <div className="fixed inset-0 z-[2000] flex flex-col items-center justify-center bg-[#070b14]/95 backdrop-blur-xl animate-in fade-in duration-300">
+                <div className="flex flex-col items-center animate-in zoom-in-95 slide-in-from-bottom-4 duration-500">
+                  <Logo isDarkMode={true} isAnimated={true} />
+                  <div className="mt-8 flex flex-col items-center">
+                    <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.5em] animate-pulse">LÜTFEN BEKLEYİN</span>
+                  </div>
+                </div>
+              </div>
+            )
+          }
+
+
+
+
+          <AuthModal
+            isOpen={isAuthModalOpen}
+            onClose={() => { if (user) setIsAuthModalOpen(false); }}
+            isDarkMode={isDarkMode}
+          />
         </>
       )}
-
-      {/* Welcome / Initial Loading Screen */}
-      {isInitialLoading && (
-        <div className={`fixed inset-0 z-[2500] flex flex-col items-center justify-center p-6 transition-all duration-700 ease-in-out ${isExitingWelcome ? 'opacity-0 scale-105 pointer-events-none' : 'opacity-100'} ${isDarkMode ? 'bg-[#070b14]' : 'bg-[#f8fafc]'}`}>
-          <div className={`flex flex-col items-center transition-transform duration-1000 ${isExitingWelcome ? 'scale-110 opacity-0 blur-xl' : 'scale-100'}`}>
-            <div className="animate-in fade-in zoom-in duration-1000 flex flex-col items-center">
-              <Logo isDarkMode={isDarkMode} isAnimated={true} />
-              <div className="mt-12 w-48 h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden relative">
-                <div className="absolute inset-0 bg-blue-600 animate-loading-bar rounded-full"></div>
-              </div>
-              <div className="mt-12 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-500">
-                <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.5em] mb-2 animate-pulse">BAŞLATILIYOR</span>
-                <h2 className={`text-2xl font-black tracking-tighter uppercase ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                  HOŞGELDİN, {localStorage.getItem('user_name')?.toLocaleUpperCase('tr-TR') || 'KULLANICI'}
-                </h2>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Premium View Transition Overlay */}
-      {isChangingView && (
-        <div className="fixed inset-0 z-[2000] flex flex-col items-center justify-center bg-[#070b14]/95 backdrop-blur-xl animate-in fade-in duration-300">
-          <div className="flex flex-col items-center animate-in zoom-in-95 slide-in-from-bottom-4 duration-500">
-            <Logo isDarkMode={true} isAnimated={true} />
-            <div className="mt-8 flex flex-col items-center">
-              <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.5em] animate-pulse">LÜTFEN BEKLEYİN</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-
-
-
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => { if (user) setIsAuthModalOpen(false); }}
-        isDarkMode={isDarkMode}
-      />
-    </div >
+    </div>
   );
 };
 
