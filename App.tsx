@@ -1536,7 +1536,8 @@ const App: React.FC = () => {
                     <span className="flex-1 text-left">{item.label}</span>
                     <ChevronRight size={18} className={`opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-${item.color}-500`} />
                   </button>
-                ))}\n              </div>
+                ))}
+              </div>
             )}
 
             <div className={`flex items-center gap-2 sm:gap-3 p-2 px-4 sm:p-2.5 rounded-[32px] sm:rounded-[40px] border shadow-2xl ${isDarkMode ? 'bg-[#0b0f1a]/95 border-slate-800 shadow-black' : 'bg-white/95 border-slate-200 shadow-blue-900/10'}`}>
