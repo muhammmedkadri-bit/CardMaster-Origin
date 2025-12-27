@@ -32,8 +32,8 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
     // Group by month
     const monthlyMap: Record<string, { month: string, spending: number, payment: number }> = {};
 
-    // Last 6 months
-    for (let i = 5; i >= 0; i--) {
+    // Last 12 months for full year view
+    for (let i = 11; i >= 0; i--) {
       const d = new Date();
       d.setMonth(d.getMonth() - i);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -111,9 +111,9 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         <div className="lg:col-span-2">
-          <div className="h-[300px] sm:h-[350px] w-full">
+          <div className="h-[250px] sm:h-[350px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analysisData.monthlyChart} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <BarChart data={analysisData.monthlyChart} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
                 <defs>
                   <linearGradient id="spendingGradientMonthly" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
@@ -129,12 +129,15 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
                   dataKey="month"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: isDarkMode ? '#94a3b8' : '#64748b', fontSize: 12, fontWeight: 700 }}
+                  tick={{ fill: isDarkMode ? '#94a3b8' : '#64748b', fontSize: 11, fontWeight: 700 }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
                 />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: isDarkMode ? '#94a3b8' : '#64748b', fontSize: 12, fontWeight: 700 }}
+                  tick={{ fill: isDarkMode ? '#94a3b8' : '#64748b', fontSize: 11, fontWeight: 700 }}
                   tickFormatter={(val) => `₺${val.toLocaleString()}`}
                 />
                 <Tooltip
@@ -171,8 +174,8 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
                   align="right"
                   wrapperStyle={{ paddingBottom: '20px', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase' }}
                 />
-                <Bar name="Harcama" dataKey="spending" fill="url(#spendingGradientMonthly)" radius={[6, 6, 0, 0]} barSize={24} />
-                <Bar name="Ödeme" dataKey="payment" fill="url(#paymentGradientMonthly)" radius={[6, 6, 0, 0]} barSize={24} />
+                <Bar name="Harcama" dataKey="spending" fill="url(#spendingGradientMonthly)" radius={[6, 6, 0, 0]} barSize={16} maxBarSize={24} />
+                <Bar name="Ödeme" dataKey="payment" fill="url(#paymentGradientMonthly)" radius={[6, 6, 0, 0]} barSize={16} maxBarSize={24} />
               </BarChart>
             </ResponsiveContainer>
           </div>

@@ -1465,7 +1465,7 @@ const App: React.FC = () => {
                                 </div>
                                 <button
                                   onClick={() => handleAddToCalendarClick(card)}
-                                  className={`p-2 rounded-xl transition-all scale-100 sm:scale-0 group-hover:scale-100 ${isDarkMode ? 'bg-slate-700 text-blue-400 hover:bg-blue-600 hover:text-white' : 'bg-white text-blue-600 hover:bg-blue-600 hover:text-white border border-slate-200 shadow-sm'}`}
+                                  className={`p-3 min-h-[44px] min-w-[44px] rounded-xl transition-all flex items-center justify-center ${isDarkMode ? 'bg-slate-700 text-blue-400 hover:bg-blue-600 hover:text-white active:scale-95' : 'bg-white text-blue-600 hover:bg-blue-600 hover:text-white border border-slate-200 shadow-sm active:scale-95'}`}
                                   title="Takvime Ekle"
                                 >
                                   <CalendarPlus size={18} />

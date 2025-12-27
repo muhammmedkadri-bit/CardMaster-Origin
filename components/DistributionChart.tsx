@@ -122,7 +122,7 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
         >
           <button
             onClick={(e) => { e.stopPropagation(); handleModeChange('cards'); }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'cards'
+            className={`flex items-center gap-2 px-4 sm:px-5 py-3.5 min-h-[48px] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'cards'
               ? 'bg-white dark:bg-slate-700 shadow-md text-blue-600 scale-[1.02]'
               : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
               }`}
@@ -131,7 +131,7 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); handleModeChange('categories'); }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'categories'
+            className={`flex items-center gap-2 px-4 sm:px-5 py-3.5 min-h-[48px] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'categories'
               ? 'bg-white dark:bg-slate-700 shadow-md text-blue-600 scale-[1.02]'
               : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
               }`}
