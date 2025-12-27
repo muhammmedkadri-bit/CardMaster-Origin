@@ -1498,7 +1498,7 @@ const App: React.FC = () => {
       </main>
 
       {!isInitialLoading && (
-        <div key="bottom-nav-morph-v6" className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[2100] flex flex-col items-center w-full max-w-[400px] sm:max-w-none sm:w-auto pointer-events-none animate-morph-reveal">
+        <div key="bottom-nav-morph-v6" className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[2100] flex flex-col items-center w-full max-w-[400px] sm:max-w-none sm:w-auto pointer-events-none animate-morph-reveal">
           <div className="pointer-events-auto flex flex-col items-center w-full sm:px-0">
             {isFabOpen && (
               <div className="mb-6 flex flex-col gap-3 min-w-[220px]">
