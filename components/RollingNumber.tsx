@@ -18,6 +18,15 @@ const RollingNumber: React.FC<RollingNumberProps> = ({ value, currency = '₺', 
         return () => clearTimeout(timer);
     }, [value]);
 
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
     const isPercent = currency === '%';
     const formatOptions = isPercent
         ? { minimumFractionDigits: 1, maximumFractionDigits: 1 }
@@ -35,6 +44,15 @@ const RollingNumber: React.FC<RollingNumberProps> = ({ value, currency = '₺', 
                     if (!isDigit) {
                         return (
                             <span key={`char-${index}`} className="opacity-70 select-none px-[0.5px] leading-[1.2em]">
+                                {char}
+                            </span>
+                        );
+                    }
+
+                    // On mobile, just render the character to save DOM elements and CPU
+                    if (isMobile) {
+                        return (
+                            <span key={`digit-${index}`} className="leading-[1.2em]">
                                 {char}
                             </span>
                         );

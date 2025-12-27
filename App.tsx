@@ -420,13 +420,10 @@ const App: React.FC = () => {
           setTransactions(data.transactions);
           setCategories(data.categories);
           setChatHistory(data.chat);
+          setNotificationHistory(data.notifications);
           setLastUpdate(Date.now());
           lastDataHash = newHash;
         }
-
-        // ALWAYS update notifications to ensure read/unread status is synced
-        // This bypasses the hash check specifically for notification status 
-        setNotificationHistory(data.notifications);
       }
     };
 
@@ -535,19 +532,19 @@ const App: React.FC = () => {
     let pollInterval: any;
 
     if (isMobile) {
-      // Mobile: Aggressive 1s polling for PWA reliability
+      // Mobile: Reduced polling to 30s to prevent UI blocking
       pollInterval = setInterval(() => {
         if (document.visibilityState === 'visible') {
           syncAll();
         }
-      }, 1000);
+      }, 30000);
     } else {
-      // Desktop: Conservative 5s polling to catch Realtime failures
+      // Desktop: Conservative 15s polling
       pollInterval = setInterval(() => {
         if (document.visibilityState === 'visible') {
           syncAll();
         }
-      }, 5000);
+      }, 15000);
     }
 
     // 4. Connection health check
@@ -557,7 +554,7 @@ const App: React.FC = () => {
         console.log("[Health] Realtime connection broken, reconnecting...");
         connectRealtime();
       }
-    }, 5000);
+    }, 10000);
 
     return () => {
       window.removeEventListener('visibilitychange', handleVisibilityChange);
