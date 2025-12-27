@@ -90,8 +90,8 @@ const CardsListView: React.FC<CardsListViewProps> = ({
           <button
             onClick={onBack}
             className={`w-12 h-12 flex items-center justify-center rounded-full transition-all active:scale-90 ${isDarkMode
-                ? 'bg-slate-800/50 text-slate-300 hover:bg-slate-700 backdrop-blur-md'
-                : 'bg-white text-slate-600 hover:bg-white hover:shadow-md border border-slate-100 shadow-sm'
+              ? 'bg-slate-800/50 text-slate-300 hover:bg-slate-700 backdrop-blur-md'
+              : 'bg-white text-slate-600 hover:bg-white hover:shadow-md border border-slate-100 shadow-sm'
               }`}
           >
             <ArrowLeft size={20} />
@@ -125,12 +125,12 @@ const CardsListView: React.FC<CardsListViewProps> = ({
           return (
             <div
               key={card.id}
-              className={`group relative p-6 sm:p-10 rounded-[40px] border transition-all hover:shadow-2xl hover:z-10 ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800 hover:bg-[#0b0f1a]/60' : 'bg-white border-slate-100 shadow-sm hover:shadow-md'
+              className={`group relative p-6 sm:p-10 pl-9 sm:pl-14 rounded-[40px] border overflow-hidden transition-all hover:shadow-2xl hover:z-10 ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800 hover:bg-[#0b0f1a]/60' : 'bg-white border-slate-100 shadow-sm hover:shadow-md'
                 } group-hover:scale-[1.01] sm:group-hover:scale-[1.02]`}
             >
-              {/* Card Color Side Accent */}
+              {/* Card Color Side Accent - Perfectly Integrated */}
               <div
-                className="absolute left-0 top-0 bottom-0 w-3 opacity-80 rounded-l-[40px]"
+                className="absolute left-0 top-0 bottom-0 w-[14px] shadow-[rgba(0,0,0,0.1)_2px_0_10px]"
                 style={{ backgroundColor: card.color }}
               />
 
