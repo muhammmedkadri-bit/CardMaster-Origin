@@ -32,7 +32,7 @@ const CardVisual: React.FC<CardVisualProps> = ({ card, onAddToCalendar, onEdit, 
         style={{
           backgroundColor: card.color,
           backgroundImage: `linear-gradient(165deg, ${card.color} 0%, rgba(0,0,0,0.85) 100%)`,
-          boxShadow: `0 30px 60px -12px ${card.color}50, 0 18px 36px -18px rgba(0,0,0,0.5), 0 -2px 10px rgba(255,255,255,0.1) inset`
+          boxShadow: `0 20px 50px -15px ${card.color}60, 0 10px 25px -10px ${card.color}40, 0 -2px 10px rgba(255,255,255,0.1) inset`
         }}
       >
         {/* Realistic Lighting Overlay */}
