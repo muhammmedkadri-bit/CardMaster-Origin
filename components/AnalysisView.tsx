@@ -66,6 +66,15 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
   const [customStart, setCustomStart] = React.useState<string>(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
   const [customEnd, setCustomEnd] = React.useState<string>(new Date().toISOString().split('T')[0]);
   const [isExporting, setIsExporting] = React.useState(false);
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
 
   const formatDateDisplay = (dateStr: string) => {
     if (!dateStr) return '';
@@ -501,7 +510,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                   fill="url(#3dSpending)"
                   radius={[6, 6, 0, 0]}
                   maxBarSize={timeRange === 'year' ? 20 : 12}
-                  animationDuration={1500}
+                  animationDuration={isMobile ? 0 : 800}
+
                 />
                 <Bar
                   dataKey="payment"
@@ -509,7 +519,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                   fill="url(#3dPayment)"
                   radius={[6, 6, 0, 0]}
                   maxBarSize={timeRange === 'year' ? 20 : 12}
-                  animationDuration={1500}
+                  animationDuration={isMobile ? 0 : 800}
+
                 />
               </BarChart>
             </ResponsiveContainer>

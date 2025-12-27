@@ -635,8 +635,10 @@ const App: React.FC = () => {
 
   const handleViewChange = (newView: 'dashboard' | 'cards' | 'analysis' | 'settings') => {
     if (newView === view) return;
-    // Instant view change - no delays that block touch events
-    setView(newView);
+    // Use startTransition to keep the UI responsive during view switching
+    React.startTransition(() => {
+      setView(newView);
+    });
   };
 
   const checkFinancialDeadlines = () => {

@@ -50,6 +50,14 @@ const renderActiveShape = (props: any) => {
 const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactions, isDarkMode, categories }) => {
   const [mode, setMode] = useState<'cards' | 'categories'>('cards');
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  React.useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const data = useMemo<DataItem[]>(() => {
     if (mode === 'cards') {
@@ -172,9 +180,9 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
               }}
               stroke="none"
               animationBegin={0}
-              animationDuration={600}
+              animationDuration={isMobile ? 0 : 600}
               animationEasing="ease-in-out"
-              isAnimationActive={true}
+              isAnimationActive={!isMobile}
             >
               {data.map((entry, index) => (
                 <Cell
