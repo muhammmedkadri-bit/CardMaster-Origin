@@ -235,6 +235,8 @@ const App: React.FC = () => {
   const [scrollY, setScrollY] = useState(0);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [realtimeRetryTrigger, setRealtimeRetryTrigger] = useState(0);
+  const [isChangingView, setIsChangingView] = useState(false);
+
 
   // Auth States
   const [user, setUser] = useState<User | null>(null);
@@ -635,10 +637,21 @@ const App: React.FC = () => {
 
   const handleViewChange = (newView: 'dashboard' | 'cards' | 'analysis' | 'settings') => {
     if (newView === view) return;
-    // Use startTransition to keep the UI responsive during view switching
-    React.startTransition(() => {
-      setView(newView);
-    });
+
+    // Start transition animation
+    setIsChangingView(true);
+
+    // Short delay for the logo to appear, then switch content
+    setTimeout(() => {
+      React.startTransition(() => {
+        setView(newView);
+      });
+
+      // Keep overlay for a moment longer then fade out
+      setTimeout(() => {
+        setIsChangingView(false);
+      }, 400);
+    }, 300);
   };
 
   const checkFinancialDeadlines = () => {
@@ -1666,6 +1679,19 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Premium View Transition Overlay */}
+      {isChangingView && (
+        <div className="fixed inset-0 z-[2000] flex flex-col items-center justify-center bg-[#070b14]/95 backdrop-blur-xl animate-in fade-in duration-300">
+          <div className="flex flex-col items-center animate-in zoom-in-95 slide-in-from-bottom-4 duration-500">
+            <Logo isDarkMode={true} isAnimated={true} />
+            <div className="mt-8 flex flex-col items-center">
+              <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.5em] animate-pulse">LÜTFEN BEKLEYİN</span>
+            </div>
+          </div>
+        </div>
+      )}
+
 
 
 
