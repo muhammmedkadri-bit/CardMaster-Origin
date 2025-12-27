@@ -521,60 +521,102 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
           </div>
 
           {filteredTransactions.length > 0 ? (
-            <div className="overflow-x-auto no-scrollbar">
-              <table className="w-full border-separate border-spacing-y-4">
-                <thead>
-                  <tr className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-[0.25em] text-left">
-                    <th className="px-6 py-2">TARİH</th>
-                    <th className="px-6 py-2">AÇIKLAMA</th>
-                    <th className="px-6 py-2">KART</th>
-                    <th className="px-6 py-2 text-right">TUTAR</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredTransactions.map(tx => {
-                    const cardColor = cards.find(c => c.id === tx.cardId)?.color;
-                    const catColor = categories.find(c => c.name.toLocaleLowerCase('tr-TR') === tx.category?.toLocaleLowerCase('tr-TR'))?.color || '#3B82F6';
-                    return (
-                      <tr key={tx.id} className={`group transition-all ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}>
-                        <td className="py-6 px-6 first:rounded-l-[32px] last:rounded-r-[32px]">
-                          <p className="text-xs font-black text-slate-400">{formatDateDisplay(tx.date)}</p>
-                        </td>
-                        <td className="py-6 px-6">
-                          <div className="flex items-center gap-4">
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${tx.type === 'spending' ? 'bg-rose-500/10 text-rose-500 shadow-lg shadow-rose-500/10' : 'bg-emerald-500/10 text-emerald-500 shadow-lg shadow-emerald-500/10'}`}>
-                              {tx.type === 'spending' ? <ShoppingBag size={20} /> : <PaymentIcon size={20} />}
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden sm:block overflow-x-auto no-scrollbar">
+                <table className="w-full border-separate border-spacing-y-4">
+                  <thead>
+                    <tr className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-[0.25em] text-left">
+                      <th className="px-6 py-2">TARİH</th>
+                      <th className="px-6 py-2">AÇIKLAMA</th>
+                      <th className="px-6 py-2">KART</th>
+                      <th className="px-6 py-2 text-right">TUTAR</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredTransactions.map(tx => {
+                      const cardColor = cards.find(c => c.id === tx.cardId)?.color;
+                      return (
+                        <tr key={tx.id} className={`group transition-all ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}>
+                          <td className="py-6 px-6 first:rounded-l-[32px] last:rounded-r-[32px]">
+                            <p className="text-xs font-black text-slate-400">{formatDateDisplay(tx.date)}</p>
+                          </td>
+                          <td className="py-6 px-6">
+                            <div className="flex items-center gap-4">
+                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${tx.type === 'spending' ? 'bg-rose-500/10 text-rose-500 shadow-lg shadow-rose-500/10' : 'bg-emerald-500/10 text-emerald-500 shadow-lg shadow-emerald-500/10'}`}>
+                                {tx.type === 'spending' ? <ShoppingBag size={20} /> : <PaymentIcon size={20} />}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <p className={`text-sm sm:text-base font-black uppercase tracking-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{tx.description || tx.category}</p>
+                                {tx.confirmationUrl && (
+                                  <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 transition-colors" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={14} /></a>
+                                )}
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <p className={`text-sm sm:text-base font-black uppercase tracking-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{tx.description || tx.category}</p>
+                          </td>
+                          <td className="py-6 px-6">
+                            <span className="px-4 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-widest whitespace-nowrap" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}05` }}>
+                              {tx.cardName}
+                            </span>
+                          </td>
+                          <td className={`py-6 px-6 text-right first:rounded-l-[32px] last:rounded-r-[32px]`}>
+                            <div className="flex flex-col items-end gap-2">
+                              <p className={`text-xl sm:text-2xl font-black tracking-tighter ${tx.type === 'spending' ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                {tx.type === 'spending' ? '-' : '+'} ₺{tx.amount.toLocaleString('tr-TR')}
+                              </p>
+                              <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => onEditTransaction?.(tx)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-400 hover:text-blue-400 hover:bg-slate-700' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-100'}`}><Edit2 size={16} /></button>
+                                <button onClick={() => onDeleteTransaction?.(tx)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-400 hover:text-rose-400 hover:bg-slate-700' : 'text-slate-400 hover:text-rose-600 hover:bg-slate-100'}`}><Trash2 size={16} /></button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card List View */}
+              <div className="sm:hidden space-y-4">
+                {filteredTransactions.map(tx => {
+                  const cardColor = cards.find(c => c.id === tx.cardId)?.color;
+                  return (
+                    <div key={tx.id} className={`p-6 rounded-[32px] border flex flex-col gap-5 ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50/50 border-slate-100'}`}>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${tx.type === 'spending' ? 'bg-rose-500/10 text-rose-500 shadow-lg shadow-rose-500/10' : 'bg-emerald-500/10 text-emerald-500 shadow-lg shadow-emerald-500/10'}`}>
+                            {tx.type === 'spending' ? <ShoppingBag size={20} /> : <PaymentIcon size={20} />}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className={`text-sm font-black uppercase tracking-tight leading-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{tx.description || tx.category}</p>
                               {tx.confirmationUrl && (
-                                <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 transition-colors" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={14} /></a>
+                                <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 transition-colors" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={14} /></a>
                               )}
                             </div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{formatDateDisplay(tx.date)}</p>
                           </div>
-                        </td>
-                        <td className="py-6 px-6">
-                          <span className="px-4 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-widest whitespace-nowrap" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}05` }}>
-                            {tx.cardName}
-                          </span>
-                        </td>
-                        <td className={`py-6 px-6 text-right first:rounded-l-[32px] last:rounded-r-[32px]`}>
-                          <div className="flex flex-col items-end gap-2">
-                            <p className={`text-xl sm:text-2xl font-black tracking-tighter ${tx.type === 'spending' ? 'text-rose-500' : 'text-emerald-500'}`}>
-                              {tx.type === 'spending' ? '-' : '+'} ₺{tx.amount.toLocaleString('tr-TR')}
-                            </p>
-                            <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => onEditTransaction?.(tx)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-400 hover:text-blue-400 hover:bg-slate-700' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-100'}`}><Edit2 size={16} /></button>
-                              <button onClick={() => onDeleteTransaction?.(tx)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-400 hover:text-rose-400 hover:bg-slate-700' : 'text-slate-400 hover:text-rose-600 hover:bg-slate-100'}`}><Trash2 size={16} /></button>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => onEditTransaction?.(tx)} className={`p-2.5 rounded-xl transition-colors ${isDarkMode ? 'text-slate-400 bg-slate-800/50' : 'text-slate-400 bg-white shadow-sm'}`}><Edit2 size={14} /></button>
+                          <button onClick={() => onDeleteTransaction?.(tx)} className={`p-2.5 rounded-xl transition-colors ${isDarkMode ? 'text-slate-400 bg-slate-800/50' : 'text-slate-400 bg-white shadow-sm'}`}><Trash2 size={14} /></button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-4 border-t border-slate-200/10 dark:border-white/5 mt-auto">
+                        <span className="px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}05` }}>
+                          {tx.cardName}
+                        </span>
+                        <p className={`text-lg font-black tracking-tighter ${tx.type === 'spending' ? 'text-rose-500' : 'text-emerald-500'}`}>
+                          {tx.type === 'spending' ? '-' : '+'} ₺{tx.amount.toLocaleString('tr-TR')}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           ) : (
             <div className="py-32 text-center">
               <Inbox size={80} className="mx-auto text-slate-200/40 mb-8" />
