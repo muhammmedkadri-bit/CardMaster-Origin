@@ -25,17 +25,17 @@
         extend: {
           animation: {
             'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-            'morph-reveal': 'morph-reveal 1.5s cubic-bezier(0.19, 1, 0.22, 1) forwards',
-            'nav-item-fade': 'nav-item-fade 0.8s ease-out forwards',
+            'morph-reveal': 'morph-reveal 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards',
+            'nav-item-fade': 'nav-item-fade 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
           },
           keyframes: {
             'morph-reveal': {
-              '0%': { 'clip-path': 'circle(0% at 50% 50%)', opacity: '0', transform: 'translateX(-50%) scale(0.5)' },
-              '20%': { 'clip-path': 'circle(10% at 50% 50%)', opacity: '1', transform: 'translateX(-50%) scale(1)' },
-              '100%': { 'clip-path': 'circle(150% at 50% 50%)', opacity: '1', transform: 'translateX(-50%) scale(1)' }
+              '0%': { 'clip-path': 'circle(0% at 50% 50%)', opacity: '0', filter: 'blur(8px)', transform: 'translateX(-50%) translateY(30px) scale(0.9)' },
+              '20%': { 'clip-path': 'circle(10% at 50% 50%)', opacity: '1', filter: 'blur(0px)', transform: 'translateX(-50%) translateY(0) scale(1)' },
+              '100%': { 'clip-path': 'circle(150% at 50% 50%)', opacity: '1', transform: 'translateX(-50%) translateY(0) scale(1)' }
             },
             'nav-item-fade': {
-              '0%': { opacity: '0', transform: 'translateY(10px) scale(0.9)' },
+              '0%': { opacity: '0', transform: 'translateY(15px) scale(0.95)' },
               '100%': { opacity: '1', transform: 'translateY(0) scale(1)' }
             }
           }
@@ -57,7 +57,6 @@
       meta.setAttribute('content', color);
     }
 
-    // Watch for class changes on html
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.attributeName === 'class') {
@@ -66,8 +65,6 @@
       });
     });
     observer.observe(document.documentElement, { attributes: true });
-
-    // Initial call
     window.addEventListener('load', updateThemeColor);
   </script>
   <link
@@ -78,7 +75,14 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
   <style>
-    /* Mobile Performance & Touch Optimizations */
+    /* Premium Hardware Acceleration & Motion Smoothing */
+    .animate-morph-reveal {
+      will-change: clip-path, transform, opacity;
+      transform-style: preserve-3d;
+      backface-visibility: hidden;
+      transform-origin: center bottom;
+    }
+
     * {
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
@@ -88,9 +92,7 @@
       font-family: 'Inter', sans-serif;
       background-color: #f8fafc;
       overflow-x: hidden;
-      /* Improve momentum scrolling on iOS */
       -webkit-overflow-scrolling: touch;
-      /* Prevent accidental text selection while tapping buttons */
       user-select: none;
       -webkit-user-select: none;
     }
@@ -98,7 +100,6 @@
     input,
     select,
     textarea {
-      /* Allow selection in inputs */
       user-select: text !important;
       -webkit-user-select: text !important;
     }
@@ -107,12 +108,10 @@
       background-color: #0b0f1a;
     }
 
-    /* Boost button responsiveness */
     button,
     a,
     [role="button"] {
       cursor: pointer;
-      /* Remove potential click delays */
       touch-action: manipulation;
     }
 
@@ -120,7 +119,6 @@
       font-family: 'JetBrains Mono', monospace;
     }
 
-    /* Mobile Optimization: Prevent zoom on focus for iOS */
     @media screen and (max-width: 768px) {
 
       input,
@@ -148,10 +146,6 @@
       background: #1e293b;
     }
 
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
-    }
-
     .no-scrollbar::-webkit-scrollbar {
       display: none;
     }
@@ -161,7 +155,6 @@
       scrollbar-width: none;
     }
 
-    /* Fix: Remove blue outline on chart double-tap */
     .recharts-wrapper,
     .recharts-surface,
     .recharts-layer,
@@ -175,26 +168,12 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    .recharts-wrapper *:focus,
-    .recharts-wrapper *:active {
-      outline: none !important;
-    }
-
-    /* Fix: Prevent pie chart center text from shifting */
-    .recharts-pie-label-text {
-      pointer-events: none !important;
-    }
-
-    /* Realistic Card Textures */
     .card-texture-brushed {
       background-image: url("https://www.transparenttextures.com/patterns/brushed-alum.png");
     }
 
-    /* Embossed Text Effect */
     .text-embossed {
-      text-shadow:
-        -1px -1px 1px rgba(255, 255, 255, 0.3),
-        1px 1px 1px rgba(0, 0, 0, 0.8);
+      text-shadow: -1px -1px 1px rgba(255, 255, 255, 0.3), 1px 1px 1px rgba(0, 0, 0, 0.8);
     }
 
     .card-inner {
@@ -208,15 +187,6 @@
       box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.4);
     }
 
-    /* Glassmorphism for card number highlights */
-    .glass-highlight {
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-    }
-
-    /* Loading Bar Animation */
     @keyframes loading-bar {
       0% {
         transform: translateX(-100%);
@@ -235,7 +205,6 @@
       animation: loading-bar 2s infinite ease-in-out;
     }
 
-    /* Ultra-Premium Logo Animations */
     @keyframes logo-scan {
       0% {
         transform: translateX(-150%) skewX(-25deg);
@@ -247,7 +216,9 @@
     }
 
     @keyframes logo-orbit {
-      0% {
+
+      0%,
+      100% {
         transform: rotate(0deg) translateY(0);
       }
 
@@ -258,14 +229,12 @@
       66% {
         transform: rotate(-1deg) translateY(2px);
       }
-
-      100% {
-        transform: rotate(0deg) translateY(0);
-      }
     }
 
     @keyframes text-reveal {
-      0% {
+
+      0%,
+      100% {
         letter-spacing: 0.1em;
         opacity: 0.8;
       }
@@ -273,11 +242,6 @@
       50% {
         letter-spacing: 0.4em;
         opacity: 1;
-      }
-
-      100% {
-        letter-spacing: 0.1em;
-        opacity: 0.8;
       }
     }
 
@@ -293,11 +257,6 @@
         opacity: 0.8;
         filter: brightness(1.5);
       }
-    }
-
-    .animate-logo-scan {
-      position: relative;
-      overflow: hidden;
     }
 
     .animate-logo-scan::after {
