@@ -1527,9 +1527,9 @@ const App: React.FC = () => {
 
             <div className={`flex items-center gap-2 sm:gap-3 p-2 px-4 sm:p-2.5 rounded-[32px] sm:rounded-[40px] border shadow-2xl overflow-hidden ${isDarkMode ? 'bg-[#0b0f1a]/95 border-slate-800 shadow-black' : 'bg-white/95 border-slate-200 shadow-blue-900/10'}`}>
               <div className="flex items-center px-1.5 sm:px-2 gap-1 sm:gap-2 animate-nav-item-fade [animation-delay:800ms] opacity-0 fill-mode-both">
-                <button onClick={() => handleViewChange('dashboard')} className={`min-w-[44px] min-h-[44px] p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'dashboard' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Dashboard"><LayoutDashboard size={20} className="sm:w-5 sm:h-5" /></button>
-                <button onClick={() => handleViewChange('cards')} className={`min-w-[44px] min-h-[44px] p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'cards' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Cards"><CardIcon size={20} className="sm:w-5 sm:h-5" /></button>
-                <button onClick={() => handleViewChange('analysis')} className={`min-w-[44px] min-h-[44px] p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'analysis' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Analysis"><BarChart3 size={20} className="sm:w-5 sm:h-5" /></button>
+                <button onClick={() => handleViewChange('dashboard')} className={`flex items-center px-3 sm:px-4 py-3 min-h-[44px] rounded-xl transition-all duration-300 ${view === 'dashboard' ? (isDarkMode ? 'bg-slate-700 text-white shadow-md' : 'bg-white text-blue-600 shadow-md') : (isDarkMode ? 'text-slate-400 hover:text-slate-300' : 'text-slate-500 hover:text-slate-600')}`} aria-label="Dashboard"><LayoutDashboard size={18} className="sm:w-5 sm:h-5" /></button>
+                <button onClick={() => handleViewChange('cards')} className={`flex items-center px-3 sm:px-4 py-3 min-h-[44px] rounded-xl transition-all duration-300 ${view === 'cards' ? (isDarkMode ? 'bg-slate-700 text-white shadow-md' : 'bg-white text-blue-600 shadow-md') : (isDarkMode ? 'text-slate-400 hover:text-slate-300' : 'text-slate-500 hover:text-slate-600')}`} aria-label="Cards"><CardIcon size={18} className="sm:w-5 sm:h-5" /></button>
+                <button onClick={() => handleViewChange('analysis')} className={`flex items-center px-3 sm:px-4 py-3 min-h-[44px] rounded-xl transition-all duration-300 ${view === 'analysis' ? (isDarkMode ? 'bg-slate-700 text-white shadow-md' : 'bg-white text-blue-600 shadow-md') : (isDarkMode ? 'text-slate-400 hover:text-slate-300' : 'text-slate-500 hover:text-slate-600')}`} aria-label="Analysis"><BarChart3 size={18} className="sm:w-5 sm:h-5" /></button>
               </div>
 
               <button
@@ -1541,13 +1541,13 @@ const App: React.FC = () => {
               </button>
 
               <div className="flex items-center px-1.5 sm:px-2 gap-1 sm:gap-2 animate-nav-item-fade [animation-delay:800ms] opacity-0 fill-mode-both">
-                <button onClick={() => handleViewChange('settings')} className={`min-w-[44px] min-h-[44px] p-3 rounded-xl sm:rounded-2xl transition-all ${view === 'settings' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Settings"><SettingsIcon size={20} className="sm:w-5 sm:h-5" /></button>
-                <button onClick={() => setIsDarkMode(!isDarkMode)} className={`min-w-[44px] min-h-[44px] p-3 rounded-xl sm:rounded-2xl transition-all ${isDarkMode ? 'text-slate-400 active:text-yellow-400 active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100'}`} aria-label="Toggle Theme">
-                  {isDarkMode ? <Sun size={20} className="sm:w-5 sm:h-5" /> : <Moon size={20} className="sm:w-5 sm:h-5" />}
+                <button onClick={() => handleViewChange('settings')} className={`flex items-center px-3 sm:px-4 py-3 min-h-[44px] rounded-xl transition-all duration-300 ${view === 'settings' ? (isDarkMode ? 'bg-slate-700 text-white shadow-md' : 'bg-white text-blue-600 shadow-md') : (isDarkMode ? 'text-slate-400 hover:text-slate-300' : 'text-slate-500 hover:text-slate-600')}`} aria-label="Settings"><SettingsIcon size={18} className="sm:w-5 sm:h-5" /></button>
+                <button onClick={() => setIsDarkMode(!isDarkMode)} className={`flex items-center px-3 sm:px-4 py-3 min-h-[44px] rounded-xl transition-all duration-300 ${isDarkMode ? 'text-slate-400 hover:text-yellow-400' : 'text-slate-500 hover:text-blue-600'}`} aria-label="Toggle Theme">
+                  {isDarkMode ? <Sun size={18} className="sm:w-5 sm:h-5" /> : <Moon size={18} className="sm:w-5 sm:h-5" />}
                 </button>
                 <button
                   onClick={() => user ? handleLogout() : setIsAuthModalOpen(true)}
-                  className={`min-w-[44px] min-h-[44px] p-3 rounded-xl sm:rounded-2xl transition-all ${isDarkMode ? 'text-slate-400 active:text-rose-400 active:bg-slate-800' : 'text-slate-500 active:text-rose-600 active:bg-slate-100'}`}
+                  className={`flex items-center px-3 sm:px-4 py-3 min-h-[44px] rounded-xl transition-all duration-300 ${isDarkMode ? 'text-slate-400 hover:text-rose-400' : 'text-slate-500 hover:text-rose-600'}`}
                   title={user ? `${user.email} - Çıkış Yap` : 'Giriş Yap'}
                   aria-label={user ? "Logout" : "Login"}
                 >
