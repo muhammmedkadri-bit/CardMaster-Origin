@@ -251,15 +251,14 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
             <button
               onClick={onBack}
               className={`w-12 h-12 flex items-center justify-center rounded-full transition-all hover:scale-105 active:scale-95 ${isDarkMode
-                  ? 'bg-slate-800/50 text-white backdrop-blur-md hover:bg-slate-700'
-                  : 'bg-white text-slate-800 shadow-sm border border-slate-100 hover:shadow-md'
+                ? 'bg-slate-800/50 text-white backdrop-blur-md hover:bg-slate-700'
+                : 'bg-white text-slate-800 shadow-sm border border-slate-100 hover:shadow-md'
                 }`}
             >
               <ArrowLeft size={20} />
             </button>
             <div>
               <h1 className={`text-2xl sm:text-3xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Analiz & Rapor</h1>
-              <p className="text-slate-500 font-medium text-[10px] sm:text-xs mt-0.5 uppercase tracking-wider opacity-70">Finansal durumunuzu detaylı inceleyin</p>
             </div>
           </div>
 
