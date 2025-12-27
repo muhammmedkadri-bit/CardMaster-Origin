@@ -1308,16 +1308,16 @@ const App: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    <div className="space-y-4 sm:space-y-5">
+                    <div className="flex overflow-x-auto gap-4 pb-4 -mb-4 snap-x snap-mandatory no-scrollbar sm:space-y-5 sm:block">
                       {sortedTransactions.length > 0 ? (
                         <>
-                          {sortedTransactions.slice(0, 5).map(tx => {
+                          {sortedTransactions.slice(0, 10).map(tx => {
                             const card = cards.find(c => c.id === tx.cardId);
                             const cardColor = card?.color || '#3B82F6';
                             const isSpending = tx.type === 'spending';
 
                             return (
-                              <div key={tx.id} className={`relative p-5 sm:p-6 rounded-[32px] sm:rounded-[28px] transition-all group border ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                              <div key={tx.id} className={`snap-start shrink-0 w-[320px] sm:w-auto relative p-5 sm:p-6 rounded-[32px] sm:rounded-[28px] transition-all group border ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
                                 {/* Mobile: New Card Layout */}
                                 <div className="flex flex-col gap-4 sm:hidden">
                                   {/* Header: Indicator, Category, Actions */}
@@ -1404,13 +1404,14 @@ const App: React.FC = () => {
                           {sortedTransactions.length > 5 && (
                             <button
                               onClick={() => handleViewChange('analysis')}
-                              className={`w-full mt-4 p-5 rounded-3xl border border-dashed font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3 ${isDarkMode
-                                ? 'border-slate-800 text-slate-500 hover:bg-slate-800/30 hover:text-blue-400 hover:border-blue-500/50'
-                                : 'border-slate-200 text-slate-400 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200'
+                              className={`snap-start shrink-0 w-[320px] sm:w-full sm:mt-4 p-6 sm:p-5 rounded-[32px] sm:rounded-3xl border-2 border-dashed font-black text-xs sm:text-[10px] uppercase tracking-[0.3em] transition-all flex flex-col sm:flex-row items-center justify-center gap-3 ${isDarkMode
+                                ? 'border-slate-700 text-slate-400 hover:bg-slate-800/30 hover:text-blue-400 hover:border-blue-500/50'
+                                : 'border-slate-200 text-slate-500 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200'
                                 }`}
                             >
-                              <span>Daha fazla hareket göster</span>
-                              <ChevronRight size={16} />
+                              <ArrowRight size={24} className="sm:hidden" />
+                              <span className="text-center">Tümünü<br className="sm:hidden" /> Görüntüle</span>
+                              <ChevronRight size={16} className="hidden sm:block" />
                             </button>
                           )}
                         </>
