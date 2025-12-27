@@ -1553,8 +1553,8 @@ const App: React.FC = () => {
           </main>
 
           {!isInitialLoading && (
-            <div key="bottom-nav-v3" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[2100] flex flex-col items-center w-full max-w-[320px] sm:max-w-none pointer-events-none animate-in fade-in slide-in-from-bottom-[100px] zoom-in-90 duration-[1500ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] fill-mode-both">
-              <div className="pointer-events-auto flex flex-col items-center">
+            <div key="bottom-nav-morph" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[2100] flex flex-col items-center w-full max-w-[340px] sm:max-w-none pointer-events-none animate-morph-reveal">
+              <div className="pointer-events-auto flex flex-col items-center w-full">
                 {isFabOpen && (
                   <div className="mb-4 flex flex-col gap-3 min-w-[210px] animate-in fade-in slide-in-from-bottom-4 duration-300">
                     <button onClick={() => { setModalMode('spending'); setIsFabOpen(false); }} className={`p-4 rounded-[24px] shadow-2xl flex items-center gap-4 font-black uppercase text-[10px] tracking-widest transition-all border active:scale-95 group ${isDarkMode ? 'bg-slate-900 border-slate-800 text-white hover:bg-slate-800' : 'bg-white border-slate-100 text-slate-800 hover:bg-slate-50'}`}>
@@ -1573,13 +1573,15 @@ const App: React.FC = () => {
                 )}
 
                 <div className={`flex items-center gap-1 sm:gap-2 p-1.5 sm:p-2 rounded-[28px] sm:rounded-[32px] border shadow-2xl ${isDarkMode ? 'bg-[#0b0f1a]/95 border-slate-800 shadow-black' : 'bg-white/95 border-slate-200 shadow-blue-900/10'}`}>
-                  <div className="flex items-center px-0.5 sm:px-1 gap-1">
+                  <div className="flex items-center px-0.5 sm:px-1 gap-1 animate-nav-item-fade [animation-delay:800ms] opacity-0 fill-mode-both">
                     <button onClick={() => handleViewChange('dashboard')} className={`min-w-[44px] min-h-[44px] p-3 rounded-xl sm:rounded-2xl ${view === 'dashboard' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Dashboard"><LayoutDashboard size={20} className="sm:w-5 sm:h-5" /></button>
                     <button onClick={() => handleViewChange('cards')} className={`min-w-[44px] min-h-[44px] p-3 rounded-xl sm:rounded-2xl ${view === 'cards' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Cards"><CardIcon size={20} className="sm:w-5 sm:h-5" /></button>
                     <button onClick={() => handleViewChange('analysis')} className={`min-w-[44px] min-h-[44px] p-3 rounded-xl sm:rounded-2xl ${view === 'analysis' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Analysis"><BarChart3 size={20} className="sm:w-5 sm:h-5" /></button>
                   </div>
-                  <button onClick={() => setIsFabOpen(!isFabOpen)} className={`shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-white shadow-xl border-[3px] sm:border-4 ${isDarkMode ? 'border-[#0a1224]' : 'border-white'} ${isFabOpen ? 'bg-slate-800 rotate-45' : 'bg-blue-600 shadow-blue-600/30 active:scale-95'}`} aria-label="New Transaction"><Plus size={24} className="sm:w-8 sm:h-8" strokeWidth={3} /></button>
-                  <div className="flex items-center px-0.5 sm:px-1 gap-1">
+
+                  <button onClick={() => setIsFabOpen(!isFabOpen)} className={`shrink-0 w-12 h-12 sm:w-14 h-14 rounded-full flex items-center justify-center text-white shadow-xl border-[3px] sm:border-4 animate-nav-item-fade [animation-delay:600ms] opacity-0 fill-mode-both ${isDarkMode ? 'border-[#0a1224]' : 'border-white'} ${isFabOpen ? 'bg-slate-800 rotate-45' : 'bg-blue-600 shadow-blue-600/30 active:scale-95'}`} aria-label="New Transaction"><Plus size={24} className="sm:w-8 sm:h-8" strokeWidth={3} /></button>
+
+                  <div className="flex items-center px-0.5 sm:px-1 gap-1 animate-nav-item-fade [animation-delay:800ms] opacity-0 fill-mode-both">
                     <button onClick={() => handleViewChange('settings')} className={`min-w-[44px] min-h-[44px] p-3 rounded-xl sm:rounded-2xl ${view === 'settings' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Settings"><SettingsIcon size={20} className="sm:w-5 sm:h-5" /></button>
                     <button onClick={() => setIsDarkMode(!isDarkMode)} className={`min-w-[44px] min-h-[44px] p-3 rounded-xl sm:rounded-2xl ${isDarkMode ? 'text-slate-400 active:text-yellow-400 active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100'}`} aria-label="Toggle Theme">
                       {isDarkMode ? <Sun size={20} className="sm:w-5 sm:h-5" /> : <Moon size={20} className="sm:w-5 sm:h-5" />}
