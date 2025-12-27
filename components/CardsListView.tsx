@@ -83,7 +83,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-6 duration-500 pt-24 pb-10">
+    <div className="animate-in fade-in slide-in-from-bottom-6 duration-500 pt-16 pb-10">
       {/* Header Area */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-12">
         <div className="flex items-center gap-6">

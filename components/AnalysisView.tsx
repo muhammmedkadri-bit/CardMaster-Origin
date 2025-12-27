@@ -244,7 +244,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
   }
 
   return (
-    <div className={`min-h-screen pt-24 pb-24 px-4 sm:px-10 transition-colors duration-500 ${isDarkMode ? 'bg-[#0b0f1a]' : 'bg-[#f8fafc]'}`}>
+    <div className={`min-h-screen pt-16 pb-24 px-4 sm:px-10 transition-colors duration-500 ${isDarkMode ? 'bg-[#0b0f1a]' : 'bg-[#f8fafc]'}`}>
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-8 mb-16">
           <div className="flex items-center gap-6">
