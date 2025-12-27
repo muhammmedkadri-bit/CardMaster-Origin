@@ -1526,7 +1526,7 @@ const App: React.FC = () => {
                     key={item.mode}
                     onClick={() => { setModalMode(item.mode as any); setIsFabOpen(false); }}
                     className={`group p-4 rounded-[24px] shadow-2xl flex items-center gap-4 font-black uppercase text-xs tracking-[0.15em] transition-all border backdrop-blur-xl active:scale-95 hover:shadow-[0_20px_60px_-15px] ${isDarkMode
-                      ? `bg-gradient-to-br ${item.gradient} bg-opacity-10 border-white/10 text-white hover:border-white/20 hover:bg-opacity-20`
+                      ? 'bg-[#0f172a]/80 border-slate-800 text-white hover:bg-[#0f172a] hover:border-slate-700'
                       : `bg-white/80 border-${item.color}-100 text-slate-800 hover:bg-white hover:shadow-${item.color}-500/20`
                       }`}
                   >
