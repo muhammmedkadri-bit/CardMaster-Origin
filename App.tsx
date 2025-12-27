@@ -234,9 +234,7 @@ const App: React.FC = () => {
   const [toastNotifications, setToastNotifications] = useState<{ id: number; message: string; type: 'warning' | 'info' | 'success' }[]>([]);
   const [scrollY, setScrollY] = useState(0);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const [isChangingView, setIsChangingView] = useState(false);
   const [realtimeRetryTrigger, setRealtimeRetryTrigger] = useState(0);
-  const [transitionData, setTransitionData] = useState<{ from: string, to: string } | null>(null);
 
   // Auth States
   const [user, setUser] = useState<User | null>(null);
@@ -640,20 +638,8 @@ const App: React.FC = () => {
 
   const handleViewChange = (newView: 'dashboard' | 'cards' | 'analysis' | 'settings') => {
     if (newView === view) return;
-
-    setTransitionData({ from: view, to: newView });
-    setIsChangingView(true);
-
-    // Reduced duration for much snappier response
-    const duration = newView === 'analysis' || view === 'analysis' ? 200 : 150;
-
-    setTimeout(() => {
-      setView(newView);
-      setTimeout(() => {
-        setIsChangingView(false);
-        setTransitionData(null);
-      }, 150);
-    }, duration);
+    // Instant view change - no delays that block touch events
+    setView(newView);
   };
 
   const checkFinancialDeadlines = () => {
@@ -1680,16 +1666,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* View Transition Overlay */}
-      {isChangingView && (
-        <div className={`fixed inset-0 z-[400] flex flex-col items-center justify-center p-6 animate-in fade-in duration-300 ${isDarkMode ? 'bg-[#0b0f1a]' : 'bg-white'}`}>
-          <div className="flex flex-col items-center animate-in zoom-in-95 duration-500">
-            <div className="scale-110">
-              <Logo isDarkMode={isDarkMode} isAnimated={true} />
-            </div>
-          </div>
-        </div>
-      )}
+
 
       <AuthModal
         isOpen={isAuthModalOpen}

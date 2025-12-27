@@ -61,11 +61,11 @@ interface AnalysisViewProps {
 type TimeRange = '7days' | '30days' | 'year' | 'custom';
 
 const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDarkMode, onBack, onEditTransaction, onDeleteTransaction, categories, lastUpdate }) => {
-  const [selectedCardId, setSelectedCardId] = useState<string>('all');
-  const [timeRange, setTimeRange] = useState<TimeRange>('30days');
-  const [customStart, setCustomStart] = useState<string>(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
-  const [customEnd, setCustomEnd] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [isExporting, setIsExporting] = useState(false);
+  const [selectedCardId, setSelectedCardId] = React.useState<string>('all');
+  const [timeRange, setTimeRange] = React.useState<TimeRange>('30days');
+  const [customStart, setCustomStart] = React.useState<string>(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
+  const [customEnd, setCustomEnd] = React.useState<string>(new Date().toISOString().split('T')[0]);
+  const [isExporting, setIsExporting] = React.useState(false);
 
   const formatDateDisplay = (dateStr: string) => {
     if (!dateStr) return '';
@@ -313,7 +313,12 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
               {(['7days', '30days', 'year', 'custom'] as TimeRange[]).map(range => (
                 <button
                   key={range}
-                  onClick={() => setTimeRange(range)}
+                  onClick={() => {
+                    // Use startTransition to prevent blocking the UI thread
+                    React.startTransition(() => {
+                      setTimeRange(range);
+                    });
+                  }}
                   className={`px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all ${timeRange === range
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 active:scale-95'
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -331,7 +336,11 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
               <div className="relative group">
                 <select
                   value={selectedCardId}
-                  onChange={(e) => setSelectedCardId(e.target.value)}
+                  onChange={(e) => {
+                    React.startTransition(() => {
+                      setSelectedCardId(e.target.value);
+                    });
+                  }}
                   className={`w-full h-16 px-6 pt-1 rounded-3xl border appearance-none outline-none font-black text-base cursor-pointer transition-all ${isDarkMode ? 'bg-slate-900/50 border-white/5 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-100 text-slate-800 focus:border-blue-500 shadow-sm'}`}
                 >
                   <option value="all">TÜM KARTLAR</option>
