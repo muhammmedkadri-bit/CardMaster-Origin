@@ -1233,302 +1233,304 @@ const App: React.FC = () => {
       ) : (
         <>
           <main className="max-w-7xl mx-auto pt-24 px-4 sm:px-6 space-y-8 sm:space-y-12 relative z-0">
-            {view === 'dashboard' ? (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 pt-4 sm:pt-8">
-                  {[
-                    { label: 'TOPLAM LİMİT', val: totalLimit, icon: <TrendingUp size={28} />, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-                    { label: 'TOPLAM BORÇ', val: totalBalance, icon: <CardIcon size={28} />, color: 'text-rose-500', bg: 'bg-rose-500/10' },
-                    { label: 'KULLANIM ORANI', val: overallUtilization, icon: <Zap size={28} />, color: 'text-blue-500', bg: 'bg-blue-500/10', suffix: '%' }
-                  ].map((item, i) => (
-                    <div key={i} className={`p-6 sm:p-8 rounded-[40px] border transition-all duration-300 group flex items-center gap-6 ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-100 shadow-sm hover:shadow-md'}`}>
-                      <div className={`w-14 h-14 shrink-0 ${item.bg} ${item.color} rounded-3xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                        {item.icon}
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-black text-slate-500 dark:text-slate-500 tracking-[0.2em] block mb-1 uppercase">{item.label}</span>
-                        <div className={`text-xl sm:text-3xl font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                          <RollingNumber
-                            value={item.val}
-                            currency={item.suffix === '%' ? '%' : '₺'}
-                          />
+            <div key={view} className="animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both">
+              {view === 'dashboard' ? (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 pt-4 sm:pt-8">
+                    {[
+                      { label: 'TOPLAM LİMİT', val: totalLimit, icon: <TrendingUp size={28} />, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+                      { label: 'TOPLAM BORÇ', val: totalBalance, icon: <CardIcon size={28} />, color: 'text-rose-500', bg: 'bg-rose-500/10' },
+                      { label: 'KULLANIM ORANI', val: overallUtilization, icon: <Zap size={28} />, color: 'text-blue-500', bg: 'bg-blue-500/10', suffix: '%' }
+                    ].map((item, i) => (
+                      <div key={i} className={`p-6 sm:p-8 rounded-[40px] border transition-all duration-300 group flex items-center gap-6 ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-100 shadow-sm hover:shadow-md'}`}>
+                        <div className={`w-14 h-14 shrink-0 ${item.bg} ${item.color} rounded-3xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                          {item.icon}
                         </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-1 gap-6 sm:gap-10 items-start max-w-5xl mx-auto">
-                  <div className="space-y-6 sm:space-y-10">
-                    {cards.length > 0 && (
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 pt-2 sm:pt-4">
-                        <div className={`flex items-center gap-4 p-5 rounded-[24px] border ${isDarkMode ? 'bg-blue-500/5 border-blue-500/20' : 'bg-blue-50 border-blue-100 shadow-sm'}`}>
-                          <div className="p-3 bg-blue-500/10 text-blue-600 rounded-xl"><Clock size={20} /></div>
-                          <div className="overflow-hidden">
-                            <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">SIRADAKİ ÖDEME</p>
-                            <p className={`text-sm font-black truncate ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{widgetsData.closestDue?.cardName} ({widgetsData.closestDue?.dueDay}. Gün)</p>
+                        <div>
+                          <span className="text-[10px] font-black text-slate-500 dark:text-slate-500 tracking-[0.2em] block mb-1 uppercase">{item.label}</span>
+                          <div className={`text-xl sm:text-3xl font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
                             <RollingNumber
-                              value={Math.max(0, widgetsData.closestDue?.balance || 0)}
-                              className="text-[10px] font-bold text-slate-500"
+                              value={item.val}
+                              currency={item.suffix === '%' ? '%' : '₺'}
                             />
                           </div>
                         </div>
+                      </div>
+                    ))}
+                  </div>
 
-                        <div className={`flex items-center gap-4 p-5 rounded-[24px] border ${isDarkMode ? 'bg-amber-500/5 border-amber-500/20' : 'bg-amber-50 border-amber-100 shadow-sm'}`}>
-                          <div className="p-3 bg-amber-500/10 text-amber-600 rounded-xl"><TrendingUp size={20} /></div>
-                          <div className="overflow-hidden">
-                            <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-1">EN YÜKSEK BORÇ</p>
-                            <p className={`text-sm font-black truncate ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{widgetsData.highestDebt?.cardName}</p>
-                            <p className="text-[10px] font-bold text-slate-500">₺{Math.max(0, widgetsData.highestDebt?.balance || 0).toLocaleString('tr-TR')}</p>
+                  <div className="grid grid-cols-1 gap-6 sm:gap-10 items-start max-w-5xl mx-auto">
+                    <div className="space-y-6 sm:space-y-10">
+                      {cards.length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 pt-2 sm:pt-4">
+                          <div className={`flex items-center gap-4 p-5 rounded-[24px] border ${isDarkMode ? 'bg-blue-500/5 border-blue-500/20' : 'bg-blue-50 border-blue-100 shadow-sm'}`}>
+                            <div className="p-3 bg-blue-500/10 text-blue-600 rounded-xl"><Clock size={20} /></div>
+                            <div className="overflow-hidden">
+                              <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">SIRADAKİ ÖDEME</p>
+                              <p className={`text-sm font-black truncate ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{widgetsData.closestDue?.cardName} ({widgetsData.closestDue?.dueDay}. Gün)</p>
+                              <RollingNumber
+                                value={Math.max(0, widgetsData.closestDue?.balance || 0)}
+                                className="text-[10px] font-bold text-slate-500"
+                              />
+                            </div>
+                          </div>
+
+                          <div className={`flex items-center gap-4 p-5 rounded-[24px] border ${isDarkMode ? 'bg-amber-500/5 border-amber-500/20' : 'bg-amber-50 border-amber-100 shadow-sm'}`}>
+                            <div className="p-3 bg-amber-500/10 text-amber-600 rounded-xl"><TrendingUp size={20} /></div>
+                            <div className="overflow-hidden">
+                              <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-1">EN YÜKSEK BORÇ</p>
+                              <p className={`text-sm font-black truncate ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{widgetsData.highestDebt?.cardName}</p>
+                              <p className="text-[10px] font-bold text-slate-500">₺{Math.max(0, widgetsData.highestDebt?.balance || 0).toLocaleString('tr-TR')}</p>
+                            </div>
+                          </div>
+
+                          {widgetsData.overdue ? (
+                            <div className={`flex items-center gap-4 p-5 rounded-[24px] border ${isDarkMode ? 'bg-rose-500/10 border-rose-500/30' : 'bg-rose-50 border-rose-200 shadow-sm'}`}>
+                              <div className="p-3 bg-rose-500/10 text-rose-600 rounded-xl"><AlertTriangle size={20} className="animate-pulse" /></div>
+                              <div className="overflow-hidden">
+                                <p className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest mb-1">ÖDEME GÜNÜ GEÇTİ</p>
+                                <p className={`text-sm font-black truncate ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{widgetsData.overdue.cardName}</p>
+                                <p className="text-[10px] font-bold text-slate-500">Ayın {widgetsData.overdue.dueDay}. günüydü</p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className={`flex items-center gap-4 p-5 rounded-[24px] border ${isDarkMode ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100 shadow-sm'}`}>
+                              <div className="p-3 bg-emerald-500/10 text-emerald-600 rounded-xl"><CheckCircle2 size={20} /></div>
+                              <div className="overflow-hidden">
+                                <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">DURUM ÖZETİ</p>
+                                <p className={`text-sm font-black truncate ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Ödemeler Güncel</p>
+                                <p className="text-[10px] font-bold text-slate-500">Kritik borç bulunmuyor</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <section id="cuzdan" className="space-y-4 sm:space-y-6">
+                        <div className="flex items-center justify-between">
+                          <h2 className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>CÜZDANIM</h2>
+                          <div className="hidden sm:flex gap-2">
+                            <button onClick={() => scrollBy(-400)} className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 cursor-pointer transition-colors active:scale-90"><ChevronLeft size={20} /></button>
+                            <button onClick={() => scrollBy(400)} className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 cursor-pointer transition-colors active:scale-90"><ChevronRight size={20} /></button>
                           </div>
                         </div>
-
-                        {widgetsData.overdue ? (
-                          <div className={`flex items-center gap-4 p-5 rounded-[24px] border ${isDarkMode ? 'bg-rose-500/10 border-rose-500/30' : 'bg-rose-50 border-rose-200 shadow-sm'}`}>
-                            <div className="p-3 bg-rose-500/10 text-rose-600 rounded-xl"><AlertTriangle size={20} className="animate-pulse" /></div>
-                            <div className="overflow-hidden">
-                              <p className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest mb-1">ÖDEME GÜNÜ GEÇTİ</p>
-                              <p className={`text-sm font-black truncate ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{widgetsData.overdue.cardName}</p>
-                              <p className="text-[10px] font-bold text-slate-500">Ayın {widgetsData.overdue.dueDay}. günüydü</p>
+                        <div ref={scrollContainerRef} onScroll={handleScroll} className="flex overflow-x-auto gap-4 sm:gap-10 pt-6 sm:pt-10 pb-10 sm:pb-14 -mb-10 sm:-mb-14 snap-x no-scrollbar scroll-smooth min-h-[200px] sm:min-h-[220px]">
+                          {cards.map((card, index) => {
+                            const cardWidth = 380; const gap = 40; const cardCenter = index * (cardWidth + gap) + (cardWidth / 2);
+                            const containerWidth = scrollContainerRef.current?.offsetWidth || 800; const viewportCenter = scrollX + (containerWidth / 2);
+                            const relativePos = (cardCenter - viewportCenter) / containerWidth;
+                            return (
+                              <div key={card.id} className="snap-start shrink-0 w-[280px] sm:w-[380px] relative">
+                                <CardVisual card={card} scrollProgress={relativePos} onAddToCalendar={handleAddToCalendarClick} onEdit={startEdit} onDelete={setCardToDelete} />
+                              </div>
+                            );
+                          })}
+                          <button onClick={() => setModalMode('add')} className={`snap-start shrink-0 w-[280px] sm:w-[380px] aspect-[1.586/1] border-2 border-dashed rounded-[32px] flex flex-col items-center justify-center gap-4 sm:gap-6 transition-all group ${isDarkMode ? 'border-slate-800 hover:bg-slate-900/50' : 'border-slate-200 hover:bg-slate-50'}`}>
+                            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+                              <Plus size={32} />
                             </div>
-                          </div>
-                        ) : (
-                          <div className={`flex items-center gap-4 p-5 rounded-[24px] border ${isDarkMode ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100 shadow-sm'}`}>
-                            <div className="p-3 bg-emerald-500/10 text-emerald-600 rounded-xl"><CheckCircle2 size={20} /></div>
-                            <div className="overflow-hidden">
-                              <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">DURUM ÖZETİ</p>
-                              <p className={`text-sm font-black truncate ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Ödemeler Güncel</p>
-                              <p className="text-[10px] font-bold text-slate-500">Kritik borç bulunmuyor</p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    <section id="cuzdan" className="space-y-4 sm:space-y-6">
-                      <div className="flex items-center justify-between">
-                        <h2 className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>CÜZDANIM</h2>
-                        <div className="hidden sm:flex gap-2">
-                          <button onClick={() => scrollBy(-400)} className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 cursor-pointer transition-colors active:scale-90"><ChevronLeft size={20} /></button>
-                          <button onClick={() => scrollBy(400)} className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 cursor-pointer transition-colors active:scale-90"><ChevronRight size={20} /></button>
+                            <span className={`font-black text-[9px] sm:text-[10px] tracking-[0.3em] uppercase ${isDarkMode ? 'text-slate-600' : 'text-slate-400'}`}>YENİ KART EKLE</span>
+                          </button>
                         </div>
-                      </div>
-                      <div ref={scrollContainerRef} onScroll={handleScroll} className="flex overflow-x-auto gap-4 sm:gap-10 pt-6 sm:pt-10 pb-10 sm:pb-14 -mb-10 sm:-mb-14 snap-x no-scrollbar scroll-smooth min-h-[200px] sm:min-h-[220px]">
-                        {cards.map((card, index) => {
-                          const cardWidth = 380; const gap = 40; const cardCenter = index * (cardWidth + gap) + (cardWidth / 2);
-                          const containerWidth = scrollContainerRef.current?.offsetWidth || 800; const viewportCenter = scrollX + (containerWidth / 2);
-                          const relativePos = (cardCenter - viewportCenter) / containerWidth;
-                          return (
-                            <div key={card.id} className="snap-start shrink-0 w-[280px] sm:w-[380px] relative">
-                              <CardVisual card={card} scrollProgress={relativePos} onAddToCalendar={handleAddToCalendarClick} onEdit={startEdit} onDelete={setCardToDelete} />
+                      </section>
+
+                      <div className={`p-6 sm:p-10 rounded-[40px] border transition-all ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                          <h3 className={`text-xl font-black flex items-center gap-4 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                            <ArrowUpRight size={24} className="text-blue-500" /> SON HAREKETLER
+                          </h3>
+                          {isSyncing && (
+                            <div className="flex items-center gap-2 text-[10px] font-black text-blue-500 uppercase tracking-widest bg-blue-500/10 px-4 py-2 rounded-full animate-pulse">
+                              <RefreshCw size={12} className="animate-spin" /> GÜNCELLENİYOR
                             </div>
-                          );
-                        })}
-                        <button onClick={() => setModalMode('add')} className={`snap-start shrink-0 w-[280px] sm:w-[380px] aspect-[1.586/1] border-2 border-dashed rounded-[32px] flex flex-col items-center justify-center gap-4 sm:gap-6 transition-all group ${isDarkMode ? 'border-slate-800 hover:bg-slate-900/50' : 'border-slate-200 hover:bg-slate-50'}`}>
-                          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
-                            <Plus size={32} />
-                          </div>
-                          <span className={`font-black text-[9px] sm:text-[10px] tracking-[0.3em] uppercase ${isDarkMode ? 'text-slate-600' : 'text-slate-400'}`}>YENİ KART EKLE</span>
-                        </button>
-                      </div>
-                    </section>
+                          )}
+                        </div>
+                        <div className="space-y-4 sm:space-y-5">
+                          {sortedTransactions.length > 0 ? (
+                            <>
+                              {sortedTransactions.slice(0, 5).map(tx => {
+                                const card = cards.find(c => c.id === tx.cardId);
+                                const cardColor = card?.color || '#3B82F6';
+                                const isSpending = tx.type === 'spending';
 
-                    <div className={`p-6 sm:p-10 rounded-[40px] border transition-all ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-                        <h3 className={`text-xl font-black flex items-center gap-4 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                          <ArrowUpRight size={24} className="text-blue-500" /> SON HAREKETLER
-                        </h3>
-                        {isSyncing && (
-                          <div className="flex items-center gap-2 text-[10px] font-black text-blue-500 uppercase tracking-widest bg-blue-500/10 px-4 py-2 rounded-full animate-pulse">
-                            <RefreshCw size={12} className="animate-spin" /> GÜNCELLENİYOR
-                          </div>
-                        )}
-                      </div>
-                      <div className="space-y-4 sm:space-y-5">
-                        {sortedTransactions.length > 0 ? (
-                          <>
-                            {sortedTransactions.slice(0, 5).map(tx => {
-                              const card = cards.find(c => c.id === tx.cardId);
-                              const cardColor = card?.color || '#3B82F6';
-                              const isSpending = tx.type === 'spending';
-
-                              return (
-                                <div key={tx.id} className={`relative p-5 sm:p-6 rounded-[32px] sm:rounded-[28px] transition-all group border ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
-                                  {/* Mobile: New Card Layout */}
-                                  <div className="flex flex-col gap-4 sm:hidden">
-                                    {/* Header: Indicator, Category, Actions */}
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-3">
-                                        <div className={`w-1.5 h-6 rounded-full ${isSpending ? 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.4)]' : 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]'}`} />
-                                        <span className={`text-[11px] font-black uppercase tracking-[0.15em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                                          {tx.category || 'Diğer'}
-                                        </span>
-                                      </div>
-                                      <div className="flex items-center gap-1.5">
-                                        <button onClick={() => startEditTransaction(tx)} className={`p-2.5 rounded-xl transition-all ${isDarkMode ? 'bg-blue-500/10 text-blue-400 border border-blue-500/10' : 'bg-blue-50 text-blue-600 border border-blue-100'}`}><Edit2 size={14} /></button>
-                                        <button onClick={() => setTransactionToDelete(tx)} className={`p-2.5 rounded-xl transition-all ${isDarkMode ? 'bg-rose-500/10 text-rose-400 border border-rose-500/10' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}><Trash2 size={14} /></button>
-                                      </div>
-                                    </div>
-
-                                    {/* Description Area */}
-                                    <div className="py-1">
-                                      <div className="flex items-center gap-2">
-                                        <p className={`text-[15px] font-black tracking-tight leading-relaxed break-words ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-                                          {tx.description || (isSpending ? 'HARCAMA' : 'ÖDEME')}
-                                        </p>
-                                        {tx.confirmationUrl && (
-                                          <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 text-blue-500" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={14} /></a>
-                                        )}
-                                      </div>
-                                    </div>
-
-                                    {/* Footer: Card, Amount, Date */}
-                                    <div className="flex flex-col gap-4 pt-4 border-t border-slate-200/10 dark:border-white/5">
-                                      <div className="flex items-center justify-between gap-4">
-                                        <div className="px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-widest" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
-                                          {tx.cardName}
+                                return (
+                                  <div key={tx.id} className={`relative p-5 sm:p-6 rounded-[32px] sm:rounded-[28px] transition-all group border ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                                    {/* Mobile: New Card Layout */}
+                                    <div className="flex flex-col gap-4 sm:hidden">
+                                      {/* Header: Indicator, Category, Actions */}
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                          <div className={`w-1.5 h-6 rounded-full ${isSpending ? 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.4)]' : 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]'}`} />
+                                          <span className={`text-[11px] font-black uppercase tracking-[0.15em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                                            {tx.category || 'Diğer'}
+                                          </span>
                                         </div>
-                                        <p className={`text-xl font-black tracking-tighter ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                          {isSpending ? '-' : '+'}₺{tx.amount.toLocaleString('tr-TR')}
-                                        </p>
+                                        <div className="flex items-center gap-1.5">
+                                          <button onClick={() => startEditTransaction(tx)} className={`p-2.5 rounded-xl transition-all ${isDarkMode ? 'bg-blue-500/10 text-blue-400 border border-blue-500/10' : 'bg-blue-50 text-blue-600 border border-blue-100'}`}><Edit2 size={14} /></button>
+                                          <button onClick={() => setTransactionToDelete(tx)} className={`p-2.5 rounded-xl transition-all ${isDarkMode ? 'bg-rose-500/10 text-rose-400 border border-rose-500/10' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}><Trash2 size={14} /></button>
+                                        </div>
                                       </div>
-                                      <div className="flex items-center gap-2 opacity-50">
-                                        <Clock size={12} className="text-slate-400" />
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{formatDateDisplay(tx.date)}</p>
-                                      </div>
-                                    </div>
-                                  </div>
 
-                                  {/* Desktop: Keep original layout */}
-                                  <div className="hidden sm:flex items-center justify-between">
-                                    <div className="flex items-center gap-5 flex-1 min-w-0">
-                                      <div className={`p-4 rounded-2xl shrink-0 ${isSpending ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                                        {isSpending ? <ShoppingBag size={20} /> : <PaymentIcon size={20} />}
-                                      </div>
-                                      <div className="flex flex-col min-w-0 pr-4">
+                                      {/* Description Area */}
+                                      <div className="py-1">
                                         <div className="flex items-center gap-2">
-                                          <p className={`font-black text-base tracking-tight truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+                                          <p className={`text-[15px] font-black tracking-tight leading-relaxed break-words ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
                                             {tx.description || (isSpending ? 'HARCAMA' : 'ÖDEME')}
                                           </p>
                                           {tx.confirmationUrl && (
-                                            <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 p-1 rounded-md text-blue-500 hover:bg-blue-500/10 transition-colors" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={14} /></a>
+                                            <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 text-blue-500" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={14} /></a>
                                           )}
                                         </div>
-                                        <div className="flex items-center gap-3 mt-1">
-                                          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{tx.cardName}</p>
-                                          <span className="text-[10px] text-slate-300 dark:text-slate-700">•</span>
-                                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{formatDateDisplay(tx.date)}</p>
+                                      </div>
+
+                                      {/* Footer: Card, Amount, Date */}
+                                      <div className="flex flex-col gap-4 pt-4 border-t border-slate-200/10 dark:border-white/5">
+                                        <div className="flex items-center justify-between gap-4">
+                                          <div className="px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-widest" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
+                                            {tx.cardName}
+                                          </div>
+                                          <p className={`text-xl font-black tracking-tighter ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                            {isSpending ? '-' : '+'}₺{tx.amount.toLocaleString('tr-TR')}
+                                          </p>
+                                        </div>
+                                        <div className="flex items-center gap-2 opacity-50">
+                                          <Clock size={12} className="text-slate-400" />
+                                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{formatDateDisplay(tx.date)}</p>
                                         </div>
                                       </div>
                                     </div>
 
-                                    <div className="flex flex-col items-end gap-2 shrink-0">
-                                      <p className={`font-black text-xl tracking-tighter ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                        {isSpending ? '-' : '+'}₺{tx.amount.toLocaleString('tr-TR')}
-                                      </p>
-                                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => startEditTransaction(tx)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-500 hover:text-blue-400 hover:bg-slate-700' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-200'}`}><Edit2 size={16} /></button>
-                                        <button onClick={() => setTransactionToDelete(tx)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-500 hover:text-rose-400 hover:bg-slate-700' : 'text-slate-400 hover:text-rose-600 hover:bg-slate-200'}`}><Trash2 size={16} /></button>
+                                    {/* Desktop: Keep original layout */}
+                                    <div className="hidden sm:flex items-center justify-between">
+                                      <div className="flex items-center gap-5 flex-1 min-w-0">
+                                        <div className={`p-4 rounded-2xl shrink-0 ${isSpending ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                                          {isSpending ? <ShoppingBag size={20} /> : <PaymentIcon size={20} />}
+                                        </div>
+                                        <div className="flex flex-col min-w-0 pr-4">
+                                          <div className="flex items-center gap-2">
+                                            <p className={`font-black text-base tracking-tight truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+                                              {tx.description || (isSpending ? 'HARCAMA' : 'ÖDEME')}
+                                            </p>
+                                            {tx.confirmationUrl && (
+                                              <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 p-1 rounded-md text-blue-500 hover:bg-blue-500/10 transition-colors" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={14} /></a>
+                                            )}
+                                          </div>
+                                          <div className="flex items-center gap-3 mt-1">
+                                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{tx.cardName}</p>
+                                            <span className="text-[10px] text-slate-300 dark:text-slate-700">•</span>
+                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{formatDateDisplay(tx.date)}</p>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      <div className="flex flex-col items-end gap-2 shrink-0">
+                                        <p className={`font-black text-xl tracking-tighter ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                          {isSpending ? '-' : '+'}₺{tx.amount.toLocaleString('tr-TR')}
+                                        </p>
+                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                          <button onClick={() => startEditTransaction(tx)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-500 hover:text-blue-400 hover:bg-slate-700' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-200'}`}><Edit2 size={16} /></button>
+                                          <button onClick={() => setTransactionToDelete(tx)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-500 hover:text-rose-400 hover:bg-slate-700' : 'text-slate-400 hover:text-rose-600 hover:bg-slate-200'}`}><Trash2 size={16} /></button>
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
-                                </div>
-                              );
-                            })}
-                            {sortedTransactions.length > 5 && (
-                              <button
-                                onClick={() => handleViewChange('analysis')}
-                                className={`w-full mt-4 p-5 rounded-3xl border border-dashed font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3 ${isDarkMode
-                                  ? 'border-slate-800 text-slate-500 hover:bg-slate-800/30 hover:text-blue-400 hover:border-blue-500/50'
-                                  : 'border-slate-200 text-slate-400 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200'
-                                  }`}
-                              >
-                                <span>Daha fazla hareket göster</span>
-                                <ChevronRight size={16} />
-                              </button>
-                            )}
-                          </>
-                        ) : (
-                          <div className="py-20 text-center text-slate-500 font-bold italic">İşlem geçmişi bulunmuyor.</div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div id="dağılım" className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className={`p-8 rounded-[32px] border transition-all min-h-[480px] h-auto ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
-                        <h3 className={`text-lg font-black mb-8 flex items-center gap-3 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                          <PieIcon size={20} className="text-blue-500" /> DAĞILIM
-                        </h3>
-                        <div className="relative">
-                          <DistributionChart cards={cards} transactions={transactions} isDarkMode={isDarkMode} categories={categories} />
+                                );
+                              })}
+                              {sortedTransactions.length > 5 && (
+                                <button
+                                  onClick={() => handleViewChange('analysis')}
+                                  className={`w-full mt-4 p-5 rounded-3xl border border-dashed font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3 ${isDarkMode
+                                    ? 'border-slate-800 text-slate-500 hover:bg-slate-800/30 hover:text-blue-400 hover:border-blue-500/50'
+                                    : 'border-slate-200 text-slate-400 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200'
+                                    }`}
+                                >
+                                  <span>Daha fazla hareket göster</span>
+                                  <ChevronRight size={16} />
+                                </button>
+                              )}
+                            </>
+                          ) : (
+                            <div className="py-20 text-center text-slate-500 font-bold italic">İşlem geçmişi bulunmuyor.</div>
+                          )}
                         </div>
                       </div>
-                      <div id="odemeler" className={`p-8 rounded-[32px] border transition-all ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
-                        <h3 className={`text-lg font-black mb-8 flex items-center gap-3 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                          <Calendar size={20} className="text-blue-500" /> ÖDEMELER
-                        </h3>
-                        <div className="space-y-4">
-                          {cards.length > 0 ? [...cards].sort((a, b) => a.dueDay - b.dueDay).map(card => (
-                            <div key={card.id} className={`group flex items-center justify-between p-4 sm:p-5 rounded-[24px] transition-all border ${isDarkMode ? 'bg-slate-800/20 border-slate-800 hover:bg-slate-800/40 hover:border-slate-700' : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-blue-100 hover:shadow-sm'}`}>
-                              <div className="flex items-center gap-4">
-                                <div className="w-1.5 h-10 rounded-full shadow-sm" style={{ backgroundColor: card.color }} />
-                                <div>
-                                  <p className={`font-black text-sm uppercase tracking-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{card.cardName}</p>
-                                  <div className="flex items-center gap-2 mt-0.5">
-                                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-md ${isDarkMode ? 'bg-slate-700 text-slate-400' : 'bg-white text-slate-500 shadow-xs'}`}>AYIN {card.dueDay}. GÜNÜ</span>
+
+                      <div id="dağılım" className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className={`p-8 rounded-[32px] border transition-all min-h-[480px] h-auto ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                          <h3 className={`text-lg font-black mb-8 flex items-center gap-3 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                            <PieIcon size={20} className="text-blue-500" /> DAĞILIM
+                          </h3>
+                          <div className="relative">
+                            <DistributionChart cards={cards} transactions={transactions} isDarkMode={isDarkMode} categories={categories} />
+                          </div>
+                        </div>
+                        <div id="odemeler" className={`p-8 rounded-[32px] border transition-all ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                          <h3 className={`text-lg font-black mb-8 flex items-center gap-3 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                            <Calendar size={20} className="text-blue-500" /> ÖDEMELER
+                          </h3>
+                          <div className="space-y-4">
+                            {cards.length > 0 ? [...cards].sort((a, b) => a.dueDay - b.dueDay).map(card => (
+                              <div key={card.id} className={`group flex items-center justify-between p-4 sm:p-5 rounded-[24px] transition-all border ${isDarkMode ? 'bg-slate-800/20 border-slate-800 hover:bg-slate-800/40 hover:border-slate-700' : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-blue-100 hover:shadow-sm'}`}>
+                                <div className="flex items-center gap-4">
+                                  <div className="w-1.5 h-10 rounded-full shadow-sm" style={{ backgroundColor: card.color }} />
+                                  <div>
+                                    <p className={`font-black text-sm uppercase tracking-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{card.cardName}</p>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                      <span className={`text-[9px] font-black px-2 py-0.5 rounded-md ${isDarkMode ? 'bg-slate-700 text-slate-400' : 'bg-white text-slate-500 shadow-xs'}`}>AYIN {card.dueDay}. GÜNÜ</span>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                              <div className="flex items-center gap-3 sm:gap-4">
-                                <div className="text-right">
-                                  <p className={`font-black text-base sm:text-lg tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                                    ₺{Math.max(0, card.balance).toLocaleString('tr-TR')}
-                                  </p>
+                                <div className="flex items-center gap-3 sm:gap-4">
+                                  <div className="text-right">
+                                    <p className={`font-black text-base sm:text-lg tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                                      ₺{Math.max(0, card.balance).toLocaleString('tr-TR')}
+                                    </p>
+                                  </div>
+                                  <button
+                                    onClick={() => handleAddToCalendarClick(card)}
+                                    className={`p-3 min-h-[44px] min-w-[44px] rounded-xl transition-all flex items-center justify-center ${isDarkMode ? 'bg-slate-700 text-blue-400 hover:bg-blue-600 hover:text-white active:scale-95' : 'bg-white text-blue-600 hover:bg-blue-600 hover:text-white border border-slate-200 shadow-sm active:scale-95'}`}
+                                    title="Takvime Ekle"
+                                  >
+                                    <CalendarPlus size={18} />
+                                  </button>
                                 </div>
-                                <button
-                                  onClick={() => handleAddToCalendarClick(card)}
-                                  className={`p-3 min-h-[44px] min-w-[44px] rounded-xl transition-all flex items-center justify-center ${isDarkMode ? 'bg-slate-700 text-blue-400 hover:bg-blue-600 hover:text-white active:scale-95' : 'bg-white text-blue-600 hover:bg-blue-600 hover:text-white border border-slate-200 shadow-sm active:scale-95'}`}
-                                  title="Takvime Ekle"
-                                >
-                                  <CalendarPlus size={18} />
-                                </button>
                               </div>
-                            </div>
-                          )) : <div className="py-12 flex flex-col items-center justify-center text-slate-500 italic text-sm opacity-40">
-                            <Calendar size={24} className="mb-2" />
-                            Henüz bir ödeme planı yok
-                          </div>}
+                            )) : <div className="py-12 flex flex-col items-center justify-center text-slate-500 italic text-sm opacity-40">
+                              <Calendar size={24} className="mb-2" />
+                              Henüz bir ödeme planı yok
+                            </div>}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <MonthlyAnalysis transactions={transactions} cards={cards} isDarkMode={isDarkMode} categories={categories} />
+                      <MonthlyAnalysis transactions={transactions} cards={cards} isDarkMode={isDarkMode} categories={categories} />
+                    </div>
                   </div>
-                </div>
-              </>
-            ) : view === 'cards' ? (
-              <CardsListView cards={cards} transactions={transactions} isDarkMode={isDarkMode} onEdit={startEdit} onDelete={setCardToDelete} onAddToCalendar={handleAddToCalendarClick} onShowStatement={handleShowStatementClick} onAddCard={() => setModalMode('add')} onBack={() => setView('dashboard')} onEditTransaction={startEditTransaction} onDeleteTransaction={setTransactionToDelete} />
-            ) : view === 'analysis' ? (
-              <AnalysisView
-                cards={cards}
-                transactions={transactions}
-                isDarkMode={isDarkMode}
-                onBack={() => setView('dashboard')}
-                onEditTransaction={startEditTransaction}
-                onDeleteTransaction={setTransactionToDelete}
-                categories={categories}
-                lastUpdate={lastUpdate}
-              />
-            ) : (
-              <SettingsView
-                isDarkMode={isDarkMode}
-                onThemeToggle={() => setIsDarkMode(!isDarkMode)}
-                onResetAll={() => setModalMode('reset_confirm')}
-                onBack={() => setView('dashboard')}
-                categories={categories}
-                setCategories={setCategories}
-              />
-            )}
+                </>
+              ) : view === 'cards' ? (
+                <CardsListView cards={cards} transactions={transactions} isDarkMode={isDarkMode} onEdit={startEdit} onDelete={setCardToDelete} onAddToCalendar={handleAddToCalendarClick} onShowStatement={handleShowStatementClick} onAddCard={() => setModalMode('add')} onBack={() => setView('dashboard')} onEditTransaction={startEditTransaction} onDeleteTransaction={setTransactionToDelete} />
+              ) : view === 'analysis' ? (
+                <AnalysisView
+                  cards={cards}
+                  transactions={transactions}
+                  isDarkMode={isDarkMode}
+                  onBack={() => setView('dashboard')}
+                  onEditTransaction={startEditTransaction}
+                  onDeleteTransaction={setTransactionToDelete}
+                  categories={categories}
+                  lastUpdate={lastUpdate}
+                />
+              ) : (
+                <SettingsView
+                  isDarkMode={isDarkMode}
+                  onThemeToggle={() => setIsDarkMode(!isDarkMode)}
+                  onResetAll={() => setModalMode('reset_confirm')}
+                  onBack={() => setView('dashboard')}
+                  categories={categories}
+                  setCategories={setCategories}
+                />
+              )}
+            </div>
           </main>
 
           <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[1000] flex flex-col items-center w-full max-w-[320px] sm:max-w-none pointer-events-none">

@@ -289,7 +289,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
   }
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-6 duration-500 pt-0 pb-24">
+    <div className="pt-0 pb-24">
       {/* Header Section */}
       <div className="flex flex-col gap-8 mb-12">
         {/* Top Row: Title and Back Button */}

@@ -137,7 +137,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ isDarkMode, onThemeToggle, 
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-8 duration-500 pt-8 pb-10 max-w-3xl mx-auto px-4">
+    <div className="pt-8 pb-10 max-w-3xl mx-auto px-4">
       {/* Header */}
       <div className="flex items-center gap-6 mb-12">
         <button
