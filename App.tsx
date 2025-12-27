@@ -1556,19 +1556,22 @@ const App: React.FC = () => {
             <div key="bottom-nav-morph-v2" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[2100] flex flex-col items-center w-full max-w-[340px] sm:max-w-none sm:w-auto pointer-events-none animate-morph-reveal">
               <div className="pointer-events-auto flex flex-col items-center w-full">
                 {isFabOpen && (
-                  <div className="mb-4 flex flex-col gap-3 min-w-[210px] animate-in fade-in slide-in-from-bottom-4 duration-300">
-                    <button onClick={() => { setModalMode('spending'); setIsFabOpen(false); }} className={`p-4 rounded-[24px] shadow-2xl flex items-center gap-4 font-black uppercase text-[10px] tracking-widest transition-all border active:scale-95 group ${isDarkMode ? 'bg-slate-900 border-slate-800 text-white hover:bg-slate-800' : 'bg-white border-slate-100 text-slate-800 hover:bg-slate-50'}`}>
-                      <div className="bg-rose-500/10 text-rose-500 p-2.5 rounded-xl group-hover:rotate-45 transition-transform"><ArrowUpRight size={16} /></div>
-                      <span>HARCAMA EKLE</span>
-                    </button>
-                    <button onClick={() => { setModalMode('payment'); setIsFabOpen(false); }} className={`p-4 rounded-[24px] shadow-2xl flex items-center gap-4 font-black uppercase text-[10px] tracking-widest transition-all border active:scale-95 group ${isDarkMode ? 'bg-slate-900 border-slate-800 text-white hover:bg-slate-800' : 'bg-white border-slate-100 text-slate-800 hover:bg-slate-50'}`}>
-                      <div className="bg-emerald-500/10 text-emerald-500 p-2.5 rounded-xl group-hover:-rotate-45 transition-transform"><ArrowDownRight size={16} /></div>
-                      <span>ÖDEME YAP</span>
-                    </button>
-                    <button onClick={() => { setModalMode('add'); setIsFabOpen(false); }} className={`p-4 rounded-[24px] shadow-2xl flex items-center gap-4 font-black uppercase text-[10px] tracking-widest transition-all border active:scale-95 group ${isDarkMode ? 'bg-slate-900 border-slate-800 text-white hover:bg-slate-800' : 'bg-white border-slate-100 text-slate-800 hover:bg-slate-50'}`}>
-                      <div className="bg-blue-500/10 text-blue-500 p-2.5 rounded-xl group-hover:scale-110 transition-transform"><Plus size={16} /></div>
-                      <span>YENİ KART EKLE</span>
-                    </button>
+                  <div className="mb-6 flex flex-col gap-3 min-w-[220px]">
+                    {[
+                      { mode: 'spending', label: 'HARCAMA EKLE', icon: <ArrowUpRight size={18} />, color: 'rose', delay: '0ms' },
+                      { mode: 'payment', label: 'ÖDEME YAP', icon: <ArrowDownRight size={18} />, color: 'emerald', delay: '50ms' },
+                      { mode: 'add', label: 'YENİ KART EKLE', icon: <Plus size={18} />, color: 'blue', delay: '100ms' }
+                    ].map((item) => (
+                      <button
+                        key={item.mode}
+                        onClick={() => { setModalMode(item.mode as any); setIsFabOpen(false); }}
+                        style={{ animationDelay: item.delay }}
+                        className={`animate-fab-pop p-4.5 rounded-[24px] shadow-2xl flex items-center gap-4 font-black uppercase text-[11px] tracking-widest transition-all border active:scale-95 group fill-mode-both ${isDarkMode ? 'bg-[#0f172a] border-slate-800 text-white hover:bg-slate-800' : 'bg-white border-slate-100 text-slate-800 hover:bg-slate-50'}`}
+                      >
+                        <div className={`bg-${item.color}-500/10 text-${item.color}-500 p-2.5 rounded-2xl group-hover:rotate-12 transition-transform`}>{item.icon}</div>
+                        <span>{item.label}</span>
+                      </button>
+                    ))}
                   </div>
                 )}
 
@@ -1579,7 +1582,13 @@ const App: React.FC = () => {
                     <button onClick={() => handleViewChange('analysis')} className={`min-w-[44px] min-h-[44px] p-3 rounded-xl sm:rounded-2xl ${view === 'analysis' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Analysis"><BarChart3 size={20} className="sm:w-5 sm:h-5" /></button>
                   </div>
 
-                  <button onClick={() => setIsFabOpen(!isFabOpen)} className={`shrink-0 w-12 h-12 sm:w-14 h-14 rounded-full flex items-center justify-center text-white shadow-xl border-[3px] sm:border-4 animate-nav-item-fade [animation-delay:600ms] opacity-0 fill-mode-both ${isDarkMode ? 'border-[#0a1224]' : 'border-white'} ${isFabOpen ? 'bg-slate-800 rotate-45' : 'bg-blue-600 shadow-blue-600/30 active:scale-95'}`} aria-label="New Transaction"><Plus size={24} className="sm:w-8 sm:h-8" strokeWidth={3} /></button>
+                  <button
+                    onClick={() => setIsFabOpen(!isFabOpen)}
+                    className={`shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-white shadow-2xl transition-all duration-500 animate-nav-item-fade [animation-delay:600ms] opacity-0 fill-mode-both active:scale-90 ${isFabOpen ? 'bg-slate-700 rotate-[135deg] scale-90' : 'bg-gradient-to-tr from-blue-700 to-blue-500 shadow-blue-500/40 hover:scale-105'}`}
+                    aria-label="New Transaction"
+                  >
+                    <Plus size={28} className="sm:w-9 sm:h-9" strokeWidth={3} />
+                  </button>
 
                   <div className="flex items-center px-0.5 sm:px-1 gap-1 animate-nav-item-fade [animation-delay:800ms] opacity-0 fill-mode-both">
                     <button onClick={() => handleViewChange('settings')} className={`min-w-[44px] min-h-[44px] p-3 rounded-xl sm:rounded-2xl ${view === 'settings' ? (isDarkMode ? 'bg-slate-800 text-white shadow-inner' : 'bg-slate-100 text-blue-600 shadow-inner') : (isDarkMode ? 'text-slate-400 active:text-white active:bg-slate-800' : 'text-slate-500 active:text-blue-600 active:bg-slate-100')}`} aria-label="Settings"><SettingsIcon size={20} className="sm:w-5 sm:h-5" /></button>
