@@ -233,7 +233,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
   if (cards.length === 0) {
     return (
       <div className="min-h-screen pt-32 px-6 text-center">
-        <div className="max-w-md mx-auto p-12 rounded-[48px] border bg-white shadow-xl">
+        <div className="max-w-md mx-auto p-12 rounded-[40px] border bg-white shadow-xl">
           <Inbox size={64} className="mx-auto text-slate-200 mb-6" />
           <h2 className="text-2xl font-black text-slate-800 mb-4">HENÜZ KARTINIZ YOK</h2>
           <p className="text-slate-500 mb-8 font-medium">Analiz yapabilmek için önce bir kart eklemelisiniz.</p>
@@ -244,44 +244,42 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
   }
 
   return (
-    <div className={`min-h-screen pt-0 pb-24 px-4 sm:px-10 transition-colors duration-500 ${isDarkMode ? 'bg-[#0b0f1a]' : 'bg-[#f8fafc]'}`}>
+    <div className={`min-h-screen pt-0 pb-24 px-4 sm:px-6 transition-colors duration-500 ${isDarkMode ? 'bg-[#0b0f1a]' : 'bg-[#f8fafc]'}`}>
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-8 mb-16">
-          <div className="flex items-center gap-5">
-            <button
-              onClick={onBack}
-              className={`w-12 h-12 flex items-center justify-center rounded-full transition-all hover:scale-105 active:scale-95 ${isDarkMode
-                ? 'bg-slate-800/50 text-white backdrop-blur-md hover:bg-slate-700'
-                : 'bg-white text-slate-800 shadow-sm border border-slate-100 hover:shadow-md'
-                }`}
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <div>
-              <h1 className={`text-2xl sm:text-3xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Analiz & Rapor</h1>
+        {/* Header Section */}
+        <div className="flex flex-col gap-8 mb-12">
+          {/* Top Row: Title and Back Button */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-5">
+              <button
+                onClick={onBack}
+                className={`w-12 h-12 flex items-center justify-center rounded-full transition-all hover:scale-105 active:scale-95 ${isDarkMode
+                  ? 'bg-slate-800/50 text-white backdrop-blur-md hover:bg-slate-700'
+                  : 'bg-white text-slate-800 shadow-sm border border-slate-100 hover:shadow-md'
+                  }`}
+              >
+                <ArrowLeft size={20} />
+              </button>
+              <div>
+                <h1 className={`text-2xl sm:text-3xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Analiz & Rapor</h1>
+              </div>
             </div>
           </div>
 
-          <button onClick={exportToPDF} disabled={isExporting} className={`flex items-center justify-center gap-3 px-8 py-5 rounded-3xl font-black text-sm transition-all active:scale-95 ${isExporting ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 shadow-xl'} ${isDarkMode ? 'bg-blue-600 text-white shadow-blue-900/40' : 'bg-blue-600 text-white shadow-blue-200'}`}>
-            {isExporting ? <RefreshCw className="animate-spin" size={20} /> : <Printer size={20} />}
-            {isExporting ? 'HAZIRLANIYOR...' : 'PDF RAPOR İNDİR'}
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mb-16">
-          <div className={`lg:col-span-8 p-10 rounded-[48px] border transition-all ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-lg'}`}>
+          {/* Filtering Section - Now above PDF on mobile */}
+          <div className={`p-6 sm:p-10 rounded-[40px] border transition-all ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-sm'}`}>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-10">
               <div className="flex items-center gap-3">
                 <div className="w-1.5 h-6 bg-blue-600 rounded-full"></div>
                 <h3 className={`text-xl font-black tracking-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>FİLTRELEME</h3>
               </div>
 
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2">
                 {(['7days', '30days', 'year', 'custom'] as TimeRange[]).map(range => (
                   <button
                     key={range}
                     onClick={() => setTimeRange(range)}
-                    className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all ${timeRange === range
+                    className={`px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all ${timeRange === range
                       ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 active:scale-95'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'
                       }`}
@@ -292,7 +290,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">İşlem Yapılan Kart</label>
                 <div className="relative group">
@@ -335,37 +333,56 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
             </div>
           </div>
 
-          <div className="lg:col-span-4 flex flex-col gap-6">
-            <div className={`flex-1 p-8 rounded-[48px] border relative overflow-hidden group ${isDarkMode ? 'bg-gradient-to-br from-blue-600/20 to-indigo-600/20 border-white/10' : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100'}`}>
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl group-hover:scale-150 transition-transform duration-700"></div>
-              <p className="text-[11px] font-black text-blue-500 uppercase tracking-[0.2em] mb-4">SEÇİLİ KARTIN BORCU</p>
-              <RollingNumber
-                value={cardStats.cardData!.balance}
-                className={`text-4xl font-black tracking-tighter mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}
-              />
-              <div className="flex items-center gap-2 text-slate-500 font-bold text-xs">
-                <Clock size={14} />
-                <span>Son Güncelleme: {new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
-              </div>
-            </div>
+          <button onClick={exportToPDF} disabled={isExporting} className={`flex items-center justify-center gap-3 px-8 py-5 rounded-[40px] font-black text-sm transition-all active:scale-95 ${isExporting ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 shadow-xl'} ${isDarkMode ? 'bg-blue-600 text-white shadow-blue-900/40' : 'bg-blue-600 text-white shadow-blue-200'}`}>
+            {isExporting ? <RefreshCw className="animate-spin" size={20} /> : <Printer size={20} />}
+            {isExporting ? 'HAZIRLANIYOR...' : 'PDF RAPOR İNDİR'}
+          </button>
+        </div>
 
-            <div className={`p-8 rounded-[40px] border flex items-center justify-between ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-white shadow-lg border-slate-50'}`}>
-              <div>
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">ASGARİ ÖDEME</p>
-                <RollingNumber
-                  value={cardStats.minPayment}
-                  className={`text-2xl font-black ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}
-                />
-              </div>
-              <div className={`w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center ${isDarkMode ? 'text-emerald-400' : 'text-emerald-500'}`}>
-                <Zap size={24} />
-              </div>
+        {/* Stats and Trend Sections */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <div className={`p-8 rounded-[40px] border relative overflow-hidden group ${isDarkMode ? 'bg-gradient-to-br from-blue-600/20 to-indigo-600/20 border-white/10' : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100 shadow-sm'}`}>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl group-hover:scale-150 transition-transform duration-700"></div>
+            <p className="text-[11px] font-black text-blue-500 uppercase tracking-[0.2em] mb-4">SEÇİLİ KARTIN BORCU</p>
+            <RollingNumber
+              value={cardStats.cardData!.balance}
+              className={`text-4xl font-black tracking-tighter mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}
+            />
+            <div className="flex items-center gap-2 text-slate-500 font-bold text-xs">
+              <Clock size={14} />
+              <span>Son Güncelleme: {new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+          </div>
+
+          <div className={`p-8 rounded-[40px] border flex items-center justify-between ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-white shadow-sm border-slate-100'}`}>
+            <div>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">DÖNEM HARCAMASI</p>
+              <RollingNumber
+                value={cardStats.spending}
+                className={`text-2xl font-black ${isDarkMode ? 'text-rose-400' : 'text-rose-600'}`}
+              />
+            </div>
+            <div className={`w-14 h-14 rounded-2xl bg-rose-500/10 flex items-center justify-center ${isDarkMode ? 'text-rose-400' : 'text-rose-500'}`}>
+              <TrendingUp size={24} />
+            </div>
+          </div>
+
+          <div className={`p-8 rounded-[40px] border flex items-center justify-between ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-white shadow-sm border-slate-100'}`}>
+            <div>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">ASGARİ ÖDEME</p>
+              <RollingNumber
+                value={cardStats.minPayment}
+                className={`text-2xl font-black ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}
+              />
+            </div>
+            <div className={`w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center ${isDarkMode ? 'text-emerald-400' : 'text-emerald-500'}`}>
+              <Zap size={24} />
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-16">
-          <div className={`p-10 rounded-[64px] border ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-xl'}`}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+          <div className={`p-10 rounded-[40px] border ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-sm'}`}>
             <div className="flex items-center gap-4 mb-10">
               <div className="w-1.5 h-6 bg-rose-500 rounded-full"></div>
               <h3 className={`text-xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>HARCAMA TRENDİ</h3>
@@ -392,7 +409,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
             </div>
           </div>
 
-          <div className={`p-10 rounded-[64px] border ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-xl'}`}>
+          <div className={`p-10 rounded-[40px] border ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-sm'}`}>
             <div className="flex items-center gap-4 mb-10">
               <div className="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
               <h3 className={`text-xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>KATEGORİ DAĞILIMI</h3>
@@ -424,7 +441,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
           </div>
         </div>
 
-        <div className={`p-10 sm:p-12 rounded-[64px] border transition-all ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-2xl shadow-slate-200/50'}`}>
+        {/* Transactions Table Section */}
+        <div className={`p-8 sm:p-12 rounded-[40px] border transition-all ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-sm'}`}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-8 mb-12">
             <div className="flex items-center gap-4">
               <div className="w-1.5 h-10 bg-blue-600 rounded-full"></div>
