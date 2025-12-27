@@ -172,8 +172,9 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
               }}
               stroke="none"
               animationBegin={0}
-              animationDuration={1500}
-              animationEasing="ease-out"
+              animationDuration={600}
+              animationEasing="ease-in-out"
+              isAnimationActive={true}
             >
               {data.map((entry, index) => (
                 <Cell
