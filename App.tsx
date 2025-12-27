@@ -1233,7 +1233,7 @@ const App: React.FC = () => {
         </div>
       ) : (
         <>
-          <main className="max-w-7xl mx-auto pt-24 px-4 sm:px-6 space-y-8 sm:space-y-12">
+          <main className="max-w-7xl mx-auto pt-24 px-4 sm:px-6 space-y-8 sm:space-y-12 relative z-0">
             {view === 'dashboard' ? (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 pt-4 sm:pt-8">
@@ -1532,7 +1532,7 @@ const App: React.FC = () => {
             )}
           </main>
 
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center w-full max-w-[320px] sm:max-w-none pointer-events-none">
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[1000] flex flex-col items-center w-full max-w-[320px] sm:max-w-none pointer-events-none">
             <div className="pointer-events-auto flex flex-col items-center">
               {isFabOpen && (
                 <div className="mb-4 flex flex-col gap-3 min-w-[210px] animate-in fade-in slide-in-from-bottom-4 duration-300">
