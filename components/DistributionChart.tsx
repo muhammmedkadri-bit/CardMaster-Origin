@@ -115,9 +115,9 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
       onClick={() => setActiveIndex(null)}
     >
       {/* Header Tabs */}
-      <div className="flex items-center justify-between mb-2 sm:mb-4 px-1">
+      <div className="relative z-10 flex items-center justify-between mb-2 sm:mb-4 px-1">
         <div
-          className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-inner"
+          className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-inner relative z-20"
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -147,7 +147,13 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
       {/* Chart Container */}
       <div className="relative w-full aspect-square sm:h-[360px] flex items-center justify-center">
         <ResponsiveContainer width="100%" height="100%">
-          <PieChart onMouseLeave={onPieLeave} onClick={() => setActiveIndex(null)}>
+          <PieChart
+            onMouseLeave={onPieLeave}
+            onClick={(e) => {
+              if (e) e.stopPropagation();
+              setActiveIndex(null);
+            }}
+          >
             <Pie
               activeIndex={activeIndex ?? undefined}
               activeShape={renderActiveShape}
@@ -162,7 +168,6 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
               onMouseLeave={onPieLeave}
               onClick={(_: any, index: number, e: any) => {
                 if (e && e.stopPropagation) e.stopPropagation();
-                // Toggle if same index, otherwise set
                 setActiveIndex(prev => prev === index ? null : index);
               }}
               stroke="none"
@@ -182,10 +187,19 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
         </ResponsiveContainer>
 
         {/* Dynamic Center Info Panel */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none p-4">
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none p-4"
+          style={{
+            zIndex: activeIndex !== null ? 5 : 1
+          }}
+        >
           <div
-            onClick={(e) => { e.stopPropagation(); setActiveIndex(null); }}
-            className="flex flex-col items-center justify-center text-center w-[48%] aspect-square rounded-full transition-all duration-500 pointer-events-auto cursor-pointer group"
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveIndex(null);
+            }}
+            className={`flex flex-col items-center justify-center text-center w-[48%] aspect-square rounded-full transition-all duration-500 ${activeIndex !== null ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'
+              } group`}
           >
             {activeIndex === null ? (
               <div className="flex flex-col items-center animate-in fade-in zoom-in-90 duration-500">
@@ -227,6 +241,11 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
 
                 <div className="mt-2 flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700">
                   <span className="text-[9px] font-black text-blue-500">PAY: %{((data[activeIndex].value / totalValue) * 100).toFixed(0)}</span>
+                </div>
+
+                {/* Tap to close hint */}
+                <div className="mt-2 text-[7px] font-bold text-slate-400 uppercase opacity-60 animate-pulse">
+                  KAPAT → TIKLA
                 </div>
               </div>
             )}
