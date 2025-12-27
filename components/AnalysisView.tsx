@@ -506,117 +506,113 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
         </div>
       </div>
 
-      {/* Transactions Table Section */}
-      <div className={`p-8 sm:p-12 rounded-[40px] border transition-all mb-12 ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-sm'}`}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-8 mb-12">
-          <div className="flex items-center gap-4">
-            <div className="w-1.5 h-10 bg-blue-600 rounded-full"></div>
-            <h3 className={`text-2xl font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>İŞLEM GEÇMİŞİ</h3>
-          </div>
-          <div className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest ${isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-500'}`}>
-            TOPLAM {filteredTransactions.length} KAYIT
-          </div>
-        </div>
-
-        {filteredTransactions.length > 0 ? (
-          <div className="overflow-x-auto no-scrollbar">
-            <table className="w-full border-separate border-spacing-y-4">
-              <thead>
-                <tr className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-[0.25em] text-left">
-                  <th className="px-6 py-2">TARİH</th>
-                  <th className="px-6 py-2">AÇIKLAMA</th>
-                  <th className="px-6 py-2">KATEGORİ</th>
-                  <th className="px-6 py-2">KART</th>
-                  <th className="px-6 py-2 text-right">TUTAR</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTransactions.map(tx => {
-                  const cardColor = cards.find(c => c.id === tx.cardId)?.color;
-                  const catColor = categories.find(c => c.name.toLocaleLowerCase('tr-TR') === tx.category?.toLocaleLowerCase('tr-TR'))?.color || '#3B82F6';
-                  return (
-                    <tr key={tx.id} className={`group transition-all ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}>
-                      <td className="py-6 px-6 first:rounded-l-[32px] last:rounded-r-[32px]">
-                        <p className="text-xs font-black text-slate-400">{formatDateDisplay(tx.date)}</p>
-                      </td>
-                      <td className="py-6 px-6">
-                        <div className="flex items-center gap-4">
-                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${tx.type === 'spending' ? 'bg-rose-500/10 text-rose-500 shadow-lg shadow-rose-500/10' : 'bg-emerald-500/10 text-emerald-500 shadow-lg shadow-emerald-500/10'}`}>
-                            {tx.type === 'spending' ? <ShoppingBag size={20} /> : <PaymentIcon size={20} />}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <p className={`text-sm sm:text-base font-black uppercase tracking-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{tx.description || tx.category}</p>
-                            {tx.confirmationUrl && (
-                              <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 transition-colors" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={14} /></a>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-6 px-6">
-                        <div className="flex items-center gap-3">
-                          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: catColor, boxShadow: `0 0 10px ${catColor}60` }}></div>
-                          <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: catColor }}>{tx.category || 'Diğer'}</span>
-                        </div>
-                      </td>
-                      <td className="py-6 px-6">
-                        <span className="px-4 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-widest whitespace-nowrap" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}05` }}>
-                          {tx.cardName}
-                        </span>
-                      </td>
-                      <td className={`py-6 px-6 text-right first:rounded-l-[32px] last:rounded-r-[32px]`}>
-                        <div className="flex flex-col items-end gap-2">
-                          <p className={`text-xl sm:text-2xl font-black tracking-tighter ${tx.type === 'spending' ? 'text-rose-500' : 'text-emerald-500'}`}>
-                            {tx.type === 'spending' ? '-' : '+'} ₺{tx.amount.toLocaleString('tr-TR')}
-                          </p>
-                          <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => onEditTransaction?.(tx)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-400 hover:text-blue-400 hover:bg-slate-700' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-100'}`}><Edit2 size={16} /></button>
-                            <button onClick={() => onDeleteTransaction?.(tx)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-400 hover:text-rose-400 hover:bg-slate-700' : 'text-slate-400 hover:text-rose-600 hover:bg-slate-100'}`}><Trash2 size={16} /></button>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="py-32 text-center">
-            <Inbox size={80} className="mx-auto text-slate-200/40 mb-8" />
-            <p className="text-slate-500 font-black uppercase tracking-[0.3em] text-sm animate-pulse italic">KAYIT BULUNAMADI</p>
-          </div>
-        )}
-      </div>
-
-      {/* Category Distribution Section - Moved to bottom */}
-      <div className={`p-10 rounded-[40px] border mb-16 ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-sm'}`}>
-        <div className="flex items-center gap-4 mb-10">
-          <div className="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
-          <h3 className={`text-xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>KATEGORİ DAĞILIMI</h3>
-        </div>
-        <div className="space-y-6 max-h-[400px] overflow-y-auto pr-4 no-scrollbar">
-          {categoryData.length > 0 ? categoryData.map((cat, idx) => (
-            <div key={idx} className="space-y-2">
-              <div className="flex justify-between items-end">
-                <span className="text-xs font-black uppercase tracking-widest text-slate-500">{cat.name}</span>
-                <RollingNumber
-                  value={cat.value}
-                  className={`text-sm font-black ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}
-                />
-              </div>
-              <div className="h-3 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-blue-600 rounded-full transition-all duration-1000"
-                  style={{ width: `${(cat.value / cardStats.spending) * 100}%` }}
-                ></div>
-              </div>
+      {/* Transactions & Category Distribution Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-16">
+        {/* Transactions Table Section */}
+        <div className={`lg:col-span-8 p-8 sm:p-12 rounded-[40px] border transition-all ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-sm'}`}>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-8 mb-12">
+            <div className="flex items-center gap-4">
+              <div className="w-1.5 h-10 bg-blue-600 rounded-full"></div>
+              <h3 className={`text-2xl font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>İŞLEM GEÇMİŞİ</h3>
             </div>
-          )) : (
-            <div className="h-full flex flex-col items-center justify-center py-10 opacity-30">
-              <PieIcon size={48} className="mb-4" />
-              <p className="font-black text-[10px] tracking-widest">VERİ BULUNAMADI</p>
+            <div className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest ${isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-500'}`}>
+              TOPLAM {filteredTransactions.length} KAYIT
+            </div>
+          </div>
+
+          {filteredTransactions.length > 0 ? (
+            <div className="overflow-x-auto no-scrollbar">
+              <table className="w-full border-separate border-spacing-y-4">
+                <thead>
+                  <tr className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-[0.25em] text-left">
+                    <th className="px-6 py-2">TARİH</th>
+                    <th className="px-6 py-2">AÇIKLAMA</th>
+                    <th className="px-6 py-2">KART</th>
+                    <th className="px-6 py-2 text-right">TUTAR</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTransactions.map(tx => {
+                    const cardColor = cards.find(c => c.id === tx.cardId)?.color;
+                    const catColor = categories.find(c => c.name.toLocaleLowerCase('tr-TR') === tx.category?.toLocaleLowerCase('tr-TR'))?.color || '#3B82F6';
+                    return (
+                      <tr key={tx.id} className={`group transition-all ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}>
+                        <td className="py-6 px-6 first:rounded-l-[32px] last:rounded-r-[32px]">
+                          <p className="text-xs font-black text-slate-400">{formatDateDisplay(tx.date)}</p>
+                        </td>
+                        <td className="py-6 px-6">
+                          <div className="flex items-center gap-4">
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${tx.type === 'spending' ? 'bg-rose-500/10 text-rose-500 shadow-lg shadow-rose-500/10' : 'bg-emerald-500/10 text-emerald-500 shadow-lg shadow-emerald-500/10'}`}>
+                              {tx.type === 'spending' ? <ShoppingBag size={20} /> : <PaymentIcon size={20} />}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <p className={`text-sm sm:text-base font-black uppercase tracking-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{tx.description || tx.category}</p>
+                              {tx.confirmationUrl && (
+                                <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 transition-colors" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={14} /></a>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-6 px-6">
+                          <span className="px-4 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-widest whitespace-nowrap" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}05` }}>
+                            {tx.cardName}
+                          </span>
+                        </td>
+                        <td className={`py-6 px-6 text-right first:rounded-l-[32px] last:rounded-r-[32px]`}>
+                          <div className="flex flex-col items-end gap-2">
+                            <p className={`text-xl sm:text-2xl font-black tracking-tighter ${tx.type === 'spending' ? 'text-rose-500' : 'text-emerald-500'}`}>
+                              {tx.type === 'spending' ? '-' : '+'} ₺{tx.amount.toLocaleString('tr-TR')}
+                            </p>
+                            <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button onClick={() => onEditTransaction?.(tx)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-400 hover:text-blue-400 hover:bg-slate-700' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-100'}`}><Edit2 size={16} /></button>
+                              <button onClick={() => onDeleteTransaction?.(tx)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-400 hover:text-rose-400 hover:bg-slate-700' : 'text-slate-400 hover:text-rose-600 hover:bg-slate-100'}`}><Trash2 size={16} /></button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="py-32 text-center">
+              <Inbox size={80} className="mx-auto text-slate-200/40 mb-8" />
+              <p className="text-slate-500 font-black uppercase tracking-[0.3em] text-sm animate-pulse italic">KAYIT BULUNAMADI</p>
             </div>
           )}
+        </div>
+
+        {/* Category Distribution Section */}
+        <div className={`lg:col-span-4 p-10 rounded-[40px] border flex flex-col ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-sm'}`}>
+          <div className="flex items-center gap-4 mb-10">
+            <div className="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
+            <h3 className={`text-xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>KATEGORİ DAĞILIMI</h3>
+          </div>
+          <div className="flex-1 space-y-6 overflow-y-auto pr-4 no-scrollbar">
+            {categoryData.length > 0 ? categoryData.map((cat, idx) => (
+              <div key={idx} className="space-y-2">
+                <div className="flex justify-between items-end">
+                  <span className="text-xs font-black uppercase tracking-widest text-slate-500">{cat.name}</span>
+                  <RollingNumber
+                    value={cat.value}
+                    className={`text-sm font-black ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}
+                  />
+                </div>
+                <div className="h-3 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-600 rounded-full transition-all duration-1000"
+                    style={{ width: `${(cat.value / cardStats.spending) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+            )) : (
+              <div className="h-full flex flex-col items-center justify-center py-10 opacity-30">
+                <PieIcon size={48} className="mb-4" />
+                <p className="font-black text-[10px] tracking-widest">VERİ BULUNAMADI</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
