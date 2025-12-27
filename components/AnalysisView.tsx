@@ -139,19 +139,53 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
   }, [selectedCardId, cards, filteredTransactions, lastUpdate]);
 
   const trendData = useMemo(() => {
-    const data: Record<string, { label: string, spending: number, payment: number, timestamp: number }> = {};
+    const data: Record<string, { label: string, spending: number, payment: number, net: number, timestamp: number }> = {};
+    const now = new Date();
+    let start = new Date();
+    let end = new Date();
+
+    if (timeRange === '7days') {
+      start.setDate(now.getDate() - 7);
+    } else if (timeRange === '30days') {
+      start.setMonth(now.getMonth() - 1);
+    } else if (timeRange === 'year') {
+      start.setFullYear(now.getFullYear() - 1);
+    } else if (timeRange === 'custom') {
+      start = new Date(customStart);
+      end = new Date(customEnd);
+    }
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+
+    // Initialize data with all dates in range to ensure a continuous line
+    const tempDate = new Date(start);
+    while (tempDate <= end) {
+      const label = timeRange === 'year'
+        ? tempDate.toLocaleDateString('tr-TR', { month: 'short', year: '2-digit' })
+        : tempDate.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' });
+
+      if (!data[label]) {
+        data[label] = { label, spending: 0, payment: 0, net: 0, timestamp: tempDate.getTime() };
+      }
+
+      if (timeRange === 'year') {
+        tempDate.setMonth(tempDate.getMonth() + 1);
+      } else {
+        tempDate.setDate(tempDate.getDate() + 1);
+      }
+    }
 
     filteredTransactions.forEach(t => {
       const d = new Date(t.date);
       const label = timeRange === 'year'
-        ? d.toLocaleDateString('tr-TR', { month: 'short' })
+        ? d.toLocaleDateString('tr-TR', { month: 'short', year: '2-digit' })
         : d.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' });
 
-      if (!data[label]) {
-        data[label] = { label, spending: 0, payment: 0, timestamp: d.getTime() };
+      if (data[label]) {
+        if (t.type === 'spending') data[label].spending += t.amount;
+        else data[label].payment += t.amount;
+        data[label].net = data[label].payment - data[label].spending;
       }
-      if (t.type === 'spending') data[label].spending += t.amount;
-      else data[label].payment += t.amount;
     });
 
     return Object.values(data).sort((a, b) => a.timestamp - b.timestamp);
@@ -386,23 +420,77 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
             <div className="w-1.5 h-6 bg-rose-500 rounded-full"></div>
             <h3 className={`text-xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>HARCAMA TRENDİ</h3>
           </div>
-          <div className="h-[300px]">
+          <div className="h-[320px] sm:h-[400px] -ml-4 sm:-ml-2">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData}>
+              <AreaChart
+                data={trendData}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
                 <defs>
                   <linearGradient id="colorSpending" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorNet" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? '#334155' : '#f1f5f9'} />
-                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} />
-                <Tooltip
-                  contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', fontWeight: 900 }}
-                  itemStyle={{ fontSize: '12px' }}
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke={isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
                 />
-                <Area type="monotone" dataKey="spending" name="Harcama" stroke="#ef4444" strokeWidth={4} fillOpacity={1} fill="url(#colorSpending)" />
+                <XAxis
+                  dataKey="label"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: isDarkMode ? '#64748b' : '#94a3b8', fontSize: 10, fontWeight: 700 }}
+                  minTickGap={timeRange === 'year' ? 10 : 30}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: isDarkMode ? '#64748b' : '#94a3b8', fontSize: 10, fontWeight: 700 }}
+                  tickFormatter={(val) => `₺${val >= 1000 ? (val / 1000).toFixed(1) + 'k' : val}`}
+                />
+                <Tooltip
+                  cursor={{ stroke: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)', strokeWidth: 1 }}
+                  contentStyle={{
+                    borderRadius: '24px',
+                    border: 'none',
+                    backgroundColor: isDarkMode ? '#1e293b' : '#ffffff',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                    padding: '16px',
+                    fontWeight: 700
+                  }}
+                  itemStyle={{ fontSize: '13px', padding: '2px 0' }}
+                  labelStyle={{ color: '#94a3b8', marginBottom: '8px', fontSize: '11px', textTransform: 'uppercase' }}
+                  formatter={(value: number) => [`₺${value.toLocaleString('tr-TR')}`, '']}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="spending"
+                  name="Harcama"
+                  stroke="#f43f5e"
+                  strokeWidth={4}
+                  fillOpacity={1}
+                  fill="url(#colorSpending)"
+                  activeDot={{ r: 6, strokeWidth: 0, fill: '#f43f5e' }}
+                  animationDuration={1500}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="net"
+                  name="Net Durum"
+                  stroke="#3b82f6"
+                  strokeWidth={3}
+                  strokeDasharray="5 5"
+                  fillOpacity={1}
+                  fill="url(#colorNet)"
+                  activeDot={{ r: 5, strokeWidth: 0, fill: '#3b82f6' }}
+                  animationDuration={1500}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
