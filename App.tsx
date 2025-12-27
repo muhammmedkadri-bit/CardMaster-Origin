@@ -1247,7 +1247,7 @@ const App: React.FC = () => {
         </div>
       ) : (
         <>
-          <main className="max-w-7xl mx-auto pt-20 px-4 sm:px-6 space-y-8 sm:space-y-12">
+          <main className="max-w-7xl mx-auto pt-[88px] px-4 sm:px-6 space-y-8 sm:space-y-12">
             {view === 'dashboard' ? (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 pt-4 sm:pt-8">
