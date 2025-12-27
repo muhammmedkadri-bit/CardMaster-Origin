@@ -236,6 +236,7 @@ const App: React.FC = () => {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [realtimeRetryTrigger, setRealtimeRetryTrigger] = useState(0);
   const [isChangingView, setIsChangingView] = useState(false);
+  const [isExitingWelcome, setIsExitingWelcome] = useState(false);
 
 
   // Auth States
@@ -321,10 +322,13 @@ const App: React.FC = () => {
   useEffect(() => {
     // Initial loading simulation for premium welcome feel
     const timer = setTimeout(() => {
-      React.startTransition(() => {
-        setIsInitialLoading(false);
-      });
-    }, 2200);
+      setIsExitingWelcome(true);
+      setTimeout(() => {
+        React.startTransition(() => {
+          setIsInitialLoading(false);
+        });
+      }, 800);
+    }, 2500);
 
     if (cards.length > 0) {
       syncWithBank(false);
@@ -1549,7 +1553,7 @@ const App: React.FC = () => {
           </main>
 
           {!isInitialLoading && (
-            <div key="bottom-nav-v2" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[1000] flex flex-col items-center w-full max-w-[320px] sm:max-w-none pointer-events-none animate-in fade-in slide-in-from-bottom-[80px] zoom-in-95 duration-[1500ms] ease-[cubic-bezier(0.23,1,0.32,1)] fill-mode-both delay-75">
+            <div key="bottom-nav-v3" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[2100] flex flex-col items-center w-full max-w-[320px] sm:max-w-none pointer-events-none animate-in fade-in slide-in-from-bottom-[100px] zoom-in-90 duration-[1500ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] fill-mode-both">
               <div className="pointer-events-auto flex flex-col items-center">
                 {isFabOpen && (
                   <div className="mb-4 flex flex-col gap-3 min-w-[210px] animate-in fade-in slide-in-from-bottom-4 duration-300">
@@ -1668,17 +1672,19 @@ const App: React.FC = () => {
 
       {/* Welcome / Initial Loading Screen */}
       {isInitialLoading && (
-        <div className={`fixed inset-0 z-[500] flex flex-col items-center justify-center p-6 ${isDarkMode ? 'bg-[#070b14]' : 'bg-[#f8fafc]'}`}>
-          <div className="animate-in fade-in zoom-in duration-1000 flex flex-col items-center">
-            <Logo isDarkMode={isDarkMode} isAnimated={true} />
-            <div className="mt-12 w-48 h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden relative">
-              <div className="absolute inset-0 bg-blue-600 animate-loading-bar rounded-full"></div>
-            </div>
-            <div className="mt-12 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-500">
-              <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.5em] mb-2 animate-pulse">BAŞLATILIYOR</span>
-              <h2 className={`text-2xl font-black tracking-tighter uppercase ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                HOŞGELDİN, {localStorage.getItem('user_name')?.toLocaleUpperCase('tr-TR') || 'KULLANICI'}
-              </h2>
+        <div className={`fixed inset-0 z-[2500] flex flex-col items-center justify-center p-6 transition-all duration-700 ease-in-out ${isExitingWelcome ? 'opacity-0 scale-105 pointer-events-none' : 'opacity-100'} ${isDarkMode ? 'bg-[#070b14]' : 'bg-[#f8fafc]'}`}>
+          <div className={`flex flex-col items-center transition-transform duration-1000 ${isExitingWelcome ? 'scale-110 opacity-0 blur-xl' : 'scale-100'}`}>
+            <div className="animate-in fade-in zoom-in duration-1000 flex flex-col items-center">
+              <Logo isDarkMode={isDarkMode} isAnimated={true} />
+              <div className="mt-12 w-48 h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden relative">
+                <div className="absolute inset-0 bg-blue-600 animate-loading-bar rounded-full"></div>
+              </div>
+              <div className="mt-12 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-500">
+                <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.5em] mb-2 animate-pulse">BAŞLATILIYOR</span>
+                <h2 className={`text-2xl font-black tracking-tighter uppercase ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                  HOŞGELDİN, {localStorage.getItem('user_name')?.toLocaleUpperCase('tr-TR') || 'KULLANICI'}
+                </h2>
+              </div>
             </div>
           </div>
         </div>
