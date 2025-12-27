@@ -547,7 +547,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                                 {tx.type === 'spending' ? <ShoppingBag size={20} /> : <PaymentIcon size={20} />}
                               </div>
                               <div className="flex items-center gap-2">
-                                <p className={`text-sm sm:text-base font-black uppercase tracking-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{tx.description || tx.category}</p>
+                                <p className={`text-sm sm:text-base font-black tracking-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{tx.description || tx.category}</p>
                                 {tx.confirmationUrl && (
                                   <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 transition-colors" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={14} /></a>
                                 )}
@@ -555,7 +555,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                             </div>
                           </td>
                           <td className="py-6 px-6">
-                            <span className="px-4 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-widest whitespace-nowrap" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}05` }}>
+                            <span className="px-4 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest whitespace-nowrap" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}05` }}>
                               {tx.cardName}
                             </span>
                           </td>
@@ -581,6 +581,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
               <div className="sm:hidden space-y-4">
                 {filteredTransactions.map(tx => {
                   const cardColor = cards.find(c => c.id === tx.cardId)?.color;
+                  const catColor = categories.find(c => c.name.toLocaleLowerCase('tr-TR') === tx.category?.toLocaleLowerCase('tr-TR'))?.color || '#3B82F6';
                   return (
                     <div key={tx.id} className={`p-6 rounded-[32px] border flex flex-col gap-5 ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50/50 border-slate-100'}`}>
                       <div className="flex items-start justify-between">
@@ -590,7 +591,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                           </div>
                           <div>
                             <div className="flex items-center gap-2 mb-1">
-                              <p className={`text-sm font-black uppercase tracking-tight leading-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{tx.description || tx.category}</p>
+                              <p className={`text-sm font-black tracking-tight leading-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{tx.description || tx.category}</p>
                               {tx.confirmationUrl && (
                                 <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 transition-colors" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={14} /></a>
                               )}
@@ -605,9 +606,14 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                       </div>
 
                       <div className="flex items-center justify-between pt-4 border-t border-slate-200/10 dark:border-white/5 mt-auto">
-                        <span className="px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}05` }}>
-                          {tx.cardName}
-                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          <span className="px-3 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}10` }}>
+                            {tx.cardName}
+                          </span>
+                          <span className="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest opacity-60 bg-slate-500/10 text-slate-500">
+                            {tx.category || 'Diğer'}
+                          </span>
+                        </div>
                         <p className={`text-lg font-black tracking-tighter ${tx.type === 'spending' ? 'text-rose-500' : 'text-emerald-500'}`}>
                           {tx.type === 'spending' ? '-' : '+'} ₺{tx.amount.toLocaleString('tr-TR')}
                         </p>
