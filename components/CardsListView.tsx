@@ -86,15 +86,18 @@ const CardsListView: React.FC<CardsListViewProps> = ({
     <div className="animate-in fade-in slide-in-from-bottom-6 duration-500 pt-0 pb-10">
       {/* Header Area */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-12">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-5">
           <button
             onClick={onBack}
-            className={`p-4 rounded-2xl transition-all active:scale-90 ${isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-white text-slate-600 hover:bg-slate-100 shadow-sm border border-slate-100'}`}
+            className={`w-12 h-12 flex items-center justify-center rounded-full transition-all active:scale-90 ${isDarkMode
+                ? 'bg-slate-800/50 text-slate-300 hover:bg-slate-700 backdrop-blur-md'
+                : 'bg-white text-slate-600 hover:bg-white hover:shadow-md border border-slate-100 shadow-sm'
+              }`}
           >
-            <ArrowLeft size={24} />
+            <ArrowLeft size={20} />
           </button>
           <div>
-            <h1 className={`text-3xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>KARTLARIM</h1>
+            <h1 className={`text-2xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Kartlarım</h1>
           </div>
         </div>
 
