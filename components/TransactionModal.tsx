@@ -13,6 +13,7 @@ interface TransactionModalProps {
 }
 
 const isColorLight = (color: string) => {
+  if (!color) return false;
   const hex = color.replace('#', '');
   const r = parseInt(hex.substr(0, 2), 16);
   const g = parseInt(hex.substr(2, 2), 16);
@@ -184,7 +185,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
                             transform: isSelected ? 'translateY(-1px) scale(1.02)' : 'none'
                           }}
                           className={`py-3 px-1 text-[10px] rounded-2xl border transition-all duration-300 font-black tracking-widest flex items-center justify-center gap-1.5 ${isSelected
-                            ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_2px_6px_-1px_rgba(0,0,0,0.08)] border-slate-200 dark:border-slate-600 z-10 ring-1 ring-slate-200 dark:ring-slate-600'
+                            ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-gray-100 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_2px_6px_-1px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_16px_-4px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.05)_inset] border-slate-200 dark:border-slate-700/50 z-10 ring-1 ring-slate-200 dark:ring-0'
                             : 'bg-white/50 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 border-transparent hover:bg-white dark:hover:bg-slate-800'
                             }`}
                         >
