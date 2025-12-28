@@ -1627,23 +1627,23 @@ const App: React.FC = () => {
             {isFabOpen && (
               <div className="mb-6 flex flex-col gap-3 min-w-[220px]">
                 {[
-                  { mode: 'spending', label: 'Harcama Ekle', icon: <ArrowUpRight size={20} />, color: 'rose', gradient: 'from-rose-500 to-pink-600' },
-                  { mode: 'payment', label: 'Ödeme Yap', icon: <ArrowDownRight size={20} />, color: 'emerald', gradient: 'from-emerald-500 to-teal-600' },
-                  { mode: 'add', label: 'Yeni Kart Ekle', icon: <Plus size={20} />, color: 'blue', gradient: 'from-blue-500 to-indigo-600' }
+                  { mode: 'spending', label: 'Harcama Ekle', icon: <ArrowUpRight size={20} />, color: 'text-rose-500', bg: 'bg-rose-500/10' },
+                  { mode: 'payment', label: 'Ödeme Yap', icon: <ArrowDownRight size={20} />, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+                  { mode: 'add', label: 'Yeni Kart Ekle', icon: <Plus size={20} />, color: 'text-blue-500', bg: 'bg-blue-500/10' }
                 ].map((item) => (
                   <button
                     key={item.mode}
                     onClick={() => { setModalMode(item.mode as any); setIsFabOpen(false); }}
-                    className={`group p-4 rounded-[24px] shadow-2xl flex items-center gap-4 font-black uppercase text-xs tracking-[0.15em] transition-all border backdrop-blur-xl active:scale-95 ${isDarkMode
-                      ? 'bg-[#0f172a]/80 border-slate-800 text-white'
-                      : `bg-white/80 border-${item.color}-100 text-slate-800`
+                    className={`group p-4 rounded-[28px] shadow-2xl flex items-center gap-4 font-black uppercase text-[10px] tracking-[0.2em] transition-all border backdrop-blur-xl active:scale-95 ${isDarkMode
+                      ? 'bg-[#0f172a]/90 border-white/5 text-white hover:border-white/10'
+                      : 'bg-white/90 border-slate-100 text-slate-800 shadow-blue-900/10 hover:border-blue-100'
                       }`}
                   >
-                    <div className={`bg-gradient-to-br ${item.gradient} p-3 rounded-2xl shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
-                      <div className="text-white">{item.icon}</div>
+                    <div className={`p-3 rounded-2xl ${item.bg} ${item.color} shadow-sm group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
+                      {item.icon}
                     </div>
                     <span className="flex-1 text-left">{item.label}</span>
-                    <ChevronRight size={18} className={`opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-${item.color}-500`} />
+                    <ChevronRight size={16} className={`opacity-20 group-hover:opacity-100 group-hover:translate-x-1 transition-all ${item.color}`} />
                   </button>
                 ))}
               </div>
