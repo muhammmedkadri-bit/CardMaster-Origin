@@ -111,7 +111,15 @@ const AutoPaymentModal: React.FC<AutoPaymentModalProps> = ({ cards, onClose, onS
                                 max="31"
                                 className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-white text-base font-black h-[54px] sm:h-auto"
                                 value={formData.dayOfMonth}
-                                onChange={e => setFormData({ ...formData, dayOfMonth: Number(e.target.value) })}
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    if (val === '') {
+                                        setFormData(prev => ({ ...prev, dayOfMonth: '' as any }));
+                                    } else {
+                                        setFormData(prev => ({ ...prev, dayOfMonth: Number(val) }));
+                                    }
+                                }}
+                                onFocus={handleFocus}
                             />
                         </div>
                     </div>
