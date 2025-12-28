@@ -11,6 +11,15 @@ interface AutoPaymentModalProps {
     initialData?: AutoPayment;
 }
 
+const isColorLight = (color: string) => {
+    const hex = color.replace('#', '');
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    const brightness = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    return brightness > 155;
+};
+
 const AutoPaymentModal: React.FC<AutoPaymentModalProps> = ({ cards, onClose, onSave, categories, initialData }) => {
     const [formData, setFormData] = useState({
         cardId: initialData?.cardId || (cards[0]?.id || ''),
@@ -126,35 +135,50 @@ const AutoPaymentModal: React.FC<AutoPaymentModalProps> = ({ cards, onClose, onS
 
                     <div>
                         <label className="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Kategori</label>
-                        <div className="grid grid-cols-3 gap-2">
-                            {(() => {
-                                const seen = new Set<string>();
-                                const uniqueCats = categories.filter(c => {
-                                    const key = c.name.toLocaleLowerCase('tr-TR').trim();
-                                    if (seen.has(key)) return false;
-                                    seen.add(key);
-                                    return true;
-                                });
-                                return uniqueCats.map(cat => (
-                                    <button
-                                        key={cat.id}
-                                        type="button"
-                                        onClick={() => {
-                                            setFormData({ ...formData, category: cat.name });
-                                            if (cat.name !== 'Diğer') {
-                                                setIsAddingCategory(false);
-                                                setNewCategory('');
-                                            }
-                                        }}
-                                        className={`py-2 px-1 text-[10px] rounded-xl border transition-all font-black tracking-widest flex items-center justify-center gap-1.5 ${formData.category === cat.name
-                                            ? 'bg-blue-600 text-white border-blue-600 shadow-md'
-                                            : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-blue-300'
-                                            }`}
-                                    >
-                                        {cat.name.toLocaleUpperCase('tr-TR')}
-                                    </button>
-                                ));
-                            })()}
+                        <div className="bg-slate-50 dark:bg-slate-900/50 p-1.5 rounded-[24px] border border-slate-100 dark:border-slate-800 shadow-inner">
+                            <div className="grid grid-cols-2 xs:grid-cols-3 gap-1.5">
+                                {(() => {
+                                    const seen = new Set<string>();
+                                    const uniqueCats = categories.filter(c => {
+                                        const key = c.name.toLocaleLowerCase('tr-TR').trim();
+                                        if (seen.has(key)) return false;
+                                        seen.add(key);
+                                        return true;
+                                    });
+                                    return uniqueCats.map(cat => {
+                                        const isSelected = formData.category === cat.name;
+                                        return (
+                                            <button
+                                                key={cat.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    setFormData({ ...formData, category: cat.name });
+                                                    if (cat.name !== 'Diğer') {
+                                                        setIsAddingCategory(false);
+                                                        setNewCategory('');
+                                                    }
+                                                }}
+                                                style={{
+                                                    backgroundColor: isSelected ? cat.color : undefined,
+                                                    borderColor: isSelected ? cat.color : undefined,
+                                                    color: isSelected ? (isColorLight(cat.color) ? '#000' : '#fff') : undefined,
+                                                    boxShadow: isSelected ? `0 10px 20px -5px ${cat.color}60, 0 4px 6px -2px ${cat.color}40` : undefined,
+                                                    transform: isSelected ? 'translateY(-1px) scale(1.02)' : 'none'
+                                                }}
+                                                className={`py-3 px-1 text-[10px] rounded-2xl border transition-all duration-300 font-black tracking-widest flex items-center justify-center gap-1.5 ${isSelected
+                                                    ? 'shadow-lg z-10'
+                                                    : 'bg-white/50 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 border-transparent hover:bg-white dark:hover:bg-slate-800'
+                                                    }`}
+                                            >
+                                                {!isSelected && (
+                                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }}></div>
+                                                )}
+                                                {cat.name.toLocaleUpperCase('tr-TR')}
+                                            </button>
+                                        );
+                                    });
+                                })()}
+                            </div>
                         </div>
 
                         {formData.category === 'Diğer' && (
