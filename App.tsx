@@ -1446,35 +1446,69 @@ const App: React.FC = () => {
                 <div className="space-y-6 sm:space-y-10">
                   {cards.length > 0 && (
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 pt-2 sm:pt-4">
-                      <div className={`flex flex-col p-5 rounded-[24px] border h-full justify-between ${isDarkMode ? 'bg-blue-500/5 border-blue-500/20' : 'bg-blue-50 border-blue-100 shadow-sm'}`}>
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="p-2.5 bg-blue-500/10 text-blue-600 rounded-xl shrink-0"><Clock size={18} /></div>
-                          <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-tight">SIRADAKİ ÖDEME</p>
+                      <div className={`p-5 rounded-[24px] border h-full ${isDarkMode ? 'bg-blue-500/5 border-blue-500/20' : 'bg-blue-50 border-blue-100 shadow-sm'}`}>
+                        {/* Mobile Layout */}
+                        <div className="flex flex-col justify-between h-full md:hidden">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2.5 bg-blue-500/10 text-blue-600 rounded-xl shrink-0"><Clock size={18} /></div>
+                            <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-tight">SIRADAKİ ÖDEME</p>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <AutoFitText
+                              text={`${widgetsData.closestDue?.cardName} (${widgetsData.closestDue?.dueDay}. Gün)`}
+                              color={widgetsData.closestDue?.color || (isDarkMode ? '#ffffff' : '#1e293b')}
+                            />
+                            <p className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                              {Math.max(0, widgetsData.closestDue?.balance || 0).toLocaleString('tr-TR')} ₺
+                            </p>
+                          </div>
                         </div>
-                        <div className="flex flex-col gap-1">
-                          <AutoFitText
-                            text={`${widgetsData.closestDue?.cardName} (${widgetsData.closestDue?.dueDay}. Gün)`}
-                            color={widgetsData.closestDue?.color || (isDarkMode ? '#ffffff' : '#1e293b')}
-                          />
-                          <p className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                            {Math.max(0, widgetsData.closestDue?.balance || 0).toLocaleString('tr-TR')} ₺
-                          </p>
+                        {/* Desktop Layout (Original) */}
+                        <div className="hidden md:flex items-center gap-4 h-full">
+                          <div className="p-3 bg-blue-500/10 text-blue-600 rounded-xl"><Clock size={20} /></div>
+                          <div className="flex flex-col gap-0.5 overflow-hidden">
+                            <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-0.5">SIRADAKİ ÖDEME</p>
+                            <AutoFitText
+                              text={`${widgetsData.closestDue?.cardName} (${widgetsData.closestDue?.dueDay}. Gün)`}
+                              color={widgetsData.closestDue?.color || (isDarkMode ? '#ffffff' : '#1e293b')}
+                            />
+                            <p className={`text-lg font-black mt-1 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                              {Math.max(0, widgetsData.closestDue?.balance || 0).toLocaleString('tr-TR')} ₺
+                            </p>
+                          </div>
                         </div>
                       </div>
 
-                      <div className={`flex flex-col p-5 rounded-[24px] border h-full justify-between ${isDarkMode ? 'bg-amber-500/5 border-amber-500/20' : 'bg-amber-50 border-amber-100 shadow-sm'}`}>
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="p-2.5 bg-amber-500/10 text-amber-600 rounded-xl shrink-0"><TrendingUp size={18} /></div>
-                          <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest leading-tight">EN YÜKSEK BORÇ</p>
+                      <div className={`p-5 rounded-[24px] border h-full ${isDarkMode ? 'bg-amber-500/5 border-amber-500/20' : 'bg-amber-50 border-amber-100 shadow-sm'}`}>
+                        {/* Mobile Layout */}
+                        <div className="flex flex-col justify-between h-full md:hidden">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2.5 bg-amber-500/10 text-amber-600 rounded-xl shrink-0"><TrendingUp size={18} /></div>
+                            <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest leading-tight">EN YÜKSEK BORÇ</p>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <AutoFitText
+                              text={widgetsData.highestDebt?.cardName || ""}
+                              color={widgetsData.highestDebt?.color || (isDarkMode ? '#ffffff' : '#1e293b')}
+                            />
+                            <p className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                              {Math.max(0, widgetsData.highestDebt?.balance || 0).toLocaleString('tr-TR')} ₺
+                            </p>
+                          </div>
                         </div>
-                        <div className="flex flex-col gap-1">
-                          <AutoFitText
-                            text={widgetsData.highestDebt?.cardName || ""}
-                            color={widgetsData.highestDebt?.color || (isDarkMode ? '#ffffff' : '#1e293b')}
-                          />
-                          <p className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                            {Math.max(0, widgetsData.highestDebt?.balance || 0).toLocaleString('tr-TR')} ₺
-                          </p>
+                        {/* Desktop Layout (Original) */}
+                        <div className="hidden md:flex items-center gap-4 h-full">
+                          <div className="p-3 bg-amber-500/10 text-amber-600 rounded-xl"><TrendingUp size={20} /></div>
+                          <div className="flex flex-col gap-0.5 overflow-hidden">
+                            <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-0.5">EN YÜKSEK BORÇ</p>
+                            <AutoFitText
+                              text={widgetsData.highestDebt?.cardName || ""}
+                              color={widgetsData.highestDebt?.color || (isDarkMode ? '#ffffff' : '#1e293b')}
+                            />
+                            <p className={`text-lg font-black mt-1 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                              {Math.max(0, widgetsData.highestDebt?.balance || 0).toLocaleString('tr-TR')} ₺
+                            </p>
+                          </div>
                         </div>
                       </div>
 
