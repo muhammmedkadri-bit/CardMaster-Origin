@@ -186,30 +186,29 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
             BU AYIN ÖZETİ
           </h4>
 
-          <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
             {analysisData.categoryBreakdown.length > 0 ? (
               analysisData.categoryBreakdown.map((cat, i) => (
-                <div key={i} className={`p-5 rounded-3xl border transition-all hover:scale-[1.02] ${isDarkMode ? 'bg-slate-800/30 border-slate-800' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
-                  <div className="flex justify-between items-center mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }}></div>
-                      <span className={`text-xs font-black uppercase tracking-widest ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>{cat.name}</span>
-                    </div>
-                    <span className="text-sm font-black" style={{ color: cat.color }}>₺{cat.value.toLocaleString('tr-TR')}</span>
-                  </div>
-                  <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-1000"
+                <div key={i} className={`p-4 rounded-3xl border transition-all hover:scale-[1.05] flex flex-col gap-3 ${isDarkMode ? 'bg-slate-800/20 border-slate-800 hover:bg-slate-800/40' : 'bg-slate-50 border-slate-100 shadow-sm hover:bg-white'}`}>
+                  <div className="flex flex-col gap-2">
+                    <span
+                      className="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest w-fit border"
                       style={{
-                        backgroundColor: cat.color,
-                        width: `${analysisData.monthlyChart[analysisData.monthlyChart.length - 1].spending > 0 ? (cat.value / analysisData.monthlyChart[analysisData.monthlyChart.length - 1].spending) * 100 : 0}%`
+                        backgroundColor: `${cat.color}15`,
+                        color: cat.color,
+                        borderColor: `${cat.color}30`
                       }}
-                    />
+                    >
+                      {cat.name}
+                    </span>
+                    <span className={`text-base font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                      -₺{cat.value.toLocaleString('tr-TR')}
+                    </span>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="py-10 text-center text-slate-500 italic text-sm">Bu ay henüz harcama verisi yok.</div>
+              <div className="col-span-2 py-10 text-center text-slate-500 italic text-sm">Bu ay henüz harcama verisi yok.</div>
             )}
           </div>
 
