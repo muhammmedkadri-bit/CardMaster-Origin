@@ -198,6 +198,20 @@ const AutoFitText: React.FC<{ text: string; color?: string; baseClass?: string }
   );
 };
 
+const deduplicateCategories = (cats: Category[]) => {
+  const seen = new Set<string>();
+  const unique = cats.filter(c => {
+    const key = c.name.toLocaleLowerCase('tr-TR').trim();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  // Ensure "Diğer" is always present and at the end
+  const diger = unique.find(c => c.name.toLocaleLowerCase('tr-TR') === 'diğer');
+  const rest = unique.filter(c => c.name.toLocaleLowerCase('tr-TR') !== 'diğer');
+  return [...rest, diger || { id: 'default-other', name: 'Diğer', color: '#64748B' }];
+};
+
 const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('theme');
@@ -240,19 +254,19 @@ const App: React.FC = () => {
     try {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed)) {
-        // More robust migration: map everything to Category objects
-        return parsed.map((item: any, index: number) => {
+        const mapped = parsed.map((item: any, index: number) => {
           if (typeof item === 'string') {
             return {
-              id: `migrated-${index}-${Date.now()}`,
+              id: `migrated-${index}`,
               name: item,
               color: defaultCategories.find(dc => dc.name === item)?.color || '#3B82F6'
             };
           }
-          return item; // Keep existing objects
+          return item;
         });
+        return deduplicateCategories(mapped);
       }
-      return parsed;
+      return deduplicateCategories(parsed);
     } catch (e) {
       return defaultCategories;
     }
@@ -400,13 +414,9 @@ const App: React.FC = () => {
 
   useEffect(() => {
     localStorage.setItem('user_categories', JSON.stringify(categories));
-    if (user && categories.length > 0) {
-      // Sync categories to DB
-      categories.forEach(cat => {
-        dataSyncService.upsertCategory(user.id, cat);
-      });
-    }
-  }, [categories, user]);
+    // Remove automatic mass upsert to avoid duplicate loops
+    // Categories will be upserted explicitly when added/edited
+  }, [categories]);
 
   // --- LOCAL STORAGE SYNC ONLY ---
   useEffect(() => {
@@ -529,11 +539,11 @@ const App: React.FC = () => {
 
         if (newHash !== lastDataHash) {
           console.log("[App] Data changed, updating UI...");
-          setCards(data.cards);
-          setTransactions(data.transactions);
-          setCategories(data.categories);
-          setChatHistory(data.chat);
-          setNotificationHistory(data.notifications);
+          if (data.cards) setCards(data.cards);
+          if (data.transactions) setTransactions(data.transactions);
+          if (data.categories) setCategories(deduplicateCategories(data.categories));
+          if (data.chat) setChatHistory(data.chat);
+          if (data.notifications) setNotificationHistory(data.notifications);
           if (data.autoPayments) setAutoPayments(data.autoPayments);
           setLastUpdate(Date.now());
           lastDataHash = newHash;

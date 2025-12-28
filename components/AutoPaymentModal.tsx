@@ -127,25 +127,34 @@ const AutoPaymentModal: React.FC<AutoPaymentModalProps> = ({ cards, onClose, onS
                     <div>
                         <label className="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Kategori</label>
                         <div className="grid grid-cols-3 gap-2">
-                            {categories.map(cat => (
-                                <button
-                                    key={cat.id}
-                                    type="button"
-                                    onClick={() => {
-                                        setFormData({ ...formData, category: cat.name });
-                                        if (cat.name !== 'Diğer') {
-                                            setIsAddingCategory(false);
-                                            setNewCategory('');
-                                        }
-                                    }}
-                                    className={`py-2 px-1 text-[10px] rounded-xl border transition-all font-black tracking-widest flex items-center justify-center gap-1.5 ${formData.category === cat.name
-                                        ? 'bg-blue-600 text-white border-blue-600 shadow-md'
-                                        : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-blue-300'
-                                        }`}
-                                >
-                                    {cat.name.toLocaleUpperCase('tr-TR')}
-                                </button>
-                            ))}
+                            {(() => {
+                                const seen = new Set<string>();
+                                const uniqueCats = categories.filter(c => {
+                                    const key = c.name.toLocaleLowerCase('tr-TR').trim();
+                                    if (seen.has(key)) return false;
+                                    seen.add(key);
+                                    return true;
+                                });
+                                return uniqueCats.map(cat => (
+                                    <button
+                                        key={cat.id}
+                                        type="button"
+                                        onClick={() => {
+                                            setFormData({ ...formData, category: cat.name });
+                                            if (cat.name !== 'Diğer') {
+                                                setIsAddingCategory(false);
+                                                setNewCategory('');
+                                            }
+                                        }}
+                                        className={`py-2 px-1 text-[10px] rounded-xl border transition-all font-black tracking-widest flex items-center justify-center gap-1.5 ${formData.category === cat.name
+                                            ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                                            : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-blue-300'
+                                            }`}
+                                    >
+                                        {cat.name.toLocaleUpperCase('tr-TR')}
+                                    </button>
+                                ));
+                            })()}
                         </div>
 
                         {formData.category === 'Diğer' && (

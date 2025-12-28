@@ -326,37 +326,46 @@ const SettingsView: React.FC<SettingsViewProps> = ({ isDarkMode, onThemeToggle, 
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {categories.map(cat => (
-                  <div key={cat.id} className={`flex items-center justify-between p-4 rounded-3xl border transition-all ${isDarkMode ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
-                    <div className="flex items-center gap-4">
-                      <div className="relative group">
+                {(() => {
+                  const seen = new Set<string>();
+                  const uniqueCats = categories.filter(c => {
+                    const key = c.name.toLocaleLowerCase('tr-TR').trim();
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                  });
+                  return uniqueCats.map(cat => (
+                    <div key={cat.id} className={`flex items-center justify-between p-4 rounded-3xl border transition-all ${isDarkMode ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
+                      <div className="flex items-center gap-4">
+                        <div className="relative group">
+                          <input
+                            type="color"
+                            value={cat.color}
+                            onChange={(e) => updateCategoryColor(cat.id, e.target.value)}
+                            className="w-8 h-8 rounded-xl border-none p-0 overflow-hidden cursor-pointer opacity-0 absolute inset-0 z-10"
+                          />
+                          <div className="w-8 h-8 rounded-xl border border-white/10 shadow-sm transition-transform group-hover:scale-110" style={{ backgroundColor: cat.color }}></div>
+                        </div>
                         <input
-                          type="color"
-                          value={cat.color}
-                          onChange={(e) => updateCategoryColor(cat.id, e.target.value)}
-                          className="w-8 h-8 rounded-xl border-none p-0 overflow-hidden cursor-pointer opacity-0 absolute inset-0 z-10"
+                          type="text"
+                          value={cat.name}
+                          onChange={(e) => renameCategory(cat.id, e.target.value)}
+                          disabled={cat.name === 'Diğer'}
+                          className={`text-[10px] font-black uppercase tracking-widest bg-transparent border-none outline-none focus:ring-1 focus:ring-blue-500/30 rounded px-1 w-full ${isDarkMode ? 'text-slate-300' : 'text-slate-600'
+                            } ${cat.name === 'Diğer' ? 'opacity-50' : ''}`}
                         />
-                        <div className="w-8 h-8 rounded-xl border border-white/10 shadow-sm transition-transform group-hover:scale-110" style={{ backgroundColor: cat.color }}></div>
                       </div>
-                      <input
-                        type="text"
-                        value={cat.name}
-                        onChange={(e) => renameCategory(cat.id, e.target.value)}
-                        disabled={cat.name === 'Diğer'}
-                        className={`text-[10px] font-black uppercase tracking-widest bg-transparent border-none outline-none focus:ring-1 focus:ring-blue-500/30 rounded px-1 w-full ${isDarkMode ? 'text-slate-300' : 'text-slate-600'
-                          } ${cat.name === 'Diğer' ? 'opacity-50' : ''}`}
-                      />
+                      {cat.name !== 'Diğer' && (
+                        <button
+                          onClick={() => removeCategory(cat.id)}
+                          className="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </div>
-                    {cat.name !== 'Diğer' && (
-                      <button
-                        onClick={() => removeCategory(cat.id)}
-                        className="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
-                  </div>
-                ))}
+                  ));
+                })()}
               </div>
             </div>
           </section>

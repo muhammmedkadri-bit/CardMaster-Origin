@@ -158,37 +158,46 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
             <div>
               <label className="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Kategori</label>
               <div className="grid grid-cols-2 xs:grid-cols-3 gap-2">
-                {categories.length > 0 ? categories.map(cat => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => {
-                      setFormData({ ...formData, category: cat.name });
-                      if (cat.name !== 'Diğer') {
-                        setIsAddingCategory(false);
-                        setNewCategory('');
-                      }
-                    }}
-                    style={{
-                      backgroundColor: formData.category.toLocaleLowerCase('tr-TR') === cat.name.toLocaleLowerCase('tr-TR') ? cat.color : undefined,
-                      borderColor: formData.category.toLocaleLowerCase('tr-TR') === cat.name.toLocaleLowerCase('tr-TR') ? cat.color : undefined,
-                      color: formData.category.toLocaleLowerCase('tr-TR') === cat.name.toLocaleLowerCase('tr-TR') ? (isColorLight(cat.color) ? '#000' : '#fff') : undefined
-                    }}
-                    className={`py-2 px-1 text-[10px] rounded-xl border transition-all font-black tracking-widest flex items-center justify-center gap-1.5 ${formData.category.toLocaleLowerCase('tr-TR') === cat.name.toLocaleLowerCase('tr-TR')
-                      ? 'shadow-md'
-                      : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-blue-300'
-                      }`}
-                  >
-                    {formData.category.toLocaleLowerCase('tr-TR') !== cat.name.toLocaleLowerCase('tr-TR') && (
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }}></div>
-                    )}
-                    {cat.name.toLocaleUpperCase('tr-TR')}
-                  </button>
-                )) : (
-                  <div className="col-span-full py-4 text-center text-xs text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
-                    Kategoriler yükleniyor...
-                  </div>
-                )}
+                {(() => {
+                  const seen = new Set<string>();
+                  const uniqueCats = categories.filter(c => {
+                    const key = c.name.toLocaleLowerCase('tr-TR').trim();
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                  });
+                  return uniqueCats.length > 0 ? uniqueCats.map(cat => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => {
+                        setFormData({ ...formData, category: cat.name });
+                        if (cat.name !== 'Diğer') {
+                          setIsAddingCategory(false);
+                          setNewCategory('');
+                        }
+                      }}
+                      style={{
+                        backgroundColor: formData.category.toLocaleLowerCase('tr-TR') === cat.name.toLocaleLowerCase('tr-TR') ? cat.color : undefined,
+                        borderColor: formData.category.toLocaleLowerCase('tr-TR') === cat.name.toLocaleLowerCase('tr-TR') ? cat.color : undefined,
+                        color: formData.category.toLocaleLowerCase('tr-TR') === cat.name.toLocaleLowerCase('tr-TR') ? (isColorLight(cat.color) ? '#000' : '#fff') : undefined
+                      }}
+                      className={`py-2 px-1 text-[10px] rounded-xl border transition-all font-black tracking-widest flex items-center justify-center gap-1.5 ${formData.category.toLocaleLowerCase('tr-TR') === cat.name.toLocaleLowerCase('tr-TR')
+                        ? 'shadow-md'
+                        : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-blue-300'
+                        }`}
+                    >
+                      {formData.category.toLocaleLowerCase('tr-TR') !== cat.name.toLocaleLowerCase('tr-TR') && (
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }}></div>
+                      )}
+                      {cat.name.toLocaleUpperCase('tr-TR')}
+                    </button>
+                  )) : (
+                    <div className="col-span-full py-4 text-center text-xs text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+                      Kategoriler yükleniyor...
+                    </div>
+                  );
+                })()}
               </div>
 
               {formData.category === 'Diğer' && (
