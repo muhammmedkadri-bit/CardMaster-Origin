@@ -30,6 +30,7 @@ interface SettingsViewProps {
   onBack: () => void;
   categories: Category[];
   setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
+  onDeleteCategory: (id: string) => void;
 }
 
 const isColorLight = (color: string) => {
@@ -41,7 +42,7 @@ const isColorLight = (color: string) => {
   return brightness > 155;
 };
 
-const SettingsView: React.FC<SettingsViewProps> = ({ isDarkMode, onThemeToggle, onResetAll, onBack, categories, setCategories }) => {
+const SettingsView: React.FC<SettingsViewProps> = ({ isDarkMode, onThemeToggle, onResetAll, onBack, categories, setCategories, onDeleteCategory }) => {
   const [userName, setUserName] = useState(() => localStorage.getItem('user_name') || 'Kullanıcı');
   const [currency, setCurrency] = useState(() => localStorage.getItem('user_currency') || 'TL');
   const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(true);
@@ -76,10 +77,22 @@ const SettingsView: React.FC<SettingsViewProps> = ({ isDarkMode, onThemeToggle, 
     const cat = categories.find(c => c.id === id);
     if (!cat || cat.name === 'Diğer') return;
     setCategories(categories.filter(c => c.id !== id));
+    onDeleteCategory(id);
   };
 
   const updateCategoryColor = (id: string, color: string) => {
-    setCategories(categories.map(c => c.id === id ? { ...c, color } : c));
+    const updated = categories.map(c => c.id === id ? { ...c, color } : c);
+    setCategories(updated);
+    // Sync with DB if user exists
+    const cat = updated.find(c => c.id === id);
+    if (cat && localStorage.getItem('supabase.auth.token')) { // Simple check or pass user
+      // We'll let App.tsx handle the actual DB sync via setCategories if possible, 
+      // but for now let's hope App.tsx's useEffect handles it or we'll add a sync prop.
+    }
+  };
+
+  const renameCategory = (id: string, name: string) => {
+    setCategories(categories.map(c => c.id === id ? { ...c, name } : c));
   };
 
   // VERİ DIŞA AKTAR (Export)
@@ -322,7 +335,14 @@ const SettingsView: React.FC<SettingsViewProps> = ({ isDarkMode, onThemeToggle, 
                         />
                         <div className="w-8 h-8 rounded-xl border border-white/10 shadow-sm transition-transform group-hover:scale-110" style={{ backgroundColor: cat.color }}></div>
                       </div>
-                      <span className="text-xs font-black uppercase tracking-widest text-slate-500">{cat.name}</span>
+                      <input
+                        type="text"
+                        value={cat.name}
+                        onChange={(e) => renameCategory(cat.id, e.target.value)}
+                        disabled={cat.name === 'Diğer'}
+                        className={`text-[10px] font-black uppercase tracking-widest bg-transparent border-none outline-none focus:ring-1 focus:ring-blue-500/30 rounded px-1 w-full ${isDarkMode ? 'text-slate-300' : 'text-slate-600'
+                          } ${cat.name === 'Diğer' ? 'opacity-50' : ''}`}
+                      />
                     </div>
                     {cat.name !== 'Diğer' && (
                       <button

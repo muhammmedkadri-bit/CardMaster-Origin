@@ -167,6 +167,22 @@ export const dataSyncService = {
         return await supabase.from('notifications').delete().eq('user_id', userId);
     },
 
+    async upsertCategory(userId: string, category: Category) {
+        if (!supabase) return;
+        const dbCat = {
+            id: category.id.length > 20 ? category.id : undefined,
+            user_id: userId,
+            name: category.name,
+            color: category.color
+        };
+        return await supabase.from('categories').upsert(dbCat).select().single();
+    },
+
+    async deleteCategory(categoryId: string) {
+        if (!supabase) return;
+        return await supabase.from('categories').delete().eq('id', categoryId);
+    },
+
     async saveChatMessage(userId: string, message: ChatMessage) {
         if (!supabase) return;
         return await supabase.from('chat_history').insert({

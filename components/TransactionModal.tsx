@@ -157,8 +157,8 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
           {type === 'spending' && (
             <div>
               <label className="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Kategori</label>
-              <div className="grid grid-cols-3 gap-2">
-                {categories.map(cat => (
+              <div className="grid grid-cols-2 xs:grid-cols-3 gap-2">
+                {categories.length > 0 ? categories.map(cat => (
                   <button
                     key={cat.id}
                     type="button"
@@ -184,7 +184,11 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
                     )}
                     {cat.name.toLocaleUpperCase('tr-TR')}
                   </button>
-                ))}
+                )) : (
+                  <div className="col-span-full py-4 text-center text-xs text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+                    Kategoriler yükleniyor...
+                  </div>
+                )}
               </div>
 
               {formData.category === 'Diğer' && (
@@ -193,14 +197,15 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
                     <button
                       type="button"
                       onClick={() => setIsAddingCategory(true)}
-                      className="flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-blue-700"
+                      className="flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-xl w-full justify-center"
                     >
                       <Plus size={14} /> Yeni Kategori Ekle
                     </button>
                   ) : (
                     <input
                       autoFocus
-                      className="w-full px-4 py-2 border border-blue-200 dark:border-blue-800 rounded-xl outline-none bg-blue-50/50 dark:bg-blue-900/10 dark:text-white text-sm font-bold placeholder:text-slate-400"
+                      required
+                      className="w-full px-4 py-3 border border-blue-200 dark:border-blue-800 rounded-xl outline-none bg-blue-50/50 dark:bg-blue-900/10 dark:text-white text-sm font-bold placeholder:text-slate-400"
                       value={newCategory}
                       onChange={e => setNewCategory(e.target.value)}
                       placeholder="Yeni kategori adı yazın..."

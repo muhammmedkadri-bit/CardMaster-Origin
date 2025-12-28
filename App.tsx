@@ -400,7 +400,13 @@ const App: React.FC = () => {
 
   useEffect(() => {
     localStorage.setItem('user_categories', JSON.stringify(categories));
-  }, [categories]);
+    if (user && categories.length > 0) {
+      // Sync categories to DB
+      categories.forEach(cat => {
+        dataSyncService.upsertCategory(user.id, cat);
+      });
+    }
+  }, [categories, user]);
 
   // --- LOCAL STORAGE SYNC ONLY ---
   useEffect(() => {
@@ -1095,6 +1101,27 @@ const App: React.FC = () => {
   const handleTransaction = async (finalTx: Transaction) => {
     if (!user) return;
 
+    // A. Check for new category
+    let updatedCategories = categories;
+    if (finalTx.type === 'spending' && finalTx.category !== 'Diğer') {
+      const exists = categories.some(cat => cat.name.toLocaleLowerCase('tr-TR') === finalTx.category.toLocaleLowerCase('tr-TR'));
+      if (!exists) {
+        const newCat: Category = {
+          id: crypto.randomUUID(),
+          name: finalTx.category,
+          color: '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0') // Random color
+        };
+        // Add before "Diğer"
+        const diger = categories.find(c => c.name === 'Diğer');
+        const rest = categories.filter(c => c.name !== 'Diğer');
+        updatedCategories = [...rest, newCat, diger].filter(Boolean) as Category[];
+        setCategories(updatedCategories);
+
+        // Save to DB
+        dataSyncService.upsertCategory(user.id, newCat);
+      }
+    }
+
     // 1. Find affected card and calculate new balance
     const affectedCard = cards.find(c => c.id === finalTx.cardId);
     if (!affectedCard) {
@@ -1708,6 +1735,7 @@ const App: React.FC = () => {
               onBack={() => setView('dashboard')}
               categories={categories}
               setCategories={setCategories}
+              onDeleteCategory={(id) => dataSyncService.deleteCategory(id)}
             />
           )}
         </div>
