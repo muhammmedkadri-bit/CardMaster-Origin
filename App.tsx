@@ -159,6 +159,44 @@ const Toast: React.FC<{ message: string; type: 'warning' | 'info' | 'success'; o
   );
 };
 
+const AutoFitText: React.FC<{ text: string; color?: string; baseClass?: string }> = ({ text, color, baseClass = "text-sm font-black truncate" }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current || !textRef.current) return;
+
+    const container = containerRef.current;
+    const textEl = textRef.current;
+
+    let size = 14; // base text-sm
+    textEl.style.fontSize = `${size}px`;
+
+    // Continuously shrink until it fits or reach minimum size
+    const checkAndShrink = () => {
+      if (textEl.scrollWidth > container.offsetWidth && size > 7) {
+        size -= 0.5;
+        textEl.style.fontSize = `${size}px`;
+        requestAnimationFrame(checkAndShrink);
+      }
+    };
+
+    checkAndShrink();
+  }, [text]);
+
+  return (
+    <div ref={containerRef} className="w-full overflow-hidden">
+      <p
+        ref={textRef}
+        className={baseClass}
+        style={{ color, whiteSpace: 'nowrap', transition: 'font-size 0.2s ease' }}
+      >
+        {text}
+      </p>
+    </div>
+  );
+};
+
 const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('theme');
@@ -1260,9 +1298,10 @@ const App: React.FC = () => {
                         <div className="p-3 bg-blue-500/10 text-blue-600 rounded-xl"><Clock size={20} /></div>
                         <div className="flex flex-col gap-0.5 overflow-hidden">
                           <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-0.5">SIRADAKİ ÖDEME</p>
-                          <p className="text-sm font-black truncate" style={{ color: widgetsData.closestDue?.color || (isDarkMode ? '#ffffff' : '#1e293b') }}>
-                            {widgetsData.closestDue?.cardName} ({widgetsData.closestDue?.dueDay}. Gün)
-                          </p>
+                          <AutoFitText
+                            text={`${widgetsData.closestDue?.cardName} (${widgetsData.closestDue?.dueDay}. Gün)`}
+                            color={widgetsData.closestDue?.color || (isDarkMode ? '#ffffff' : '#1e293b')}
+                          />
                           <div className="mt-1">
                             <RollingNumber
                               value={Math.max(0, widgetsData.closestDue?.balance || 0)}
@@ -1276,9 +1315,10 @@ const App: React.FC = () => {
                         <div className="p-3 bg-amber-500/10 text-amber-600 rounded-xl"><TrendingUp size={20} /></div>
                         <div className="flex flex-col gap-0.5 overflow-hidden">
                           <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-0.5">EN YÜKSEK BORÇ</p>
-                          <p className="text-sm font-black truncate" style={{ color: widgetsData.highestDebt?.color || (isDarkMode ? '#ffffff' : '#1e293b') }}>
-                            {widgetsData.highestDebt?.cardName}
-                          </p>
+                          <AutoFitText
+                            text={widgetsData.highestDebt?.cardName || ""}
+                            color={widgetsData.highestDebt?.color || (isDarkMode ? '#ffffff' : '#1e293b')}
+                          />
                           <p className={`text-lg font-black mt-1 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
                             {Math.max(0, widgetsData.highestDebt?.balance || 0).toLocaleString('tr-TR')} ₺
                           </p>
@@ -1311,9 +1351,10 @@ const App: React.FC = () => {
                               {widgetsData.statusWidget.type === 'overdue' ? 'ÖDEME GÜNÜ GEÇTİ' :
                                 widgetsData.statusWidget.type === 'dueSoon' ? 'SON ÖDEME YAKLAŞIYOR' : 'HESAP KESİM GÜNÜ'}
                             </p>
-                            <p className="text-sm font-black truncate" style={{ color: widgetsData.statusWidget.card.color || (isDarkMode ? '#ffffff' : '#1e293b') }}>
-                              {widgetsData.statusWidget.card.cardName}
-                            </p>
+                            <AutoFitText
+                              text={widgetsData.statusWidget.card.cardName}
+                              color={widgetsData.statusWidget.card.color || (isDarkMode ? '#ffffff' : '#1e293b')}
+                            />
                             <p className="text-[10px] font-bold text-slate-500">
                               {widgetsData.statusWidget.type === 'overdue' ? `Ayın ${widgetsData.statusWidget.card.dueDay}. günüydü` :
                                 widgetsData.statusWidget.type === 'dueSoon' ? `Son ödeme günü ayın ${widgetsData.statusWidget.card.dueDay}. günü` :
