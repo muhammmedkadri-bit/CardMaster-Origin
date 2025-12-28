@@ -1635,11 +1635,11 @@ const App: React.FC = () => {
                     key={item.mode}
                     onClick={() => { setModalMode(item.mode as any); setIsFabOpen(false); }}
                     className={`group p-4 rounded-[28px] shadow-2xl flex items-center gap-4 font-black uppercase text-[10px] tracking-[0.2em] transition-all border backdrop-blur-xl active:scale-95 ${isDarkMode
-                      ? 'bg-[#0f172a]/98 border-white/5 text-white hover:border-white/10'
-                      : 'bg-white/98 border-slate-100 text-slate-800 shadow-blue-900/10 hover:border-blue-100'
+                      ? 'bg-[#0f172a] border-white/10 text-white hover:bg-[#1e293b]'
+                      : 'bg-white border-slate-100 text-slate-800 shadow-blue-900/20 hover:border-blue-200'
                       }`}
                   >
-                    <div className={`p-3 rounded-2xl ${item.color.replace('text-', 'bg-')}/20 ${item.color} shadow-sm group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
+                    <div className={`p-3 rounded-2xl ${item.color.replace('text-', 'bg-')}/30 ${item.color} shadow-sm group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
                       {item.icon}
                     </div>
                     <span className="flex-1 text-left">{item.label}</span>
