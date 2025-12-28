@@ -1321,12 +1321,9 @@ const App: React.FC = () => {
                             text={`${widgetsData.closestDue?.cardName} (${widgetsData.closestDue?.dueDay}. Gün)`}
                             color={widgetsData.closestDue?.color || (isDarkMode ? '#ffffff' : '#1e293b')}
                           />
-                          <div className="mt-1">
-                            <RollingNumber
-                              value={Math.max(0, widgetsData.closestDue?.balance || 0)}
-                              className={`text-lg font-black ${isDarkMode ? 'text-white' : 'text-slate-800'}`}
-                            />
-                          </div>
+                          <p className={`text-lg font-black mt-1 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                            {Math.max(0, widgetsData.closestDue?.balance || 0).toLocaleString('tr-TR')} ₺
+                          </p>
                         </div>
                       </div>
 
