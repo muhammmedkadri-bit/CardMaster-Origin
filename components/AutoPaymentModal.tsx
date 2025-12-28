@@ -159,20 +159,14 @@ const AutoPaymentModal: React.FC<AutoPaymentModalProps> = ({ cards, onClose, onS
                                                     }
                                                 }}
                                                 style={{
-                                                    backgroundColor: isSelected ? cat.color : undefined,
-                                                    borderColor: isSelected ? cat.color : undefined,
-                                                    color: isSelected ? (isColorLight(cat.color) ? '#000' : '#fff') : undefined,
-                                                    boxShadow: isSelected ? `0 10px 20px -5px ${cat.color}60, 0 4px 6px -2px ${cat.color}40` : undefined,
                                                     transform: isSelected ? 'translateY(-1px) scale(1.02)' : 'none'
                                                 }}
                                                 className={`py-3 px-1 text-[10px] rounded-2xl border transition-all duration-300 font-black tracking-widest flex items-center justify-center gap-1.5 ${isSelected
-                                                    ? 'shadow-lg z-10'
+                                                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_2px_6px_-1px_rgba(0,0,0,0.08)] border-slate-200 dark:border-slate-600 z-10 ring-1 ring-slate-200 dark:ring-slate-600'
                                                     : 'bg-white/50 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 border-transparent hover:bg-white dark:hover:bg-slate-800'
                                                     }`}
                                             >
-                                                {!isSelected && (
-                                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }}></div>
-                                                )}
+                                                <div className={`w-2 h-2 rounded-full transition-transform ${isSelected ? 'scale-125' : ''}`} style={{ backgroundColor: cat.color }}></div>
                                                 {cat.name.toLocaleUpperCase('tr-TR')}
                                             </button>
                                         );
