@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import { CreditCard, Transaction, Category, NotificationItem, ChatMessage } from '../types';
+import { CreditCard, Transaction, Category, NotificationItem, ChatMessage, AutoPayment } from '../types';
 
 let activeSyncChannel: any = null;
 
@@ -8,12 +8,13 @@ export const dataSyncService = {
     async fetchAllData(userId: string) {
         if (!supabase) return null;
 
-        const [cards, transactions, categories, notifications, chat] = await Promise.all([
+        const [cards, transactions, categories, notifications, chat, autoPayments] = await Promise.all([
             supabase.from('cards').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
             supabase.from('transactions').select('*').eq('user_id', userId).order('date', { ascending: false }),
             supabase.from('categories').select('*').eq('user_id', userId).order('name', { ascending: true }),
             supabase.from('notifications').select('*').eq('user_id', userId).order('timestamp', { ascending: false }),
-            supabase.from('chat_history').select('*').eq('user_id', userId).order('created_at', { ascending: true })
+            supabase.from('chat_history').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
+            supabase.from('auto_payments').select('*').eq('user_id', userId).order('day_of_month', { ascending: true })
         ]);
 
         return {
@@ -21,7 +22,8 @@ export const dataSyncService = {
             transactions: (transactions.data || []).map(t => this.mapTransactionFromDB(t)),
             categories: (categories.data || []).map(cat => this.mapCategoryFromDB(cat)),
             notifications: (notifications.data || []).map(n => this.mapNotificationFromDB(n)),
-            chat: (chat.data || []).map(m => this.mapChatFromDB(m))
+            chat: (chat.data || []).map(m => this.mapChatFromDB(m)),
+            autoPayments: (autoPayments.data || []).map(ap => this.mapAutoPaymentFromDB(ap))
         };
     },
 
@@ -174,6 +176,27 @@ export const dataSyncService = {
         });
     },
 
+    async upsertAutoPayment(userId: string, ap: AutoPayment) {
+        if (!supabase) return;
+        const dbAp = {
+            id: ap.id.length > 20 ? ap.id : undefined,
+            user_id: userId,
+            card_id: ap.cardId,
+            category: ap.category,
+            amount: ap.amount,
+            day_of_month: ap.dayOfMonth,
+            description: ap.description,
+            last_processed_month: ap.lastProcessedMonth,
+            active: ap.active
+        };
+        return await supabase.from('auto_payments').upsert(dbAp).select().single();
+    },
+
+    async deleteAutoPayment(id: string) {
+        if (!supabase) return;
+        return await supabase.from('auto_payments').delete().eq('id', id);
+    },
+
     // --- MAPPERS ---
     mapCardFromDB(c: any): CreditCard {
         return {
@@ -226,5 +249,18 @@ export const dataSyncService = {
 
     mapChatFromDB(m: any): ChatMessage {
         return { role: m.role as any, content: m.content };
+    },
+
+    mapAutoPaymentFromDB(ap: any): AutoPayment {
+        return {
+            id: ap.id,
+            cardId: ap.card_id,
+            category: ap.category,
+            amount: Number(ap.amount),
+            dayOfMonth: ap.day_of_month,
+            description: ap.description,
+            lastProcessedMonth: ap.last_processed_month,
+            active: ap.active
+        };
     }
 };

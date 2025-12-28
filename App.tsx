@@ -36,10 +36,11 @@ import {
   Settings as SettingsIcon,
   ShieldCheck
 } from 'lucide-react';
-import { CreditCard, AIInsight, Transaction, Category, NotificationItem, ChatMessage } from './types';
+import { CreditCard, AIInsight, Transaction, Category, NotificationItem, ChatMessage, AutoPayment } from './types';
 import CardVisual from './components/CardVisual';
 import CardModal from './components/CardModal';
 import TransactionModal from './components/TransactionModal';
+import AutoPaymentModal from './components/AutoPaymentModal';
 import MonthlyAnalysis from './components/MonthlyAnalysis';
 import CalendarReminderModal from './components/CalendarReminderModal';
 import CardsListView from './components/CardsListView';
@@ -218,6 +219,11 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [autoPayments, setAutoPayments] = useState<AutoPayment[]>(() => {
+    const saved = localStorage.getItem('user_auto_payments');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [categories, setCategories] = useState<Category[]>(() => {
     const saved = localStorage.getItem('user_categories');
     const defaultCategories: Category[] = [
@@ -259,7 +265,7 @@ const App: React.FC = () => {
 
   const [view, setView] = useState<'dashboard' | 'cards' | 'analysis' | 'settings'>('dashboard');
   const [statusIndex, setStatusIndex] = useState(0);
-  const [modalMode, setModalMode] = useState<'add' | 'edit' | 'spending' | 'payment' | 'edit_transaction' | 'calendar' | 'statement' | 'reset_confirm' | null>(null);
+  const [modalMode, setModalMode] = useState<'add' | 'edit' | 'spending' | 'payment' | 'edit_transaction' | 'calendar' | 'statement' | 'reset_confirm' | 'auto_payment' | null>(null);
   const [editingCard, setEditingCard] = useState<CreditCard | undefined>(undefined);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | undefined>(undefined);
   const [selectedCardForAction, setSelectedCardForAction] = useState<CreditCard | null>(null);
@@ -387,8 +393,10 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('user_cards', JSON.stringify(cards));
     localStorage.setItem('user_transactions', JSON.stringify(transactions));
+    localStorage.setItem('user_auto_payments', JSON.stringify(autoPayments));
     checkFinancialDeadlines();
-  }, [cards, transactions]);
+    processAutoPayments();
+  }, [cards, transactions, autoPayments]);
 
   useEffect(() => {
     localStorage.setItem('user_categories', JSON.stringify(categories));
@@ -456,6 +464,7 @@ const App: React.FC = () => {
           }
           setNotificationHistory(data.notifications);
           setChatHistory(data.chat);
+          if (data.autoPayments) setAutoPayments(data.autoPayments);
         }
       } else {
         setCards([]);
@@ -519,6 +528,7 @@ const App: React.FC = () => {
           setCategories(data.categories);
           setChatHistory(data.chat);
           setNotificationHistory(data.notifications);
+          if (data.autoPayments) setAutoPayments(data.autoPayments);
           setLastUpdate(Date.now());
           lastDataHash = newHash;
         }
@@ -575,6 +585,19 @@ const App: React.FC = () => {
             setTransactions(prev => prev.map(t => t.id === updatedTx.id ? updatedTx : t));
             return;
           }
+        }
+
+        if (table === 'auto_payments') {
+          if (payload.eventType === 'INSERT' && payload.new) {
+            const newAp = dataSyncService.mapAutoPaymentFromDB(payload.new);
+            setAutoPayments(prev => [...prev.filter(x => x.id !== newAp.id), newAp]);
+          } else if (payload.eventType === 'UPDATE' && payload.new) {
+            const updatedAp = dataSyncService.mapAutoPaymentFromDB(payload.new);
+            setAutoPayments(prev => prev.map(x => x.id === updatedAp.id ? updatedAp : x));
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            setAutoPayments(prev => prev.filter(x => x.id !== payload.old.id));
+          }
+          return;
         }
 
         if (table === 'cards') {
@@ -734,6 +757,75 @@ const App: React.FC = () => {
   const handleViewChange = (newView: 'dashboard' | 'cards' | 'analysis' | 'settings') => {
     if (newView === view) return;
     setView(newView);
+  };
+
+  const handleSaveAutoPayment = async (ap: AutoPayment) => {
+    if (!user) return;
+    setAutoPayments(prev => [...prev.filter(x => x.id !== ap.id), ap]);
+    showToast('Otomatik ödeme kaydedildi', 'success');
+    await dataSyncService.upsertAutoPayment(user.id, ap);
+    await dataSyncService.sendSyncSignal(user.id);
+  };
+
+  const processAutoPayments = async () => {
+    if (!user || autoPayments.length === 0 || cards.length === 0) return;
+
+    const now = new Date();
+    const todayNum = now.getDate();
+    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+    const paymentsToProcess = autoPayments.filter(ap =>
+      ap.active &&
+      Number(ap.dayOfMonth) === todayNum &&
+      ap.lastProcessedMonth !== currentMonthKey
+    );
+
+    if (paymentsToProcess.length === 0) return;
+
+    for (const ap of paymentsToProcess) {
+      const card = cards.find(c => c.id === ap.cardId);
+      if (!card) continue;
+
+      const newTxId = crypto.randomUUID();
+      const newTx: Transaction = {
+        id: newTxId,
+        cardId: ap.cardId,
+        cardName: card.cardName,
+        type: 'spending',
+        amount: ap.amount,
+        category: ap.category,
+        date: now.toISOString(),
+        description: ap.description || `${ap.category} Otomatik Ödemesi`
+      };
+
+      const updatedCard = { ...card, balance: card.balance + ap.amount };
+      const updatedAp = { ...ap, lastProcessedMonth: currentMonthKey };
+
+      // Optimized local update
+      setTransactions(prev => [newTx, ...prev]);
+      setCards(prev => prev.map(c => c.id === card.id ? updatedCard : c));
+      setAutoPayments(prev => prev.map(x => x.id === ap.id ? updatedAp : x));
+
+      try {
+        await Promise.all([
+          dataSyncService.saveTransaction(user.id, newTx),
+          dataSyncService.upsertCard(user.id, updatedCard),
+          dataSyncService.upsertAutoPayment(user.id, updatedAp)
+        ]);
+
+        addFinancialAlert(
+          `${card.cardName} kartından ${ap.amount.toLocaleString('tr-TR')} ₺ tutarında otomatik ödeme (${ap.category}) gerçekleştirildi.`,
+          'success',
+          `auto_pay_${ap.id}_${currentMonthKey}`,
+          card.color,
+          card.cardName
+        );
+      } catch (err) {
+        console.error('Auto payment processing failed to sync:', err);
+      }
+    }
+
+    await dataSyncService.sendSyncSignal(user.id);
   };
 
   const checkFinancialDeadlines = () => {
@@ -1629,6 +1721,7 @@ const App: React.FC = () => {
                 {[
                   { mode: 'spending', label: 'Harcama Ekle', icon: <ArrowUpRight size={20} />, color: 'text-rose-500', bg: 'bg-rose-500/10' },
                   { mode: 'payment', label: 'Ödeme Yap', icon: <ArrowDownRight size={20} />, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+                  { mode: 'auto_payment', label: 'Otomatik Ödeme', icon: <RefreshCw size={18} />, color: 'text-blue-500', bg: 'bg-blue-500/10' },
                   { mode: 'add', label: 'Yeni Kart Ekle', icon: <Plus size={20} />, color: 'text-blue-500', bg: 'bg-blue-500/10' }
                 ].map((item) => (
                   <button
@@ -1746,6 +1839,11 @@ const App: React.FC = () => {
       {
         modalMode === 'statement' && selectedCardForAction && (
           <StatementModal card={selectedCardForAction} transactions={transactions} isDarkMode={isDarkMode} onClose={() => { setModalMode(null); setSelectedCardForAction(null); }} />
+        )
+      }
+      {
+        modalMode === 'auto_payment' && cards.length > 0 && (
+          <AutoPaymentModal cards={cards} categories={categories} onClose={() => setModalMode(null)} onSave={handleSaveAutoPayment} />
         )
       }
       {

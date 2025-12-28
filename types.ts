@@ -55,3 +55,14 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
 }
+
+export interface AutoPayment {
+  id: string;
+  cardId: string;
+  category: string;
+  amount: number;
+  dayOfMonth: number;
+  description: string;
+  lastProcessedMonth?: string; // Format: YYYY-MM
+  active: boolean;
+}
