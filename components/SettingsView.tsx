@@ -47,7 +47,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ isDarkMode, onThemeToggle, 
   const [currency, setCurrency] = useState(() => localStorage.getItem('user_currency') || 'TL');
   const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(true);
   const [newCatName, setNewCatName] = useState('');
-  const [newCatColor, setNewCatColor] = useState('#3B82F6');
+  const [newCatColor, setNewCatColor] = useState(() => '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0'));
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -58,18 +58,21 @@ const SettingsView: React.FC<SettingsViewProps> = ({ isDarkMode, onThemeToggle, 
     localStorage.setItem('user_currency', currency);
   }, [currency]);
 
+  const getRandomColor = () => '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+
   const addCategory = () => {
     if (newCatName.trim() && !categories.some(c => c.name.toLocaleLowerCase('tr-TR') === newCatName.trim().toLocaleLowerCase('tr-TR'))) {
       const other = categories.find(c => c.name === 'Diğer');
       const filtered = categories.filter(c => c.name !== 'Diğer');
       const newCat: Category = {
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         name: newCatName.trim(),
-        color: newCatColor
+        color: newCatColor // Uses current color picker value which starts random
       };
       const updated = [...filtered, newCat, other].filter(Boolean) as Category[];
       setCategories(updated);
       setNewCatName('');
+      setNewCatColor(getRandomColor()); // Set next random color
     }
   };
 
