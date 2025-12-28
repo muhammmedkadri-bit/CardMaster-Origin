@@ -319,6 +319,27 @@ const App: React.FC = () => {
     if (isAIPanelOpen) scrollToBottom();
   }, [chatHistory, isAIPanelOpen]);
 
+  // Dynamic Theme Color Updater for Status Bar
+  useEffect(() => {
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (!metaThemeColor) return;
+
+    // Check if any "modal-like" overlay is active
+    const isOverlayActive =
+      modalMode !== null ||
+      isAIPanelOpen ||
+      isNotificationPanelOpen ||
+      isAuthModalOpen;
+
+    if (isOverlayActive) {
+      // When modal is open, use black to match the dimmed backdrop
+      metaThemeColor.setAttribute('content', '#000000');
+    } else {
+      // Revert to theme color
+      metaThemeColor.setAttribute('content', isDarkMode ? '#0f172a' : '#f8fafc');
+    }
+  }, [modalMode, isAIPanelOpen, isNotificationPanelOpen, isAuthModalOpen, isDarkMode]);
+
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [scrollX, setScrollX] = useState(0);
 
