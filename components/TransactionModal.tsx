@@ -35,13 +35,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
   const [newCategory, setNewCategory] = useState('');
   const [isAddingCategory, setIsAddingCategory] = useState(false);
 
-  useEffect(() => {
-    // Lock body scroll prevents background interaction and "sliding" feel
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, []);
+
 
   useEffect(() => {
     if (initialData) {
