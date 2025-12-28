@@ -107,8 +107,8 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[3000] flex items-center justify-center p-3 sm:p-4 overflow-hidden">
-      <div className="bg-white dark:bg-slate-900 rounded-[28px] sm:rounded-[32px] w-full max-w-md p-6 sm:p-8 shadow-2xl relative border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-300 max-h-[92vh] overflow-y-auto no-scrollbar mb-10 overflow-x-hidden">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[3000] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-[28px] sm:rounded-[32px] w-full max-w-md p-6 sm:p-8 shadow-2xl relative border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-300 max-h-[85vh] overflow-y-auto no-scrollbar mx-auto my-auto overflow-x-hidden">
         <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
           <X size={24} />
         </button>
