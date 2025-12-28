@@ -357,7 +357,7 @@ const App: React.FC = () => {
     if (widgetsData.statusItems.length <= 1) return;
     const interval = setInterval(() => {
       setStatusIndex(prev => (prev + 1) % widgetsData.statusItems.length);
-    }, 4000); // Cycle every 4 seconds
+    }, 6000); // Cycle every 6 seconds
     return () => clearInterval(interval);
   }, [widgetsData.statusItems.length, view]);
 
