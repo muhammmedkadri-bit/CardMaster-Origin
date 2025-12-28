@@ -881,14 +881,44 @@ const App: React.FC = () => {
   const overallUtilization = totalLimit > 0 ? (totalBalance / totalLimit) * 100 : 0;
 
   const widgetsData = useMemo(() => {
-    if (cards.length === 0) return { closestDue: null, highestDebt: null, overdue: null };
+    if (cards.length === 0) return { closestDue: null, highestDebt: null, statusWidget: null };
     const today = new Date().getDate();
+
+    // Status Logic
+    // 1. Overdue (Highest priority)
+    const overdueCard = cards.find(c => c.dueDay < today && c.balance > 0);
+
+    // 2. Due Soon (Active cycle between statement and due day)
+    // Most cards have dueDay ~10 days after statementDay. 
+    // If today is between them, it's the active payment period.
+    const dueSoonCard = cards.find(c => {
+      if (c.balance <= 0) return false;
+      if (c.dueDay > c.statementDay) {
+        return today > c.statementDay && today <= c.dueDay;
+      } else {
+        // Crosses month boundary (e.g. statement 25, due 5)
+        return today > c.statementDay || today <= c.dueDay;
+      }
+    });
+
+    // 3. Statement Day
+    const statementCard = cards.find(c => today === c.statementDay && c.balance > 0);
+
+    let statusWidget = null;
+    if (overdueCard) {
+      statusWidget = { type: 'overdue', card: overdueCard };
+    } else if (dueSoonCard) {
+      statusWidget = { type: 'dueSoon', card: dueSoonCard };
+    } else if (statementCard) {
+      statusWidget = { type: 'statement', card: statementCard };
+    }
+
     const futureDueDates = cards.filter(c => c.dueDay >= today).sort((a, b) => a.dueDay - b.dueDay);
     const pastDueDates = cards.filter(c => c.dueDay < today).sort((a, b) => a.dueDay - b.dueDay);
     const closestDue = futureDueDates.length > 0 ? futureDueDates[0] : pastDueDates[0];
     const highestDebt = [...cards].sort((a, b) => b.balance - a.balance)[0];
-    const overdue = cards.find(c => c.dueDay < today && c.balance > 0);
-    return { closestDue, highestDebt, overdue };
+
+    return { closestDue, highestDebt, statusWidget, overdue: overdueCard };
   }, [cards]);
 
   const sortedTransactions = useMemo(() => {
@@ -1255,15 +1285,40 @@ const App: React.FC = () => {
                         </div>
                       </div>
 
-                      {widgetsData.overdue ? (
-                        <div className={`col-span-2 md:col-span-1 flex items-center gap-4 p-5 rounded-[24px] border ${isDarkMode ? 'bg-rose-500/10 border-rose-500/30' : 'bg-rose-50 border-rose-200 shadow-sm'}`}>
-                          <div className="p-3 bg-rose-500/10 text-rose-600 rounded-xl"><AlertTriangle size={20} className="animate-pulse" /></div>
+                      {widgetsData.statusWidget ? (
+                        <div className={`col-span-2 md:col-span-1 flex items-center gap-4 p-5 rounded-[24px] border-[1.5px] transition-all duration-500 ${widgetsData.statusWidget.type === 'overdue'
+                          ? 'animate-pulse-red bg-rose-500/5 border-rose-500/50'
+                          : widgetsData.statusWidget.type === 'dueSoon'
+                            ? 'animate-pulse-orange bg-amber-500/5 border-amber-500/50'
+                            : 'animate-pulse-blue bg-blue-500/5 border-blue-500/50'
+                          }`}>
+                          <div className={`p-3 rounded-xl ${widgetsData.statusWidget.type === 'overdue'
+                            ? 'bg-rose-500/10 text-rose-500'
+                            : widgetsData.statusWidget.type === 'dueSoon'
+                              ? 'bg-amber-500/10 text-amber-500'
+                              : 'bg-blue-500/10 text-blue-500'
+                            }`}>
+                            {widgetsData.statusWidget.type === 'overdue' ? <AlertTriangle size={20} className="animate-pulse" /> :
+                              widgetsData.statusWidget.type === 'dueSoon' ? <Clock size={20} /> : <Calendar size={20} />}
+                          </div>
                           <div className="overflow-hidden">
-                            <p className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest mb-1">ÖDEME GÜNÜ GEÇTİ</p>
-                            <p className="text-sm font-black truncate" style={{ color: widgetsData.overdue.color || (isDarkMode ? '#ffffff' : '#1e293b') }}>
-                              {widgetsData.overdue.cardName}
+                            <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${widgetsData.statusWidget.type === 'overdue'
+                              ? 'text-rose-500'
+                              : widgetsData.statusWidget.type === 'dueSoon'
+                                ? 'text-amber-500'
+                                : 'text-blue-500'
+                              }`}>
+                              {widgetsData.statusWidget.type === 'overdue' ? 'ÖDEME GÜNÜ GEÇTİ' :
+                                widgetsData.statusWidget.type === 'dueSoon' ? 'SON ÖDEME YAKLAŞIYOR' : 'HESAP KESİM GÜNÜ'}
                             </p>
-                            <p className="text-[10px] font-bold text-slate-500">Ayın {widgetsData.overdue.dueDay}. günüydü</p>
+                            <p className="text-sm font-black truncate" style={{ color: widgetsData.statusWidget.card.color || (isDarkMode ? '#ffffff' : '#1e293b') }}>
+                              {widgetsData.statusWidget.card.cardName}
+                            </p>
+                            <p className="text-[10px] font-bold text-slate-500">
+                              {widgetsData.statusWidget.type === 'overdue' ? `Ayın ${widgetsData.statusWidget.card.dueDay}. günüydü` :
+                                widgetsData.statusWidget.type === 'dueSoon' ? `Son ödeme günü ayın ${widgetsData.statusWidget.card.dueDay}. günü` :
+                                  `Hesap kesim günü bugün (Ayın ${widgetsData.statusWidget.card.statementDay}. günü)`}
+                            </p>
                           </div>
                         </div>
                       ) : (
