@@ -216,7 +216,7 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
                   TOPLAM {mode === 'cards' ? 'BORÇ' : 'GİDER'}
                 </span>
                 <span className={`text-xl sm:text-2xl font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                  ₺{totalValue.toLocaleString('tr-TR')}
+                  {totalValue.toLocaleString('tr-TR')} ₺
                 </span>
                 <span className="text-[7px] font-bold text-slate-500 mt-1 uppercase opacity-60">
                   {data.length} KALEM ANALİZ
@@ -235,7 +235,7 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
                   {data[activeIndex].bankName ? `${data[activeIndex].bankName} - ` : ''}{data[activeIndex].name}
                 </span>
                 <span className={`text-xl sm:text-2xl font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                  ₺{data[activeIndex].value.toLocaleString('tr-TR')}
+                  {data[activeIndex].value.toLocaleString('tr-TR')} ₺
                 </span>
 
 
@@ -282,7 +282,7 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
               </div>
               <div className="flex items-center gap-2 shrink-0 ml-2">
                 <span className={`text-xs font-black ${isDebt ? 'text-rose-500' : 'text-emerald-500'}`}>
-                  {isDebt ? '-' : '+'} ₺{item.value.toLocaleString('tr-TR')}
+                  {isDebt ? '-' : '+'} {item.value.toLocaleString('tr-TR')} ₺
                 </span>
                 <ArrowRight size={12} className={`transition-transform duration-300 ${isActive ? 'translate-x-1 text-blue-500' : 'opacity-0'}`} />
               </div>
