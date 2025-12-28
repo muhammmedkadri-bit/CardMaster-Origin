@@ -1299,10 +1299,14 @@ const App: React.FC = () => {
                     <div>
                       <span className="text-[10px] font-black text-slate-500 dark:text-slate-500 tracking-[0.2em] block mb-1 uppercase">{item.label}</span>
                       <div className={`text-xl sm:text-3xl font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                        <RollingNumber
-                          value={item.val}
-                          currency={item.suffix === '%' ? '%' : '₺'}
-                        />
+                        {item.suffix === '%' ? (
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-[0.7em] font-sans font-bold opacity-70 relative -top-[0.05em]">%</span>
+                            <span>{item.val.toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</span>
+                          </div>
+                        ) : (
+                          <span>{item.val.toLocaleString('tr-TR')} ₺</span>
+                        )}
                       </div>
                     </div>
                   </div>
