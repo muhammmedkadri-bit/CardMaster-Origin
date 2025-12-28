@@ -1453,11 +1453,14 @@ const App: React.FC = () => {
                             <div className="p-2.5 bg-blue-500/10 text-blue-600 rounded-xl shrink-0"><Clock size={18} /></div>
                             <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-tight">SIRADAKİ ÖDEME</p>
                           </div>
-                          <div className="flex flex-col gap-1">
-                            <AutoFitText
-                              text={`${widgetsData.closestDue?.cardName} (${widgetsData.closestDue?.dueDay}. Gün)`}
-                              color={widgetsData.closestDue?.color || (isDarkMode ? '#ffffff' : '#1e293b')}
-                            />
+                          <div className="flex flex-col gap-1 items-start">
+                            <div className="inline-flex px-2.5 py-1 rounded-lg border text-[11px] font-black uppercase tracking-widest" style={{
+                              color: widgetsData.closestDue?.color || (isDarkMode ? '#ffffff' : '#1e293b'),
+                              borderColor: `${widgetsData.closestDue?.color || (isDarkMode ? '#ffffff' : '#1e293b')}40`,
+                              backgroundColor: `${widgetsData.closestDue?.color || (isDarkMode ? '#ffffff' : '#1e293b')}15`
+                            }}>
+                              {widgetsData.closestDue?.cardName} ({widgetsData.closestDue?.dueDay}. Gün)
+                            </div>
                             <p className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
                               {Math.max(0, widgetsData.closestDue?.balance || 0).toLocaleString('tr-TR')} ₺
                             </p>
@@ -1466,12 +1469,15 @@ const App: React.FC = () => {
                         {/* Desktop Layout (Original) */}
                         <div className="hidden md:flex items-center gap-4 h-full">
                           <div className="p-3 bg-blue-500/10 text-blue-600 rounded-xl"><Clock size={20} /></div>
-                          <div className="flex flex-col gap-0.5 overflow-hidden">
+                          <div className="flex flex-col gap-1 overflow-hidden items-start">
                             <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-0.5">SIRADAKİ ÖDEME</p>
-                            <AutoFitText
-                              text={`${widgetsData.closestDue?.cardName} (${widgetsData.closestDue?.dueDay}. Gün)`}
-                              color={widgetsData.closestDue?.color || (isDarkMode ? '#ffffff' : '#1e293b')}
-                            />
+                            <div className="inline-flex px-2.5 py-1 rounded-lg border text-[11px] font-black uppercase tracking-widest" style={{
+                              color: widgetsData.closestDue?.color || (isDarkMode ? '#ffffff' : '#1e293b'),
+                              borderColor: `${widgetsData.closestDue?.color || (isDarkMode ? '#ffffff' : '#1e293b')}40`,
+                              backgroundColor: `${widgetsData.closestDue?.color || (isDarkMode ? '#ffffff' : '#1e293b')}15`
+                            }}>
+                              {widgetsData.closestDue?.cardName} ({widgetsData.closestDue?.dueDay}. Gün)
+                            </div>
                             <p className={`text-lg font-black mt-1 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
                               {Math.max(0, widgetsData.closestDue?.balance || 0).toLocaleString('tr-TR')} ₺
                             </p>
@@ -1486,11 +1492,14 @@ const App: React.FC = () => {
                             <div className="p-2.5 bg-amber-500/10 text-amber-600 rounded-xl shrink-0"><TrendingUp size={18} /></div>
                             <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest leading-tight">EN YÜKSEK BORÇ</p>
                           </div>
-                          <div className="flex flex-col gap-1">
-                            <AutoFitText
-                              text={widgetsData.highestDebt?.cardName || ""}
-                              color={widgetsData.highestDebt?.color || (isDarkMode ? '#ffffff' : '#1e293b')}
-                            />
+                          <div className="flex flex-col gap-1 items-start">
+                            <div className="inline-flex px-2.5 py-1 rounded-lg border text-[11px] font-black uppercase tracking-widest" style={{
+                              color: widgetsData.highestDebt?.color || (isDarkMode ? '#ffffff' : '#1e293b'),
+                              borderColor: `${widgetsData.highestDebt?.color || (isDarkMode ? '#ffffff' : '#1e293b')}40`,
+                              backgroundColor: `${widgetsData.highestDebt?.color || (isDarkMode ? '#ffffff' : '#1e293b')}15`
+                            }}>
+                              {widgetsData.highestDebt?.cardName}
+                            </div>
                             <p className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
                               {Math.max(0, widgetsData.highestDebt?.balance || 0).toLocaleString('tr-TR')} ₺
                             </p>
@@ -1499,12 +1508,15 @@ const App: React.FC = () => {
                         {/* Desktop Layout (Original) */}
                         <div className="hidden md:flex items-center gap-4 h-full">
                           <div className="p-3 bg-amber-500/10 text-amber-600 rounded-xl"><TrendingUp size={20} /></div>
-                          <div className="flex flex-col gap-0.5 overflow-hidden">
+                          <div className="flex flex-col gap-1 overflow-hidden items-start">
                             <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-0.5">EN YÜKSEK BORÇ</p>
-                            <AutoFitText
-                              text={widgetsData.highestDebt?.cardName || ""}
-                              color={widgetsData.highestDebt?.color || (isDarkMode ? '#ffffff' : '#1e293b')}
-                            />
+                            <div className="inline-flex px-2.5 py-1 rounded-lg border text-[11px] font-black uppercase tracking-widest" style={{
+                              color: widgetsData.highestDebt?.color || (isDarkMode ? '#ffffff' : '#1e293b'),
+                              borderColor: `${widgetsData.highestDebt?.color || (isDarkMode ? '#ffffff' : '#1e293b')}40`,
+                              backgroundColor: `${widgetsData.highestDebt?.color || (isDarkMode ? '#ffffff' : '#1e293b')}15`
+                            }}>
+                              {widgetsData.highestDebt?.cardName}
+                            </div>
                             <p className={`text-lg font-black mt-1 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
                               {Math.max(0, widgetsData.highestDebt?.balance || 0).toLocaleString('tr-TR')} ₺
                             </p>
