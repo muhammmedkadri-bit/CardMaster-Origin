@@ -747,7 +747,7 @@ const App: React.FC = () => {
 
     cards.forEach(card => {
       const balanceVal = Math.max(0, card.balance).toLocaleString('tr-TR');
-      const balanceStr = balanceVal !== '0' ? `(Borç: ₺${balanceVal})` : '';
+      const balanceStr = balanceVal !== '0' ? `(Borç: ${balanceVal} ₺)` : '';
 
       // Rule 1: Statement Day Notification (Only on that day)
       if (today === card.statementDay) {
@@ -776,7 +776,7 @@ const App: React.FC = () => {
       if (card.balance > 0) {
         const minPayment = (card.balance * (card.minPaymentRatio / 100)).toLocaleString('tr-TR');
         addFinancialAlert(
-          `${card.cardName} ödenmesi gereken borç bulunuyor. Asgari: ₺${minPayment}.`,
+          `${card.cardName} ödenmesi gereken borç bulunuyor. Asgari: ${minPayment} ₺.`,
           'warning',
           mandatoryKey,
           card.color,
@@ -1478,7 +1478,7 @@ const App: React.FC = () => {
                                         {tx.cardName || card?.cardName}
                                       </div>
                                       <p className={`text-xl font-black tracking-tighter ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                        {isSpending ? '-' : '+'}₺{tx.amount.toLocaleString('tr-TR')}
+                                        {isSpending ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
                                       </p>
                                     </div>
                                     <div className="flex items-center gap-2 opacity-50">
@@ -1515,7 +1515,7 @@ const App: React.FC = () => {
 
                                   <div className="flex flex-col items-end gap-2 shrink-0">
                                     <p className={`font-black text-xl tracking-tighter ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                      {isSpending ? '-' : '+'}₺{tx.amount.toLocaleString('tr-TR')}
+                                      {isSpending ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
                                     </p>
                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                       <button onClick={() => startEditTransaction(tx)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-500 hover:text-blue-400 hover:bg-slate-700' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-200'}`}><Edit2 size={16} /></button>
@@ -1570,7 +1570,7 @@ const App: React.FC = () => {
                             <div className="flex items-center gap-3 sm:gap-4">
                               <div className="text-right">
                                 <p className={`font-black text-base sm:text-lg tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                                  ₺{Math.max(0, card.balance).toLocaleString('tr-TR')}
+                                  {Math.max(0, card.balance).toLocaleString('tr-TR')} ₺
                                 </p>
                               </div>
                               <button

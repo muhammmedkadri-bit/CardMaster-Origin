@@ -138,7 +138,7 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
                   axisLine={false}
                   tickLine={false}
                   tick={{ fill: isDarkMode ? '#94a3b8' : '#64748b', fontSize: 11, fontWeight: 700 }}
-                  tickFormatter={(val) => `₺${val.toLocaleString()}`}
+                  tickFormatter={(val) => `${val.toLocaleString()} ₺`}
                 />
                 <Tooltip
                   cursor={{ fill: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)', radius: 10 }}
@@ -157,7 +157,7 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
                                   </span>
                                 </div>
                                 <span className={`text-sm font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                                  ₺{entry.value.toLocaleString('tr-TR')}
+                                  {entry.value.toLocaleString('tr-TR')} ₺
                                 </span>
                               </div>
                             ))}
@@ -202,7 +202,7 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
                       {cat.name}
                     </span>
                     <span className={`text-base font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                      -₺{cat.value.toLocaleString('tr-TR')}
+                      -{cat.value.toLocaleString('tr-TR')} ₺
                     </span>
                   </div>
                 </div>
@@ -219,7 +219,7 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
               </div>
               <div>
                 <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5">BU AY ÖDEME</p>
-                <p className={`text-lg font-black text-emerald-500 tracking-tighter`}>₺{analysisData.monthlyChart[analysisData.monthlyChart.length - 1].payment.toLocaleString()}</p>
+                <p className={`text-lg font-black text-emerald-500 tracking-tighter`}>{analysisData.monthlyChart[analysisData.monthlyChart.length - 1].payment.toLocaleString()} ₺</p>
               </div>
             </div>
             <div className={`p-5 rounded-[32px] border flex items-center gap-4 transition-all ${isDarkMode ? 'bg-rose-500/5 border-rose-500/20' : 'bg-rose-50 border-rose-100 shadow-sm'}`}>
@@ -228,7 +228,7 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
               </div>
               <div>
                 <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5">BU AY GİDER</p>
-                <p className={`text-lg font-black text-rose-500 tracking-tighter`}>₺{analysisData.monthlyChart[analysisData.monthlyChart.length - 1].spending.toLocaleString()}</p>
+                <p className={`text-lg font-black text-rose-500 tracking-tighter`}>{analysisData.monthlyChart[analysisData.monthlyChart.length - 1].spending.toLocaleString()} ₺</p>
               </div>
             </div>
           </div>

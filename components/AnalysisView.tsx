@@ -241,10 +241,10 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
         head: [['Tanım', 'Miktar']],
         body: [
           ['Seçili Kart', cardStats.cardData!.cardName],
-          ['Toplam Harcama', `TL ${cardStats.spending.toLocaleString('tr-TR')}`],
-          ['Toplam Ödeme', `TL ${cardStats.payment.toLocaleString('tr-TR')}`],
-          ['Dönem Borcu', `TL ${cardStats.cardData!.balance.toLocaleString('tr-TR')}`],
-          ['Asgari Ödeme', `TL ${cardStats.minPayment.toLocaleString('tr-TR')}`]
+          ['Toplam Harcama', `${cardStats.spending.toLocaleString('tr-TR')} ₺`],
+          ['Toplam Ödeme', `${cardStats.payment.toLocaleString('tr-TR')} ₺`],
+          ['Dönem Borcu', `${cardStats.cardData!.balance.toLocaleString('tr-TR')} ₺`],
+          ['Asgari Ödeme', `${cardStats.minPayment.toLocaleString('tr-TR')} ₺`]
         ],
         theme: 'striped',
         headStyles: { fillColor: [59, 130, 246] }
@@ -261,7 +261,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
           tx.description || (tx.type === 'spending' ? 'Harcama' : 'Ödeme'),
           tx.category,
           tx.cardName,
-          `${tx.type === 'spending' ? '-' : '+'} TL ${tx.amount.toLocaleString('tr-TR')}`
+          `${tx.type === 'spending' ? '-' : '+'} ${tx.amount.toLocaleString('tr-TR')} ₺`
         ]),
         styles: { fontSize: 8 },
         columnStyles: { 4: { halign: 'right' } }
@@ -477,7 +477,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                   axisLine={false}
                   tickLine={false}
                   tick={{ fill: isDarkMode ? '#64748b' : '#94a3b8', fontSize: 10, fontWeight: 700 }}
-                  tickFormatter={(val) => `₺${val >= 1000 ? (val / 1000).toFixed(1) + 'k' : val}`}
+                  tickFormatter={(val) => `${val >= 1000 ? (val / 1000).toFixed(1) + 'k' : val} ₺`}
                 />
                 <Tooltip
                   cursor={{ fill: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)' }}
@@ -493,7 +493,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                                   {entry.name}:
                                 </span>
                                 <span className={`text-[13px] font-black ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                                  ₺{entry.value.toLocaleString('tr-TR')}
+                                  {entry.value.toLocaleString('tr-TR')} ₺
                                 </span>
                               </div>
                             ))}
@@ -585,7 +585,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                             <div className="flex flex-col items-end gap-2">
                               <p className={`text-xl sm:text-2xl font-black tracking-tighter ${tx.type === 'spending' ? 'text-rose-500' : 'text-emerald-500'} whitespace-nowrap flex items-center justify-end`}>
                                 <span className="opacity-70 mr-1">{tx.type === 'spending' ? '-' : '+'}</span>
-                                <span>₺{tx.amount.toLocaleString('tr-TR')}</span>
+                                <span>{tx.amount.toLocaleString('tr-TR')} ₺</span>
                               </p>
                               <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button onClick={() => onEditTransaction?.(tx)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-400 hover:text-blue-400 hover:bg-slate-700' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-100'}`}><Edit2 size={16} /></button>
@@ -668,7 +668,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                           {/* Amount */}
                           <p className={`text-xl font-black tracking-tighter ${isSpending ? 'text-rose-500' : 'text-emerald-500'} whitespace-nowrap shrink-0 flex items-center`}>
                             <span className="opacity-70 mr-1">{isSpending ? '-' : '+'}</span>
-                            <span>₺{tx.amount.toLocaleString('tr-TR')}</span>
+                            <span>{tx.amount.toLocaleString('tr-TR')} ₺</span>
                           </p>
                         </div>
 

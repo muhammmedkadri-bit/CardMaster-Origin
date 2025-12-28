@@ -11,7 +11,7 @@ interface CalendarReminderModalProps {
 
 const CalendarReminderModal: React.FC<CalendarReminderModalProps> = ({ card, onClose, onAdd }) => {
   const [selectedDay, setSelectedDay] = useState(card.dueDay);
-  const [description, setDescription] = useState(`CardMaster Hatırlatıcısı: Bugün ${card.bankName} (${card.cardName}) kartının ödeme günü. Borç tutarı: TL ${card.balance.toLocaleString('tr-TR')}`);
+  const [description, setDescription] = useState(`CardMaster Hatırlatıcısı: Bugün ${card.bankName} (${card.cardName}) kartının ödeme günü. Borç tutarı: ${card.balance.toLocaleString('tr-TR')} ₺`);
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[120] flex items-center justify-center p-4 animate-in fade-in duration-300">
@@ -44,8 +44,8 @@ const CalendarReminderModal: React.FC<CalendarReminderModalProps> = ({ card, onC
                   key={day}
                   onClick={() => setSelectedDay(day)}
                   className={`aspect-square flex items-center justify-center rounded-xl text-xs font-black transition-all ${selectedDay === day
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 scale-110'
-                      : 'text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 scale-110'
+                    : 'text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                     }`}
                 >
                   {day}

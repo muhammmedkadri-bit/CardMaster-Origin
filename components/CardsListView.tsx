@@ -222,9 +222,9 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                     </div>
                     <div className="flex justify-between items-center text-[10px] font-black text-slate-500 uppercase tracking-tight">
                       <span className={isCreditBalance ? 'text-emerald-500 font-black' : ''}>
-                        {isCreditBalance ? 'ALACAK' : 'BORÇ'}: TL {displayBalance.toLocaleString('tr-TR')}
+                        {isCreditBalance ? 'ALACAK' : 'BORÇ'}: {displayBalance.toLocaleString('tr-TR')} ₺
                       </span>
-                      <span>LİMİT: TL {card.limit.toLocaleString('tr-TR')}</span>
+                      <span>LİMİT: {card.limit.toLocaleString('tr-TR')} ₺</span>
                     </div>
                   </div>
 
@@ -233,13 +233,13 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                     <div className={`p-3 sm:p-5 rounded-[28px] flex flex-col justify-center border ${isDarkMode ? 'bg-amber-500/5 border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.05)]' : 'bg-amber-50 border-amber-100 shadow-sm'}`}>
                       <p className="text-[8px] font-black text-amber-600 uppercase tracking-widest mb-1 leading-tight">TAHMİNİ ASGARİ</p>
                       <p className={`text-xs sm:text-base font-black truncate ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`}>
-                        ₺{estimatedMinPayment.toLocaleString('tr-TR')}
+                        {estimatedMinPayment.toLocaleString('tr-TR')} ₺
                       </p>
                     </div>
                     <div className={`p-3 sm:p-5 rounded-[28px] flex flex-col justify-center ${isDarkMode ? 'bg-slate-800/30' : 'bg-slate-50'}`}>
                       <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1 leading-tight">KALAN LİMİT</p>
                       <p className={`text-xs sm:text-base font-black truncate ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                        ₺{remainingLimit.toLocaleString('tr-TR')}
+                        {remainingLimit.toLocaleString('tr-TR')} ₺
                       </p>
                     </div>
                     <div className={`p-3 sm:p-5 rounded-[28px] flex flex-col justify-center ${isDarkMode ? 'bg-slate-800/30' : 'bg-slate-50'}`}>
@@ -310,7 +310,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                           <div className="flex items-center gap-4">
                             <div className="text-right">
                               <p className={`text-sm font-black tracking-tighter ${tx.type === 'spending' ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                {tx.type === 'spending' ? '-' : '+'} TL {tx.amount.toLocaleString('tr-TR')}
+                                {tx.type === 'spending' ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
                               </p>
                             </div>
                             <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover/item:opacity-100 transition-opacity">

@@ -429,7 +429,7 @@ const StatementModal: React.FC<StatementModalProps> = ({ card, transactions, isD
                 <div>
                   <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">TOPLAM HARCAMA</p>
                   <p className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-br from-blue-600 to-indigo-700 tracking-tighter leading-none">
-                    ₺ {(stats.spending).toLocaleString('tr-TR')}
+                    {(stats.spending).toLocaleString('tr-TR')} ₺
                   </p>
                 </div>
               </div>
@@ -440,7 +440,7 @@ const StatementModal: React.FC<StatementModalProps> = ({ card, transactions, isD
                 <div>
                   <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">ASGARİ ÖDEME</p>
                   <p className={`text-2xl font-black tracking-tighter leading-none ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                    ₺ {stats.minPayment.toLocaleString('tr-TR')}
+                    {stats.minPayment.toLocaleString('tr-TR')} ₺
                   </p>
                 </div>
               </div>
