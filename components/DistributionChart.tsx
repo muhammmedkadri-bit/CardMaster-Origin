@@ -2,7 +2,7 @@
 import React, { useMemo, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Sector } from 'recharts';
 import { CreditCard, Transaction, Category } from '../types';
-import { PieChart as PieIcon, CreditCard as CardIcon, LayoutGrid, Info, ArrowRight } from 'lucide-react';
+import { PieChart as PieIcon, CreditCard as CardIcon, LayoutGrid, Info, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface DistributionChartProps {
   cards: CreditCard[];
@@ -10,7 +10,6 @@ interface DistributionChartProps {
   isDarkMode: boolean;
   categories: Category[];
 }
-
 
 interface DataItem {
   name: string;
@@ -117,20 +116,40 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
     setActiveIndex(null);
   };
 
+  const handleNextMode = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    handleModeChange(mode === 'cards' ? 'categories' : 'cards');
+  };
+
+  const handlePrevMode = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    handleModeChange(mode === 'cards' ? 'categories' : 'cards');
+  };
+
   return (
     <div
       className="flex flex-col h-full w-full select-none"
       onClick={() => setActiveIndex(null)}
     >
       {/* Header Tabs */}
-      <div className="relative z-10 flex items-center justify-between mb-2 sm:mb-4 px-1">
+      <div className="relative z-10 flex items-center justify-center gap-3 sm:gap-4 mb-2 sm:mb-4 px-1 pt-2">
+        <button
+          onClick={handlePrevMode}
+          className={`p-2 rounded-full border transition-all ${isDarkMode
+            ? 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white hover:bg-slate-700'
+            : 'bg-white border-slate-200 text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 shadow-sm'
+            }`}
+        >
+          <ChevronLeft size={16} />
+        </button>
+
         <div
-          className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-inner relative z-20"
+          className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-inner relative z-20 overflow-x-auto no-scrollbar"
           onClick={(e) => e.stopPropagation()}
         >
           <button
             onClick={(e) => { e.stopPropagation(); handleModeChange('cards'); }}
-            className={`flex items-center gap-2 px-4 sm:px-5 py-3.5 min-h-[48px] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'cards'
+            className={`flex items-center gap-2 px-4 sm:px-5 py-3.5 min-h-[48px] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap ${mode === 'cards'
               ? 'bg-white dark:bg-slate-700 shadow-md text-blue-600 dark:text-white scale-[1.02]'
               : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
               }`}
@@ -139,7 +158,7 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); handleModeChange('categories'); }}
-            className={`flex items-center gap-2 px-4 sm:px-5 py-3.5 min-h-[48px] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'categories'
+            className={`flex items-center gap-2 px-4 sm:px-5 py-3.5 min-h-[48px] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap ${mode === 'categories'
               ? 'bg-white dark:bg-slate-700 shadow-md text-blue-600 dark:text-white scale-[1.02]'
               : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
               }`}
@@ -147,6 +166,16 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
             <LayoutGrid size={14} /> KATEGORİ
           </button>
         </div>
+
+        <button
+          onClick={handleNextMode}
+          className={`p-2 rounded-full border transition-all ${isDarkMode
+            ? 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white hover:bg-slate-700'
+            : 'bg-white border-slate-200 text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 shadow-sm'
+            }`}
+        >
+          <ChevronRight size={16} />
+        </button>
       </div>
 
       {/* Chart Container */}
