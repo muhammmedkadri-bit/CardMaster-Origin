@@ -1701,7 +1701,7 @@ const App: React.FC = () => {
 
       {
         transactionToDelete && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[130] flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[3000] flex items-center justify-center p-6 animate-in fade-in duration-300">
             <div className={`p-10 rounded-[40px] max-w-sm w-full text-center border shadow-2xl animate-in zoom-in-95 duration-300 ${isDarkMode ? 'bg-[#0b0f1a] border-slate-800 text-white' : 'bg-white border-slate-100 text-slate-800'}`}>
               <div className="w-16 h-16 bg-blue-500/10 text-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-8"><AlertTriangle size={32} /></div>
               <h3 className="text-xl font-black mb-4 uppercase tracking-tight">İŞLEMİ SİL?</h3>
@@ -1714,7 +1714,7 @@ const App: React.FC = () => {
 
       {
         modalMode === 'reset_confirm' && (
-          <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-[200] flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-[3000] flex items-center justify-center p-6 animate-in fade-in duration-300">
             <div className="p-12 rounded-[56px] max-w-md w-full text-center border border-rose-500/30 bg-[#0b0f1a] shadow-[0_0_100px_rgba(244,63,94,0.1)]">
               <div className="w-24 h-24 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-10 ring-4 ring-rose-500/5"><AlertTriangle size={48} /></div>
               <h3 className="text-3xl font-black mb-6 text-white tracking-tight italic uppercase">HER ŞEYİ SİL?</h3>
@@ -1750,7 +1750,7 @@ const App: React.FC = () => {
       }
       {
         (modalMode === 'spending' || modalMode === 'payment') && cards.length === 0 && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-6 z-50 backdrop-blur-xl"><div className={`p-10 rounded-[48px] max-w-sm text-center border ${isDarkMode ? 'bg-[#0b0f1a] border-slate-800 text-white' : 'bg-white border-slate-100 shadow-2xl'}`}><div className="w-20 h-20 bg-blue-100 rounded-3xl flex items-center justify-center mx-auto mb-8 text-blue-600"><CardIcon size={40} /></div><p className="font-black text-xl mb-10 leading-tight uppercase">İşlem yapabilmek için önce bir kart eklemelisiniz.</p><button onClick={() => setModalMode('add')} className="w-full bg-blue-600 text-white py-4.5 rounded-[24px] font-black uppercase tracking-[0.2em] text-[10px] hover:bg-blue-700">KART EKLE</button></div></div>
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-6 z-[3000] backdrop-blur-xl"><div className={`p-10 rounded-[48px] max-w-sm text-center border ${isDarkMode ? 'bg-[#0b0f1a] border-slate-800 text-white' : 'bg-white border-slate-100 shadow-2xl'}`}><div className="w-20 h-20 bg-blue-100 rounded-3xl flex items-center justify-center mx-auto mb-8 text-blue-600"><CardIcon size={40} /></div><p className="font-black text-xl mb-10 leading-tight uppercase">İşlem yapabilmek için önce bir kart eklemelisiniz.</p><button onClick={() => setModalMode('add')} className="w-full bg-blue-600 text-white py-4.5 rounded-[24px] font-black uppercase tracking-[0.2em] text-[10px] hover:bg-blue-700">KART EKLE</button></div></div>
         )
       }
 
@@ -1758,7 +1758,7 @@ const App: React.FC = () => {
       {/* Welcome / Initial Loading Screen - RESTORED & FIXED */}
       {
         isInitialLoading && (
-          <div className={`fixed inset-0 z-[2500] flex flex-col items-center justify-center p-6 ${isDarkMode ? 'bg-[#070b14]' : 'bg-[#f8fafc]'}`}>
+          <div className={`fixed inset-0 z-[4000] flex flex-col items-center justify-center p-6 ${isDarkMode ? 'bg-[#070b14]' : 'bg-[#f8fafc]'}`}>
             <div className="flex flex-col items-center max-w-md w-full text-center">
               <div className="mb-8 scale-150">
                 <Logo isDarkMode={isDarkMode} />
@@ -1794,7 +1794,7 @@ const App: React.FC = () => {
 
       {/* Premium View Transition Overlay */}
       {isChangingView && (
-        <div className="fixed inset-0 z-[2000] flex flex-col items-center justify-center bg-[#070b14]/95 backdrop-blur-xl animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[3000] flex flex-col items-center justify-center bg-[#070b14]/95 backdrop-blur-xl animate-in fade-in duration-300">
           <div className="flex flex-col items-center animate-in zoom-in-95 slide-in-from-bottom-4 duration-500">
             <Logo isDarkMode={true} isAnimated={true} />
             <div className="mt-8 flex flex-col items-center">

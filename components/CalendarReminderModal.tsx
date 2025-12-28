@@ -14,8 +14,8 @@ const CalendarReminderModal: React.FC<CalendarReminderModalProps> = ({ card, onC
   const [description, setDescription] = useState(`CardMaster Hatırlatıcısı: Bugün ${card.bankName} (${card.cardName}) kartının ödeme günü. Borç tutarı: ${card.balance.toLocaleString('tr-TR')} ₺`);
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[120] flex items-center justify-center p-4 animate-in fade-in duration-300">
-      <div className="bg-white dark:bg-[#1a1f2e] rounded-[32px] w-full max-w-md p-8 shadow-[0_20px_60px_rgba(0,0,0,0.5)] relative border border-transparent dark:border-slate-800 animate-in zoom-in-95 duration-300">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[3000] flex items-center justify-center p-4 animate-in fade-in duration-300">
+      <div className="bg-white dark:bg-[#1a1f2e] rounded-[32px] w-full max-w-md p-8 shadow-[0_20px_60px_rgba(0,0,0,0.5)] relative border border-transparent dark:border-slate-800 animate-in zoom-in-95 duration-300 mb-12">
         <button
           onClick={onClose}
           className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"

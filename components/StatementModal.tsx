@@ -333,13 +333,13 @@ const StatementModal: React.FC<StatementModalProps> = ({ card, transactions, isD
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xl z-[150] flex items-center justify-center p-4 animate-in fade-in duration-500">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xl z-[3000] flex items-center justify-center p-4 animate-in fade-in duration-500">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/20 blur-[120px] rounded-full animate-pulse"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/20 blur-[120px] rounded-full animate-pulse delay-700"></div>
       </div>
 
-      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl rounded-[40px] w-full max-w-lg p-10 shadow-[0_32px_80px_rgba(0,0,0,0.3)] relative border border-white/20 dark:border-slate-800/50 animate-in zoom-in-95 duration-500 overflow-hidden">
+      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl rounded-[40px] w-full max-w-lg p-10 shadow-[0_32px_80px_rgba(0,0,0,0.3)] relative border border-white/20 dark:border-slate-800/50 animate-in zoom-in-95 duration-500 overflow-hidden mb-12">
         {/* Decorative Top Gradient Line */}
         <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 via-indigo-500 to-blue-400"></div>
 

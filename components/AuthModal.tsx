@@ -58,13 +58,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isDarkMode }) =>
     };
 
     return (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4">
             <div
                 className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300"
                 onClick={onClose}
             />
 
-            <div className={`relative w-full max-w-md overflow-hidden rounded-[40px] shadow-2xl animate-in zoom-in-95 duration-300 ${isDarkMode ? 'bg-[#0f172a] border border-slate-800' : 'bg-white border border-slate-100'
+            <div className={`relative w-full max-w-md overflow-hidden rounded-[40px] shadow-2xl animate-in zoom-in-95 duration-300 mb-10 ${isDarkMode ? 'bg-[#0f172a] border border-slate-800' : 'bg-white border border-slate-100'
                 }`}>
                 {/* Cinematic Header Background */}
                 <div className={`absolute top-0 left-0 right-0 h-32 opacity-20 ${isDarkMode ? 'bg-gradient-to-b from-blue-500/20 to-transparent' : 'bg-gradient-to-b from-blue-600/10 to-transparent'
@@ -135,8 +135,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isDarkMode }) =>
                                         onChange={(e) => setEmail(e.target.value)}
                                         placeholder="ornek@email.com"
                                         className={`w-full py-5 pl-14 pr-6 rounded-[24px] text-sm font-semibold outline-none transition-all border ${isDarkMode
-                                                ? 'bg-[#1e293b]/50 border-slate-700 text-white focus:border-blue-500/50 focus:bg-[#1e293b]'
-                                                : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-blue-400 focus:bg-white'
+                                            ? 'bg-[#1e293b]/50 border-slate-700 text-white focus:border-blue-500/50 focus:bg-[#1e293b]'
+                                            : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-blue-400 focus:bg-white'
                                             }`}
                                     />
                                 </div>
@@ -158,8 +158,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, isDarkMode }) =>
                                         onChange={(e) => setPassword(e.target.value)}
                                         placeholder="••••••••"
                                         className={`w-full py-5 pl-14 pr-6 rounded-[24px] text-sm font-semibold outline-none transition-all border ${isDarkMode
-                                                ? 'bg-[#1e293b]/50 border-slate-700 text-white focus:border-blue-500/50 focus:bg-[#1e293b]'
-                                                : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-blue-400 focus:bg-white'
+                                            ? 'bg-[#1e293b]/50 border-slate-700 text-white focus:border-blue-500/50 focus:bg-[#1e293b]'
+                                            : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-blue-400 focus:bg-white'
                                             }`}
                                     />
                                 </div>
