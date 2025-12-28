@@ -1225,7 +1225,7 @@ const App: React.FC = () => {
               <div className="grid grid-cols-1 gap-6 sm:gap-10 items-start max-w-5xl mx-auto">
                 <div className="space-y-6 sm:space-y-10">
                   {cards.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 pt-2 sm:pt-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 pt-2 sm:pt-4">
                       <div className={`flex items-center gap-4 p-5 rounded-[24px] border ${isDarkMode ? 'bg-blue-500/5 border-blue-500/20' : 'bg-blue-50 border-blue-100 shadow-sm'}`}>
                         <div className="p-3 bg-blue-500/10 text-blue-600 rounded-xl"><Clock size={20} /></div>
                         <div className="overflow-hidden">
@@ -1233,7 +1233,7 @@ const App: React.FC = () => {
                           <p className={`text-sm font-black truncate ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{widgetsData.closestDue?.cardName} ({widgetsData.closestDue?.dueDay}. Gün)</p>
                           <RollingNumber
                             value={Math.max(0, widgetsData.closestDue?.balance || 0)}
-                            className="text-[10px] font-bold text-slate-500"
+                            className={`text-lg font-black ${isDarkMode ? 'text-white' : 'text-slate-800'}`}
                           />
                         </div>
                       </div>
@@ -1243,12 +1243,14 @@ const App: React.FC = () => {
                         <div className="overflow-hidden">
                           <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-1">EN YÜKSEK BORÇ</p>
                           <p className={`text-sm font-black truncate ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{widgetsData.highestDebt?.cardName}</p>
-                          <p className="text-[10px] font-bold text-slate-500">₺{Math.max(0, widgetsData.highestDebt?.balance || 0).toLocaleString('tr-TR')}</p>
+                          <p className={`text-lg font-black ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                            {Math.max(0, widgetsData.highestDebt?.balance || 0).toLocaleString('tr-TR')} ₺
+                          </p>
                         </div>
                       </div>
 
                       {widgetsData.overdue ? (
-                        <div className={`flex items-center gap-4 p-5 rounded-[24px] border ${isDarkMode ? 'bg-rose-500/10 border-rose-500/30' : 'bg-rose-50 border-rose-200 shadow-sm'}`}>
+                        <div className={`col-span-2 md:col-span-1 flex items-center gap-4 p-5 rounded-[24px] border ${isDarkMode ? 'bg-rose-500/10 border-rose-500/30' : 'bg-rose-50 border-rose-200 shadow-sm'}`}>
                           <div className="p-3 bg-rose-500/10 text-rose-600 rounded-xl"><AlertTriangle size={20} className="animate-pulse" /></div>
                           <div className="overflow-hidden">
                             <p className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest mb-1">ÖDEME GÜNÜ GEÇTİ</p>
@@ -1257,7 +1259,7 @@ const App: React.FC = () => {
                           </div>
                         </div>
                       ) : (
-                        <div className={`flex items-center gap-4 p-5 rounded-[24px] border ${isDarkMode ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100 shadow-sm'}`}>
+                        <div className={`col-span-2 md:col-span-1 flex items-center gap-4 p-5 rounded-[24px] border ${isDarkMode ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100 shadow-sm'}`}>
                           <div className="p-3 bg-emerald-500/10 text-emerald-600 rounded-xl"><CheckCircle2 size={20} /></div>
                           <div className="overflow-hidden">
                             <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">DURUM ÖZETİ</p>
