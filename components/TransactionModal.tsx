@@ -135,7 +135,6 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
                 required
                 type="number"
                 step="0.01"
-                autoFocus
                 className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-white text-xl font-black h-[54px] sm:h-auto appearance-none"
                 value={formData.amount}
                 onChange={e => handleAmountChange(e.target.value)}
@@ -215,7 +214,6 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
                     </button>
                   ) : (
                     <input
-                      autoFocus
                       required
                       className="w-full px-4 py-3 border border-blue-200 dark:border-blue-800 rounded-xl outline-none bg-blue-50/50 dark:bg-blue-900/10 dark:text-white text-sm font-bold placeholder:text-slate-400"
                       value={newCategory}
