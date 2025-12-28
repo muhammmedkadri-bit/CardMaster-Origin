@@ -193,7 +193,7 @@ const AutoPaymentModal: React.FC<AutoPaymentModalProps> = ({ cards, onClose, onS
                             type="submit"
                             className="w-full py-4 text-white rounded-[20px] font-bold text-lg shadow-lg transition-all active:scale-95 bg-blue-600 hover:bg-blue-700 shadow-blue-200 dark:shadow-blue-950/40"
                         >
-                            {initialData ? 'Değişiklikleri Kaydet' : 'Otomatik İşlemi Kaydet'}
+                            {initialData ? 'Değişiklikleri Kaydet' : 'Otomatik Ödemeyi Kaydet'}
                         </button>
                     </div>
                 </form>
