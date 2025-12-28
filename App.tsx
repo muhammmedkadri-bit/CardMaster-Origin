@@ -1525,7 +1525,7 @@ const App: React.FC = () => {
               </div>
             )}
 
-            <div className={`flex items-center gap-2 py-4 px-3 sm:gap-3 rounded-full border shadow-2xl ${isDarkMode ? 'bg-[#0b0f1a]/95 border-slate-700 shadow-black' : 'bg-white/95 border-slate-300 shadow-blue-900/10'}`}>
+            <div className={`flex items-center gap-2 py-4 px-3 sm:gap-3 rounded-full border-[1.5px] shadow-2xl ${isDarkMode ? 'bg-[#0b0f1a]/95 border-slate-800 shadow-black' : 'bg-white/95 border-slate-200 shadow-blue-900/10'}`}>
               {/* Left buttons */}
               <div className="flex items-center gap-2 p-1 sm:px-2 sm:gap-2">
                 <button onClick={() => handleViewChange('dashboard')} className={`flex items-center justify-center w-[46px] h-[46px] sm:px-4 sm:py-3 sm:w-auto sm:h-auto rounded-full sm:rounded-xl transition-all duration-300 active:scale-95 ${view === 'dashboard' ? (isDarkMode ? 'bg-slate-700 text-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-black/20 translate-y-[1px]' : 'bg-white text-blue-600 shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)] border border-slate-200/50 translate-y-[1px]') : (isDarkMode ? 'text-slate-400 hover:text-slate-300 border border-transparent' : 'text-slate-500 hover:text-slate-600 border border-transparent')}`} aria-label="Dashboard"><LayoutDashboard size={18} className="sm:w-5 sm:h-5" /></button>
