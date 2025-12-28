@@ -1562,10 +1562,10 @@ const App: React.FC = () => {
                           <div key={card.id} className={`group flex items-center justify-between p-4 sm:p-5 rounded-[24px] transition-all border ${isDarkMode ? 'bg-slate-800/20 border-slate-800 hover:bg-slate-800/40 hover:border-slate-700' : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-blue-100 hover:shadow-sm'}`}>
                             <div className="flex items-center gap-4">
                               <div className="w-1.5 h-10 rounded-full shadow-sm" style={{ backgroundColor: card.color }} />
-                              <div>
-                                <p className={`font-black text-sm uppercase tracking-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{card.cardName}</p>
-                                <div className="flex items-center gap-2 mt-0.5">
-                                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-md ${isDarkMode ? 'bg-slate-700 text-slate-400' : 'bg-white text-slate-500 shadow-xs'}`}>AYIN {card.dueDay}. GÜNÜ</span>
+                              <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-3 flex-wrap">
+                                  <p className={`font-black text-sm uppercase tracking-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{card.cardName}</p>
+                                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-md border ${isDarkMode ? 'bg-slate-800/80 text-blue-400 border-blue-500/20' : 'bg-blue-50 text-blue-600 border-blue-100 shadow-xs'}`}>AYIN {card.dueDay}. GÜNÜ</span>
                                 </div>
                               </div>
                             </div>
