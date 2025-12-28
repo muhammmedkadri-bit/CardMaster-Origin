@@ -36,6 +36,14 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
   const [isAddingCategory, setIsAddingCategory] = useState(false);
 
   useEffect(() => {
+    // Lock body scroll prevents background interaction and "sliding" feel
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
+  useEffect(() => {
     if (initialData) {
       setFormData({
         cardId: initialData.cardId,
@@ -99,8 +107,8 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[3000] flex items-center justify-center p-3 sm:p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-[28px] sm:rounded-[32px] w-full max-w-md p-6 sm:p-8 shadow-2xl relative border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-300 max-h-[92vh] overflow-y-auto no-scrollbar mb-10">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[3000] flex items-center justify-center p-3 sm:p-4 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-[28px] sm:rounded-[32px] w-full max-w-md p-6 sm:p-8 shadow-2xl relative border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-300 max-h-[92vh] overflow-y-auto no-scrollbar mb-10 overflow-x-hidden">
         <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
           <X size={24} />
         </button>
@@ -126,29 +134,29 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
             </select>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+            <div className="min-w-0">
               <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-widest text-left">Tutar (TL)</label>
               <input
                 required
                 type="number"
                 step="0.01"
                 autoFocus
-                className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-white text-xl font-black h-[54px] sm:h-auto"
+                className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-white text-xl font-black h-[54px] sm:h-auto appearance-none"
                 value={formData.amount}
                 onChange={e => handleAmountChange(e.target.value)}
                 onFocus={handleFocus}
                 placeholder="0.00"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-widest flex items-center gap-2">
                 <Calendar size={12} /> İşlem Tarihi
               </label>
               <input
                 required
                 type="date"
-                className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-white text-sm font-bold h-[54px] sm:h-auto"
+                className="w-full min-w-0 px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-white text-sm font-bold h-[54px] sm:h-auto appearance-none"
                 value={formData.date}
                 onChange={e => setFormData({ ...formData, date: e.target.value })}
               />
