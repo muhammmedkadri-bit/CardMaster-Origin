@@ -210,7 +210,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                     <div className="flex justify-between items-end mb-1">
                       <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">KART KULLANIMI</span>
                       <span className={`text-sm font-black ${isCreditBalance ? 'text-emerald-500' : isHighUsage ? 'text-rose-500' : (isDarkMode ? 'text-white' : 'text-slate-700')}`}>
-                        %{utilization.toFixed(1)}
+                        <span className="text-[0.85em] font-sans font-bold opacity-80 mr-0.5">%</span>{utilization.toFixed(1)}
                       </span>
                     </div>
                     <div className={`h-3 w-full rounded-full p-0.5 border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>

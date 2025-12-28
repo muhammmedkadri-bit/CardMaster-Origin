@@ -117,7 +117,9 @@ const CardVisual: React.FC<CardVisualProps> = ({ card, onAddToCalendar, onEdit, 
               <div className="w-px h-2.5 sm:h-5 bg-white/20 self-center"></div>
               <div className="flex flex-col">
                 <p className={`text-[5px] sm:text-[8px] ${labelStyle} mb-0.5`}>KULLANIM</p>
-                <p className={`text-[8px] sm:text-[12px] font-black ${isCreditBalance ? 'text-emerald-400' : isOverThreshold ? 'text-rose-400' : valueStyle}`}>%{utilization.toFixed(0)}</p>
+                <p className={`text-[8px] sm:text-[12px] font-black ${isCreditBalance ? 'text-emerald-400' : isOverThreshold ? 'text-rose-400' : valueStyle}`}>
+                  <span className="text-[0.8em] font-sans font-bold opacity-80 mr-0.5">%</span>{utilization.toFixed(0)}
+                </p>
               </div>
             </div>
           </div>
