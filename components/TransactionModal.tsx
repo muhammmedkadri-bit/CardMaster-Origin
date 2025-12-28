@@ -28,7 +28,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
     amount: initialData?.amount ?? 0,
     category: initialData?.category || (type === 'payment' ? 'Ödeme' : (categories[0]?.name || 'Diğer')),
     description: initialData?.description || '',
-    date: initialData?.date || new Date().toISOString().split('T')[0],
+    date: initialData?.date ? initialData.date.split('T')[0] : new Date().toISOString().split('T')[0],
     confirmationUrl: initialData?.confirmationUrl || ''
   });
 
@@ -60,7 +60,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
         amount: initialData.amount,
         category: initialData.category,
         description: initialData.description,
-        date: initialData.date,
+        date: initialData.date.split('T')[0], // Extract YYYY-MM-DD
         confirmationUrl: initialData.confirmationUrl || ''
       });
     }
