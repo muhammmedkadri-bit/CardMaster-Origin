@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CreditCard, Category, AutoPayment } from '../types';
 import { X, RefreshCw, Calendar, Plus, Info } from 'lucide-react';
 
@@ -33,6 +33,23 @@ const AutoPaymentModal: React.FC<AutoPaymentModalProps> = ({ cards, onClose, onS
 
     const [newCategory, setNewCategory] = useState('');
     const [isAddingCategory, setIsAddingCategory] = useState(false);
+
+    useEffect(() => {
+        // Robust scroll locking for mobile
+        const scrollY = window.scrollY;
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${scrollY}px`;
+        document.body.style.width = '100%';
+        document.body.style.overflowY = 'scroll';
+
+        return () => {
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.width = '';
+            document.body.style.overflowY = '';
+            window.scrollTo(0, scrollY);
+        };
+    }, []);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
