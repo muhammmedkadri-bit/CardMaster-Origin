@@ -298,7 +298,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
               <BarChart3 size={24} />
             </div>
             <div>
-              <h1 className={`text-2xl sm:text-3xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Analiz & Rapor</h1>
+              <h1 data-v-updated="header-new" className={`text-2xl sm:text-3xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Analiz & Rapor</h1>
             </div>
           </div>
         </div>
