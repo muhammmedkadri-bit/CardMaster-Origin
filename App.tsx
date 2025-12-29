@@ -1784,7 +1784,7 @@ const App: React.FC = () => {
               </div>
             </>
           ) : view === 'cards' ? (
-            <CardsListView cards={cards} transactions={transactions} isDarkMode={isDarkMode} onEdit={startEdit} onDelete={setCardToDelete} onAddToCalendar={handleAddToCalendarClick} onShowStatement={handleShowStatementClick} onAddCard={() => setModalMode('add')} onBack={() => setView('dashboard')} onEditTransaction={startEditTransaction} onDeleteTransaction={setTransactionToDelete} />
+            <CardsListView cards={cards} transactions={transactions} isDarkMode={isDarkMode} onEdit={startEdit} onDelete={setCardToDelete} onAddToCalendar={handleAddToCalendarClick} onShowStatement={handleShowStatementClick} onAddCard={() => setModalMode('add')} onBack={() => setView('dashboard')} onEditTransaction={startEditTransaction} onDeleteTransaction={setTransactionToDelete} categories={categories} />
           ) : view === 'analysis' ? (
             <AnalysisView
               cards={cards}

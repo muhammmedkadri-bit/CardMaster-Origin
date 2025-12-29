@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import RollingNumber from './RollingNumber';
-import { CreditCard, Transaction } from '../types';
+import { CreditCard, Transaction, Category } from '../types';
 import {
   ArrowLeft,
   Plus,
@@ -39,6 +39,7 @@ interface CardsListViewProps {
   onBack: () => void;
   onEditTransaction: (tx: Transaction) => void;
   onDeleteTransaction: (tx: Transaction) => void;
+  categories: Category[];
 }
 
 type LocalTimeRange = 'all' | '7days' | '30days';
@@ -54,7 +55,8 @@ const CardsListView: React.FC<CardsListViewProps> = ({
   onAddCard,
   onBack,
   onEditTransaction,
-  onDeleteTransaction
+  onDeleteTransaction,
+  categories
 }) => {
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   const [localRange, setLocalRange] = useState<LocalTimeRange>('30days');
@@ -295,46 +297,67 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                     </div>
 
                     <div className="space-y-3 max-h-[400px] overflow-y-auto no-scrollbar pr-1">
-                      {cardTransactions.length > 0 ? cardTransactions.map(tx => (
-                        <div key={tx.id} className={`flex items-center justify-between p-4 rounded-2xl border transition-all group/item ${isDarkMode ? 'bg-slate-900/60 border-slate-800 hover:bg-slate-800/40' : 'bg-white border-slate-100 hover:shadow-md'}`}>
-                          <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-                            <div className={`p-2.5 rounded-xl shrink-0 ${tx.type === 'spending' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                              {tx.type === 'spending' ? <ShoppingBag size={14} /> : <PaymentIcon size={14} />}
+                      {cardTransactions.length > 0 ? cardTransactions.map(tx => {
+                        const categoryInfo = categories.find(c => c.name.toLocaleLowerCase('tr-TR') === tx.category.toLocaleLowerCase('tr-TR'));
+                        const categoryColor = categoryInfo?.color || card.color;
+
+                        return (
+                          <div key={tx.id} className={`flex items-stretch justify-between p-4 sm:p-5 rounded-[28px] border transition-all group/item mb-3 ${isDarkMode ? 'bg-slate-900/60 border-slate-800 hover:bg-slate-800/40' : 'bg-white border-slate-100 hover:shadow-md'}`}>
+                            {/* Left: Icon */}
+                            <div className="flex items-center gap-4 min-w-0 flex-1">
+                              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${tx.type === 'spending' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                                {tx.type === 'spending' ? <ShoppingBag size={20} /> : <PaymentIcon size={20} />}
+                              </div>
+
+                              {/* Middle: Info Column */}
+                              <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                                <p className={`text-sm font-black tracking-tight truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+                                  {tx.description || (tx.type === 'spending' ? 'Harcama' : 'Ödeme')}
+                                </p>
+
+                                <div className="flex items-center">
+                                  <span
+                                    className="px-2.5 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider text-white shadow-sm"
+                                    style={{ backgroundColor: categoryColor }}
+                                  >
+                                    {tx.category}
+                                  </span>
+                                </div>
+
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                                  {formatDateDisplay(tx.date)}
+                                </p>
+                              </div>
                             </div>
-                            <div className="min-w-0 flex-1">
-                              <p className={`text-xs font-black tracking-tight truncate ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>{tx.description || (tx.type === 'spending' ? 'Harcama' : 'Ödeme')}</p>
-                              <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 overflow-hidden">
-                                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest shrink-0">{formatDateDisplay(tx.date)}</span>
-                                <span className="text-slate-300 dark:text-slate-700 text-[8px] shrink-0">•</span>
-                                <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest truncate">{tx.category}</span>
+
+                            {/* Right: Actions and Amount Column */}
+                            <div className="flex flex-col justify-between items-end shrink-0 ml-4">
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => onEditTransaction(tx)}
+                                  className={`p-1.5 rounded-lg transition-all hover:scale-110 active:scale-90 ${isDarkMode ? 'text-slate-400 hover:text-blue-400 hover:bg-slate-800' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-100'}`}
+                                  title="İşlemi Düzenle"
+                                >
+                                  <Edit2 size={14} />
+                                </button>
+                                <button
+                                  onClick={() => onDeleteTransaction(tx)}
+                                  className={`p-1.5 rounded-lg transition-all hover:scale-110 active:scale-90 ${isDarkMode ? 'text-slate-400 hover:text-rose-400 hover:bg-slate-800' : 'text-slate-400 hover:text-rose-600 hover:bg-slate-100'}`}
+                                  title="İşlemi Sil"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+
+                              <div className="text-right">
+                                <p className={`text-base sm:text-lg font-black tracking-tighter ${tx.type === 'spending' ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                  {tx.type === 'spending' ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
+                                </p>
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 sm:gap-4 shrink-0 ml-3">
-                            <div className="text-right shrink-0">
-                              <p className={`text-sm font-black tracking-tighter ${tx.type === 'spending' ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                {tx.type === 'spending' ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover/item:opacity-100 transition-opacity">
-                              <button
-                                onClick={() => onEditTransaction(tx)}
-                                className={`p-1.5 rounded-lg transition-colors ${isDarkMode ? 'text-slate-400 hover:text-blue-400 hover:bg-slate-700' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-100'}`}
-                                title="İşlemi Düzenle"
-                              >
-                                <Edit2 size={14} />
-                              </button>
-                              <button
-                                onClick={() => onDeleteTransaction(tx)}
-                                className={`p-1.5 rounded-lg transition-colors ${isDarkMode ? 'text-slate-400 hover:text-rose-400 hover:bg-slate-700' : 'text-slate-400 hover:text-rose-600 hover:bg-slate-100'}`}
-                                title="İşlemi Sil"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )) : (
+                        );
+                      }) : (
                         <div className="py-12 text-center">
                           <Inbox size={32} className="text-slate-300 dark:text-slate-700 mx-auto mb-4" />
                           <p className="text-xs font-bold text-slate-500 italic uppercase tracking-widest">İşlem kaydı bulunmuyor</p>
