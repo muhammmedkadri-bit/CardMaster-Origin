@@ -119,7 +119,6 @@ export const dataSyncService = {
             statement_day: card.statementDay,
             due_day: card.dueDay,
             color: card.color,
-            reminder_days_before: card.reminderDaysBefore,
             min_payment_ratio: card.minPaymentRatio
         };
         return await supabase.from('cards').upsert(dbCard).select().single();
@@ -225,7 +224,6 @@ export const dataSyncService = {
             statementDay: c.statement_day,
             dueDay: c.due_day,
             color: c.color,
-            reminderDaysBefore: c.reminder_days_before,
             minPaymentRatio: c.min_payment_ratio
         };
     },

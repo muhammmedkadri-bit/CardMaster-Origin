@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { CreditCard } from '../types';
 import { COLORS } from '../constants';
-import { X, Bell, Percent } from 'lucide-react';
+import { X, Percent } from 'lucide-react';
 import CardVisual from './CardVisual';
 
 interface CardModalProps {
@@ -23,7 +23,6 @@ const CardModal: React.FC<CardModalProps> = ({ onClose, onSave, initialData, tit
     statementDay: 1,
     dueDay: 10,
     color: COLORS[0],
-    reminderDaysBefore: 1,
     minPaymentRatio: 20
   });
 
@@ -55,7 +54,6 @@ const CardModal: React.FC<CardModalProps> = ({ onClose, onSave, initialData, tit
       const { id, ...rest } = initialData;
       setFormData({
         ...rest,
-        reminderDaysBefore: rest.reminderDaysBefore || 1,
         minPaymentRatio: rest.minPaymentRatio || 20
       });
     }
@@ -194,38 +192,25 @@ const CardModal: React.FC<CardModalProps> = ({ onClose, onSave, initialData, tit
               </div>
             </div>
 
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800/30 grid grid-cols-2 gap-4">
-              <div>
-                <label className="flex items-center gap-2 text-[10px] font-black text-blue-600 dark:text-blue-400 mb-2 uppercase tracking-widest">
-                  <Bell size={12} /> Hatırlatma
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number" min="0" max="15"
-                    className="w-14 px-2 py-2 border border-blue-200 dark:border-blue-700/50 rounded-xl outline-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-center"
-                    value={formData.reminderDaysBefore || ''}
-                    onChange={e => handleNumberChange('reminderDaysBefore', e.target.value)}
-                    onFocus={handleFocus}
-                    placeholder="1"
-                  />
-                  <span className="text-[10px] font-bold text-slate-500">gün</span>
-                </div>
-              </div>
-              <div>
-                <label className="flex items-center gap-2 text-[10px] font-black text-amber-600 dark:text-amber-400 mb-2 uppercase tracking-widest">
-                  <Percent size={12} /> Asgari Ödeme
-                </label>
+            <div className="p-4 bg-amber-50/50 dark:bg-amber-900/10 rounded-2xl border border-amber-100/50 dark:border-amber-800/20">
+              <label className="flex items-center gap-2 text-[10px] font-black text-amber-600 dark:text-amber-400 mb-2 uppercase tracking-widest">
+                <Percent size={12} /> Asgari Ödeme Oranı
+              </label>
+              <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
                   <input
                     type="number" min="1" max="100"
-                    className="w-14 px-2 py-2 border border-amber-200 dark:border-amber-700/50 rounded-xl outline-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-center"
+                    className="w-16 px-2 py-2.5 border border-amber-200 dark:border-amber-700/50 rounded-xl outline-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-center text-sm"
                     value={formData.minPaymentRatio || ''}
                     onChange={e => handleNumberChange('minPaymentRatio', e.target.value)}
                     onFocus={handleFocus}
                     placeholder="20"
                   />
-                  <span className="text-[10px] font-bold text-slate-500">% borç</span>
+                  <span className="text-sm font-bold text-amber-600 dark:text-amber-400">%</span>
                 </div>
+                <span className="text-[11px] font-medium text-slate-500 leading-tight">
+                  Kartınızın asgari ödeme yüzdesini girin
+                </span>
               </div>
             </div>
           </div>

@@ -9,7 +9,6 @@ export interface CreditCard {
   statementDay: number;
   dueDay: number;
   color: string;
-  reminderDaysBefore: number;
   minPaymentRatio: number; // Asgari ödeme yüzdesi (örn: 20 veya 40)
   // Added optional property used for utilization alerts in visualization components
   alertThreshold?: number;
