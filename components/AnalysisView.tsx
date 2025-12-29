@@ -57,11 +57,11 @@ interface AnalysisViewProps {
   lastUpdate?: number;
 }
 
-type TimeRange = '7days' | '30days' | 'year' | 'custom';
+type TimeRange = 'today' | 'thisweek' | 'thismonth' | 'thisyear' | 'custom';
 
 const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDarkMode, onBack, onEditTransaction, onDeleteTransaction, categories, lastUpdate }) => {
   const [selectedCardId, setSelectedCardId] = React.useState<string>('all');
-  const [timeRange, setTimeRange] = React.useState<TimeRange>('30days');
+  const [timeRange, setTimeRange] = React.useState<TimeRange>('thismonth');
   const [customStart, setCustomStart] = React.useState<string>(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
   const [customEnd, setCustomEnd] = React.useState<string>(new Date().toISOString().split('T')[0]);
   const [isExporting, setIsExporting] = React.useState(false);
@@ -98,20 +98,31 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
       : transactions.filter(t => t.cardId === selectedCardId);
 
     const now = new Date();
-    let start = new Date();
-    let end = new Date();
+    let start = new Date(now);
+    let end = new Date(now);
 
-    if (timeRange === '7days') {
-      start.setDate(now.getDate() - 7);
-    } else if (timeRange === '30days') {
-      start.setMonth(now.getMonth() - 1);
-    } else if (timeRange === 'year') {
-      start.setFullYear(now.getFullYear() - 1);
+    if (timeRange === 'today') {
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+    } else if (timeRange === 'thisweek') {
+      const day = now.getDay();
+      const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+      start.setDate(diff);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+    } else if (timeRange === 'thismonth') {
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+    } else if (timeRange === 'thisyear') {
+      start.setMonth(0, 1);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
     } else if (timeRange === 'custom') {
       start = new Date(customStart);
       end = new Date(customEnd);
       start.setHours(0, 0, 0, 0);
-      end.setHours(23, 59, 59);
+      end.setHours(23, 59, 59, 999);
     }
 
     // Pre-map dates to timestamps for faster comparison and sorting
@@ -149,28 +160,39 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
   const trendData = useMemo(() => {
     const data: Record<string, { label: string, spending: number, payment: number, net: number, timestamp: number }> = {};
     const now = new Date();
-    let start = new Date();
-    let end = new Date();
+    let start = new Date(now);
+    let end = new Date(now);
 
-    if (timeRange === '7days') {
-      start.setDate(now.getDate() - 7);
-    } else if (timeRange === '30days') {
-      start.setMonth(now.getMonth() - 1);
-    } else if (timeRange === 'year') {
-      start.setFullYear(now.getFullYear() - 1);
+    if (timeRange === 'today') {
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+    } else if (timeRange === 'thisweek') {
+      const day = now.getDay();
+      const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+      start.setDate(diff);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+    } else if (timeRange === 'thismonth') {
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+    } else if (timeRange === 'thisyear') {
+      start.setMonth(0, 1);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
     } else if (timeRange === 'custom') {
       start = new Date(customStart);
       end = new Date(customEnd);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
     }
-    start.setHours(0, 0, 0, 0);
-    end.setHours(23, 59, 59, 999);
 
     const monthNames = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
 
     // Initialize data with all dates in range to ensure a continuous line
     const tempDate = new Date(start);
     while (tempDate <= end) {
-      const label = timeRange === 'year'
+      const label = timeRange === 'thisyear'
         ? `${monthNames[tempDate.getMonth()]} ${tempDate.getFullYear()}`
         : `${tempDate.getDate()} ${monthNames[tempDate.getMonth()]}`;
 
@@ -178,7 +200,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
         data[label] = { label, spending: 0, payment: 0, net: 0, timestamp: tempDate.getTime() };
       }
 
-      if (timeRange === 'year') {
+      if (timeRange === 'thisyear') {
         tempDate.setMonth(tempDate.getMonth() + 1);
       } else {
         tempDate.setDate(tempDate.getDate() + 1);
@@ -187,7 +209,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
 
     filteredTransactions.forEach(t => {
       const d = new Date(t.date);
-      const label = timeRange === 'year'
+      const label = timeRange === 'thisyear'
         ? `${monthNames[d.getMonth()]} ${d.getFullYear()}`
         : `${d.getDate()} ${monthNames[d.getMonth()]}`;
 
@@ -311,22 +333,25 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
               <h3 className={`text-xl font-black tracking-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>FİLTRELEME</h3>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              {(['7days', '30days', 'year', 'custom'] as TimeRange[]).map(range => (
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-4">
+              {(['today', 'thisweek', 'thismonth', 'thisyear', 'custom'] as TimeRange[]).map(range => (
                 <button
                   key={range}
                   onClick={() => {
-                    // Use startTransition to prevent blocking the UI thread
                     React.startTransition(() => {
                       setTimeRange(range);
                     });
                   }}
-                  className={`px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all ${timeRange === range
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 active:scale-95'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'
-                    }`}
+                  className={`px-3 py-4 sm:px-6 sm:py-3.5 rounded-[20px] text-[9px] sm:text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 select-none border ${timeRange === range
+                    ? (isDarkMode
+                      ? 'bg-slate-700 text-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-black/20 translate-y-[1px]'
+                      : 'bg-white text-blue-600 shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)] border-slate-200/50 translate-y-[1px]')
+                    : isDarkMode
+                      ? 'bg-[#0f172a]/80 text-slate-400 border-slate-800/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] hover:bg-[#1e293b]'
+                      : 'bg-white text-slate-500 border-slate-100 shadow-sm hover:bg-slate-50 hover:border-slate-200'
+                    } active:scale-95`}
                 >
-                  {range === '7days' ? '1 Hafta' : range === '30days' ? '1 Ay' : range === 'year' ? '1 Yıl' : 'Özel'}
+                  {range === 'today' ? 'Bugün' : range === 'thisweek' ? 'Bu Hafta' : range === 'thismonth' ? 'Bu Ay' : range === 'thisyear' ? 'Bu Yıl' : 'Özel'}
                 </button>
               ))}
             </div>
