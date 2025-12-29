@@ -193,7 +193,7 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
               className={`flex flex-col items-center justify-center text-center w-[48%] aspect-square rounded-full transition-all duration-500 ${activeIndex !== null ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'
                 } group`}
             >
-              {activeIndex === null ? (
+              {activeIndex === null || !data[activeIndex] ? (
                 <div className="flex flex-col items-center animate-in fade-in zoom-in-90 duration-500">
                   <div className="p-2 mb-1 bg-blue-500/10 text-blue-500 rounded-full">
                     {type === 'cards' ? <CardIcon size={16} /> : <PieIcon size={16} />}
@@ -224,11 +224,9 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
                     {data[activeIndex].value.toLocaleString('tr-TR')} ₺
                   </span>
 
-
                   <div className="mt-2 flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700">
                     <span className="text-[9px] font-black text-blue-500">PAY: %{((data[activeIndex].value / totalValue) * 100).toFixed(0)}</span>
                   </div>
-
                 </div>
               )}
             </div>
