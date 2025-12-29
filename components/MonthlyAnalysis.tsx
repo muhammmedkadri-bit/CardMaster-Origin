@@ -212,23 +212,27 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
             )}
           </div>
 
-          <div className="pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className={`p-5 rounded-[32px] border flex items-center gap-4 transition-all ${isDarkMode ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100 shadow-sm'}`}>
-              <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
-                <TrendingDown size={20} />
+          <div className="pt-4 flex flex-col gap-4">
+            <div className={`p-5 rounded-[32px] border flex items-center gap-5 transition-all hover:translate-x-1 ${isDarkMode ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100 shadow-sm'}`}>
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
+                <TrendingDown size={24} />
               </div>
-              <div>
-                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5">BU AY ÖDEME</p>
-                <p className={`text-lg font-black text-emerald-500 tracking-tighter`}>{analysisData.monthlyChart[analysisData.monthlyChart.length - 1].payment.toLocaleString()} ₺</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-black text-slate-500/80 dark:text-slate-400 uppercase tracking-[0.15em] mb-1">BU AY ÖDEME</p>
+                <p className={`text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tighter`}>
+                  {analysisData.monthlyChart[analysisData.monthlyChart.length - 1].payment.toLocaleString('tr-TR')} <span className="text-[0.7em] opacity-70">₺</span>
+                </p>
               </div>
             </div>
-            <div className={`p-5 rounded-[32px] border flex items-center gap-4 transition-all ${isDarkMode ? 'bg-rose-500/5 border-rose-500/20' : 'bg-rose-50 border-rose-100 shadow-sm'}`}>
-              <div className="w-10 h-10 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-500 shrink-0">
-                <TrendingUp size={20} />
+            <div className={`p-5 rounded-[32px] border flex items-center gap-5 transition-all hover:translate-x-1 ${isDarkMode ? 'bg-rose-500/5 border-rose-500/20' : 'bg-rose-50 border-rose-100 shadow-sm'}`}>
+              <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-500 shrink-0">
+                <TrendingUp size={24} />
               </div>
-              <div>
-                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5">BU AY GİDER</p>
-                <p className={`text-lg font-black text-rose-500 tracking-tighter`}>{analysisData.monthlyChart[analysisData.monthlyChart.length - 1].spending.toLocaleString()} ₺</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-black text-slate-500/80 dark:text-slate-400 uppercase tracking-[0.15em] mb-1">BU AY GİDER</p>
+                <p className={`text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tighter`}>
+                  {analysisData.monthlyChart[analysisData.monthlyChart.length - 1].spending.toLocaleString('tr-TR')} <span className="text-[0.7em] opacity-70">₺</span>
+                </p>
               </div>
             </div>
           </div>
