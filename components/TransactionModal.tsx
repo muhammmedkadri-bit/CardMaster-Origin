@@ -110,7 +110,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
         cardName: selectedCard.cardName,
         type: 'spending',
         amount: Number(formData.extraAmount),
-        category: 'Faiz/Ekstralar',
+        category: 'Faiz & Ek Ücretler',
         date: finalDate,
         description: formData.description ? `${formData.description} (Faiz/Ücret)` : 'Faiz ve Ücret Ödemesi',
         confirmationUrl: formData.confirmationUrl || undefined
@@ -283,7 +283,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
                   onFocus={handleFocus}
                   placeholder="0.00"
                 />
-                <p className="mt-2 text-[10px] font-bold text-slate-400 italic">Bu tutar 'Faiz/Ekstralar' kategorisinde harcama olarak kaydedilir.</p>
+                <p className="mt-2 text-[10px] font-bold text-slate-400 italic">Bu tutar 'Faiz & Ek Ücretler' kategorisinde harcama olarak kaydedilir.</p>
               </div>
             </div>
           )}
