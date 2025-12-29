@@ -421,7 +421,9 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <div className={`p-8 rounded-[40px] border relative overflow-hidden group ${isDarkMode ? 'bg-gradient-to-br from-blue-600/20 to-indigo-600/20 border-white/10' : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100 shadow-sm'}`}>
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl group-hover:scale-150 transition-transform duration-700"></div>
-          <p className="text-[11px] font-black text-blue-500 uppercase tracking-[0.2em] mb-4">SEÇİLİ KARTIN BORCU</p>
+          <p className="text-[11px] font-black text-blue-500 uppercase tracking-[0.2em] mb-4">
+            {selectedCardId === 'all' ? 'TÜM KARTLARIN TOPLAM BORCU' : 'SEÇİLİ KARTIN BORCU'}
+          </p>
           <RollingNumber
             value={cardStats.cardData!.balance}
             className={`text-4xl font-black tracking-tighter mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}
