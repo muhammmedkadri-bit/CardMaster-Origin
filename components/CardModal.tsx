@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { CreditCard } from '../types';
 import { COLORS } from '../constants';
 import { X, Bell, Percent } from 'lucide-react';
+import CardVisual from './CardVisual';
 
 interface CardModalProps {
   onClose: () => void;
@@ -25,6 +26,12 @@ const CardModal: React.FC<CardModalProps> = ({ onClose, onSave, initialData, tit
     reminderDaysBefore: 1,
     minPaymentRatio: 20
   });
+
+  // Create a temporary card object for preview
+  const previewCard: CreditCard = {
+    ...formData,
+    id: 'preview'
+  };
 
   useEffect(() => {
     // Robust scroll locking for mobile
@@ -88,59 +95,8 @@ const CardModal: React.FC<CardModalProps> = ({ onClose, onSave, initialData, tit
         {/* Dynamic Card Preview */}
         <div className="mb-10 px-0.5">
           <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-4 uppercase tracking-[0.2em] ml-1">KART ÖNİZLEME</label>
-          <div
-            className="relative aspect-[1.586/1] w-full rounded-[24px] p-6 text-white overflow-hidden flex flex-col shadow-2xl transition-all duration-500 animate-in zoom-in-95 duration-500"
-            style={{
-              backgroundColor: formData.color,
-              backgroundImage: `linear-gradient(165deg, ${formData.color} 0%, rgba(0,0,0,0.85) 100%)`,
-              boxShadow: `0 20px 40px -15px ${formData.color}80, 0 10px 20px -10px ${formData.color}40, 0 -2px 10px rgba(255,255,255,0.1) inset`
-            }}
-          >
-            {/* Realistic Lighting & Texture */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/10 pointer-events-none" />
-            <div className="absolute inset-0 opacity-[0.03] pointer-events-none card-texture-brushed" />
-
-            <div className="relative z-10 flex justify-between items-start mb-4">
-              <div className="flex flex-col">
-                <p className="text-[8px] font-black text-white/50 uppercase tracking-[0.3em] mb-1 leading-none h-3">
-                  {formData.bankName || 'BANKA ADI'}
-                </p>
-                <h3 className="text-base font-black tracking-tight leading-none text-white h-5 truncate max-w-[180px]">
-                  {formData.cardName || 'KART ADI'}
-                </h3>
-              </div>
-              <div className="flex -space-x-3 opacity-80 filter drop-shadow-lg scale-75 origin-right">
-                <div className="w-8 h-8 rounded-full bg-rose-500/95" />
-                <div className="w-8 h-8 rounded-full bg-amber-500/95 backdrop-blur-sm" />
-              </div>
-            </div>
-
-            <div className="mt-1 mb-6 relative z-10">
-              <div className="w-9 h-6.5 bg-gradient-to-br from-[#ffd700] via-[#f0c419] to-[#b8860b] rounded-md shadow-lg border border-black/10" />
-            </div>
-
-            <div className="mt-auto relative z-10">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="font-mono tracking-[0.2em] font-black text-white/40 text-lg drop-shadow-md">•••• •••• ••••</div>
-                <div className="font-mono tracking-[0.1em] font-black text-white text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] bg-gradient-to-b from-white to-slate-300 bg-clip-text text-transparent">
-                  {formData.lastFour || '0000'}
-                </div>
-              </div>
-
-              <div className="flex justify-between items-end opacity-60">
-                <div className="flex gap-4">
-                  <div className="flex flex-col">
-                    <span className="text-[6px] font-black uppercase tracking-widest mb-0.5">KESİM</span>
-                    <span className="text-[10px] font-mono font-black">{formData.statementDay || 1}</span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[6px] font-black uppercase tracking-widest mb-0.5">SON ÖDEME</span>
-                    <span className="text-[10px] font-mono font-black">{formData.dueDay || 10}</span>
-                  </div>
-                </div>
-                <span className="text-[10px] font-black tracking-widest uppercase italic">MASTERPASS</span>
-              </div>
-            </div>
+          <div className="transform scale-[0.85] sm:scale-100 origin-top -mb-10 sm:mb-0">
+            <CardVisual card={previewCard} />
           </div>
         </div>
 
