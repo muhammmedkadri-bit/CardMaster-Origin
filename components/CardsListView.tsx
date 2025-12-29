@@ -3,7 +3,6 @@ import React, { useState, useMemo } from 'react';
 import RollingNumber from './RollingNumber';
 import { CreditCard, Transaction, Category } from '../types';
 import {
-  ArrowLeft,
   Plus,
   CreditCard as CardIcon,
   Trash2,
@@ -117,18 +116,12 @@ const CardsListView: React.FC<CardsListViewProps> = ({
     <div className="pt-0 pb-10">
       {/* Header Area */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-12">
-        <div className="flex items-center gap-5">
-          <button
-            onClick={onBack}
-            className={`w-12 h-12 flex items-center justify-center rounded-full transition-all active:scale-90 ${isDarkMode
-              ? 'bg-slate-800/50 text-slate-300 hover:bg-slate-700 backdrop-blur-md'
-              : 'bg-white text-slate-600 hover:bg-white hover:shadow-md border border-slate-100 shadow-sm'
-              }`}
-          >
-            <ArrowLeft size={20} />
-          </button>
+        <div className="flex items-center gap-4">
+          <div className={`w-12 h-12 flex items-center justify-center rounded-2xl ${isDarkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
+            <CardIcon size={24} />
+          </div>
           <div>
-            <h1 className={`text-2xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Kartlarım</h1>
+            <h1 className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Kartlarım</h1>
           </div>
         </div>
 
@@ -315,12 +308,12 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                             key={r}
                             onClick={() => setLocalRange(r)}
                             className={`px-2 py-4 rounded-[20px] text-[9px] font-black uppercase tracking-wider transition-all duration-300 select-none border ${localRange === r
-                                ? (isDarkMode
-                                  ? 'bg-slate-700 text-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-black/20 translate-y-[1px]'
-                                  : 'bg-white text-blue-600 shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)] border-slate-200/50 translate-y-[1px]')
-                                : isDarkMode
-                                  ? 'bg-[#0f172a]/80 text-slate-400 border-slate-800/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] hover:bg-[#1e293b]'
-                                  : 'bg-white text-slate-500 border-slate-100 shadow-sm hover:bg-slate-50 hover:border-slate-200'
+                              ? (isDarkMode
+                                ? 'bg-slate-700 text-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-black/20 translate-y-[1px]'
+                                : 'bg-white text-blue-600 shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)] border-slate-200/50 translate-y-[1px]')
+                              : isDarkMode
+                                ? 'bg-[#0f172a]/80 text-slate-400 border-slate-800/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] hover:bg-[#1e293b]'
+                                : 'bg-white text-slate-500 border-slate-100 shadow-sm hover:bg-slate-50 hover:border-slate-200'
                               } active:scale-95`}
                           >
                             {r === 'today' ? 'Bugün' : r === 'thisweek' ? 'Bu Hafta' : r === 'thismonth' ? 'Bu Ay' : r === 'thisyear' ? 'Bu Yıl' : 'Özel'}
