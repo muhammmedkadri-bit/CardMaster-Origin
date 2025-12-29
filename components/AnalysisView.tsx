@@ -645,8 +645,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
 
         <div
           ref={marqueeRef}
-          onMouseEnter={() => setIsMarqueePaused(true)}
-          onMouseLeave={() => setIsMarqueePaused(false)}
           onMouseDown={handleDragStart}
           onMouseMove={handleDragMove}
           onMouseUp={handleDragEnd}
