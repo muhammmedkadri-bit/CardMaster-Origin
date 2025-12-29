@@ -314,14 +314,16 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                           <button
                             key={r}
                             onClick={() => setLocalRange(r)}
-                            className={`px-3 py-4 rounded-[20px] text-[10px] font-black uppercase tracking-wider transition-all duration-300 select-none border ${localRange === r
-                              ? 'bg-blue-600 text-white border-blue-500 shadow-[0_10px_20px_-5px_rgba(37,99,235,0.4),inset_0_2px_4px_rgba(255,255,255,0.2)] scale-[1.02]'
-                              : isDarkMode
-                                ? 'bg-[#0f172a]/80 text-slate-400 border-slate-800/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] hover:bg-[#1e293b]'
-                                : 'bg-white text-slate-500 border-slate-100 shadow-sm hover:bg-slate-50 hover:border-slate-200'
+                            className={`px-2 py-4 rounded-[20px] text-[9px] font-black uppercase tracking-wider transition-all duration-300 select-none border ${localRange === r
+                                ? (isDarkMode
+                                  ? 'bg-slate-700 text-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-black/20 translate-y-[1px]'
+                                  : 'bg-white text-blue-600 shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)] border-slate-200/50 translate-y-[1px]')
+                                : isDarkMode
+                                  ? 'bg-[#0f172a]/80 text-slate-400 border-slate-800/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] hover:bg-[#1e293b]'
+                                  : 'bg-white text-slate-500 border-slate-100 shadow-sm hover:bg-slate-50 hover:border-slate-200'
                               } active:scale-95`}
                           >
-                            {r === 'today' ? 'Bugün' : r === 'thisweek' ? 'B.Hafta' : r === 'thismonth' ? 'Bu Ay' : r === 'thisyear' ? 'Bu Yıl' : 'Özel'}
+                            {r === 'today' ? 'Bugün' : r === 'thisweek' ? 'Bu Hafta' : r === 'thismonth' ? 'Bu Ay' : r === 'thisyear' ? 'Bu Yıl' : 'Özel'}
                           </button>
                         ))}
                       </div>
