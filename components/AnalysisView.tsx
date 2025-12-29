@@ -232,9 +232,16 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
       });
 
     return Object.entries(data)
-      .map(([name, value]) => ({ name, value }))
+      .map(([name, value]) => {
+        const catInfo = categories.find(c => c.name.toLocaleLowerCase('tr-TR') === name.toLocaleLowerCase('tr-TR'));
+        return {
+          name: name.toLocaleUpperCase('tr-TR'),
+          value,
+          color: catInfo?.color || '#3b82f6'
+        };
+      })
       .sort((a, b) => b.value - a.value);
-  }, [filteredTransactions, lastUpdate]);
+  }, [filteredTransactions, categories, lastUpdate]);
 
   const exportToPDF = async () => {
     setIsExporting(true);
@@ -717,19 +724,24 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
           </div>
           <div className="flex-1 space-y-6 overflow-y-auto pr-4 no-scrollbar">
             {categoryData.length > 0 ? categoryData.map((cat, idx) => (
-              <div key={idx} className="space-y-2">
-                <div className="flex justify-between items-end">
-                  <span className="text-xs font-black uppercase tracking-widest text-slate-500">{cat.name}</span>
+              <div key={idx} className={`p-4 rounded-[24px] border flex items-center justify-between transition-all hover:translate-x-1 ${isDarkMode ? 'bg-white/5 border-white/5 hover:bg-white/10' : 'bg-slate-50 border-slate-100 hover:bg-slate-50'}`}>
+                <div className="flex items-center gap-4">
+                  <div className="w-1.5 h-8 rounded-full shadow-sm" style={{ backgroundColor: cat.color }} />
+                  <div>
+                    <p className={`text-[11px] font-black tracking-[0.1em] ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                      {cat.name}
+                    </p>
+                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">
+                      %{((cat.value / (cardStats.spending || 1)) * 100).toFixed(0)} PAY
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
                   <RollingNumber
                     value={cat.value}
-                    className={`text-sm font-black ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}
+                    className={`text-base font-black tracking-tighter ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}
                   />
-                </div>
-                <div className="h-3 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-blue-600 rounded-full transition-all duration-1000"
-                    style={{ width: `${(cat.value / cardStats.spending) * 100}%` }}
-                  ></div>
+                  <span className="text-[10px] font-bold text-slate-500 ml-1">₺</span>
                 </div>
               </div>
             )) : (
