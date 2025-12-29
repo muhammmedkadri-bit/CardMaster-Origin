@@ -177,30 +177,31 @@ const StatementArchiveModal: React.FC<StatementArchiveModalProps> = ({ card, tra
 
             <div className="bg-white/90 dark:bg-slate-950/90 backdrop-blur-3xl rounded-[40px] w-full max-w-4xl p-0 shadow-[0_32px_80px_rgba(0,0,0,0.5)] relative border border-white/20 dark:border-slate-800/50 animate-in zoom-in-95 duration-500 overflow-hidden h-[85vh] flex flex-col">
                 {/* Header Section */}
-                <div className="p-8 sm:p-10 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
-                    <div className="flex items-center gap-6">
-                        <div className="relative">
+                <div className="p-6 sm:p-10 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-6 shrink-0 relative">
+                    <div className="flex items-center gap-4 sm:gap-6">
+                        <div className="relative shrink-0">
                             <div className="absolute inset-0 bg-blue-500 blur-2xl opacity-20"></div>
-                            <div className="relative w-14 h-14 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shadow-xl rotate-3">
-                                <History size={28} />
+                            <div className="relative w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shadow-xl rotate-3">
+                                <History size={24} className="sm:w-7 sm:h-7" />
                             </div>
                         </div>
-                        <div>
-                            <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter">DÖNEM EKSTRELERİ</h2>
-                            <div className="flex items-center gap-3 mt-1">
-                                <span className="px-3 py-1 rounded-xl bg-blue-500/10 text-blue-500 text-[10px] font-black uppercase tracking-widest border border-blue-500/20">{card.cardName}</span>
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{card.bankName}</span>
+                        <div className="min-w-0">
+                            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tighter truncate">DÖNEM EKSTRELERİ</h2>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className="px-2 py-0.5 sm:px-3 sm:py-1 rounded-lg bg-blue-500/10 text-blue-500 text-[9px] sm:text-[10px] font-black uppercase tracking-widest border border-blue-500/20 truncate max-w-[120px]">{card.cardName}</span>
+                                <span className="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate">{card.bankName}</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                        <div className={`p-1.5 rounded-2xl border flex items-center gap-1 ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                    {/* Desktop/Tablet Actions */}
+                    <div className="flex items-center gap-3 sm:gap-4">
+                        <div className={`p-1 rounded-2xl border flex items-center gap-1 overflow-x-auto no-scrollbar ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                             {years.map(y => (
                                 <button
                                     key={y}
                                     onClick={() => setSelectedYear(y)}
-                                    className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${selectedYear === y
+                                    className={`px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-[10px] sm:text-xs font-black transition-all whitespace-nowrap ${selectedYear === y
                                         ? 'bg-blue-600 text-white shadow-lg'
                                         : 'text-slate-500 hover:text-blue-500'}`}
                                 >
@@ -210,11 +211,19 @@ const StatementArchiveModal: React.FC<StatementArchiveModalProps> = ({ card, tra
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-800/50 text-slate-400 hover:text-red-500 transition-all active:scale-95"
+                            className="hidden sm:flex p-3 rounded-2xl bg-slate-100 dark:bg-slate-800/50 text-slate-400 hover:text-red-500 transition-all active:scale-95"
                         >
                             <X size={20} />
                         </button>
                     </div>
+
+                    {/* Mobile Only Fixed Close Button - Top Right */}
+                    <button
+                        onClick={onClose}
+                        className="sm:hidden absolute top-6 right-6 p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/50 text-slate-400 hover:text-red-500 transition-all active:scale-90"
+                    >
+                        <X size={18} />
+                    </button>
                 </div>
 
                 {/* Content Section */}
@@ -224,8 +233,8 @@ const StatementArchiveModal: React.FC<StatementArchiveModalProps> = ({ card, tra
                             <div
                                 key={m.monthIdx}
                                 className={`group p-6 rounded-[32px] border transition-all flex flex-col gap-6 relative overflow-hidden ${m.transactionCount > 0
-                                        ? (isDarkMode ? 'bg-slate-900/40 border-slate-800 hover:border-blue-500/50' : 'bg-white border-slate-100 shadow-sm hover:shadow-xl hover:border-blue-200')
-                                        : 'opacity-40 grayscale pointer-events-none'
+                                    ? (isDarkMode ? 'bg-slate-900/40 border-slate-800 hover:border-blue-500/50' : 'bg-white border-slate-100 shadow-sm hover:shadow-xl hover:border-blue-200')
+                                    : 'opacity-40 grayscale pointer-events-none'
                                     }`}
                             >
                                 <div className="flex items-center justify-between relative z-10">
