@@ -599,32 +599,38 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
 
         <div className="relative overflow-x-auto no-scrollbar py-2">
           <div className="marquee-animation gap-6 px-6">
-            {/* Double the list for infinite effect or use a sufficient amount */}
-            {[...categoryData, ...categoryData].map((cat, idx) => (
-              <div
-                key={idx}
-                className={`flex-shrink-0 min-w-[240px] p-5 rounded-[32px] border flex items-center justify-between transition-all hover:scale-105 active:scale-95 ${isDarkMode ? 'bg-white/5 border-white/5 shadow-xl shadow-black/20' : 'bg-white border-slate-100 shadow-xl shadow-slate-200/50'
-                  }`}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-1.5 h-10 rounded-full shadow-lg" style={{ backgroundColor: cat.color, boxShadow: `0 0 15px ${cat.color}40` }} />
-                  <div>
-                    <p className={`text-[12px] font-black tracking-[0.1em] ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-                      {cat.name}
-                    </p>
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
-                      %{((cat.value / (cardStats.spending || 1)) * 100).toFixed(0)} PAY
-                    </p>
+            {/* Create a block with a spacer at the end, then duplicate for infinite effect */}
+            {[...categoryData, null, ...categoryData, null].map((cat, idx) => (
+              cat ? (
+                <div
+                  key={idx}
+                  className={`flex-shrink-0 min-w-[240px] p-5 rounded-[32px] border flex items-center justify-between transition-all hover:scale-105 active:scale-95 ${isDarkMode ? 'bg-white/5 border-white/5 shadow-xl shadow-black/20' : 'bg-white border-slate-100 shadow-xl shadow-slate-200/50'
+                    }`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-1.5 h-10 rounded-full shadow-lg" style={{ backgroundColor: (cat as any).color, boxShadow: `0 0 15px ${(cat as any).color}40` }} />
+                    <div>
+                      <p className={`text-[12px] font-black tracking-[0.1em] ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                        {(cat as any).name}
+                      </p>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
+                        %{(((cat as any).value / (cardStats.spending || 1)) * 100).toFixed(0)} PAY
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <RollingNumber
+                      value={(cat as any).value}
+                      className={`text-lg font-black tracking-tighter ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}
+                    />
+                    <span className="text-[11px] font-bold text-slate-500 ml-1">₺</span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <RollingNumber
-                    value={cat.value}
-                    className={`text-lg font-black tracking-tighter ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}
-                  />
-                  <span className="text-[11px] font-bold text-slate-500 ml-1">₺</span>
+              ) : (
+                <div key={idx} className="flex-shrink-0 w-[240px] flex items-center justify-center">
+                  <div className={`w-1 h-8 rounded-full opacity-10 ${isDarkMode ? 'bg-white' : 'bg-slate-900'}`} />
                 </div>
-              </div>
+              )
             ))}
           </div>
         </div>
