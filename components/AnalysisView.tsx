@@ -70,6 +70,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
   const [currentPage, setCurrentPage] = React.useState(1);
   const [isMarqueePaused, setIsMarqueePaused] = React.useState(false);
   const marqueeRef = useRef<HTMLDivElement>(null);
+  const scrollPosRef = useRef(0);
   const ITEMS_PER_PAGE = 10;
 
   const filteredTransactions = useMemo(() => {
@@ -250,10 +251,15 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
     let animationId: number;
     const scroll = () => {
       if (marquee) {
-        marquee.scrollLeft += 0.8; // Smooth slow scroll
+        // Use a ref to store the fractional position and avoid subpixel rounding issues
+        scrollPosRef.current += 0.8;
 
-        // Reset to 0 when half-way through the duplicated content for seamless loop
-        if (marquee.scrollLeft >= marquee.scrollWidth / 2) {
+        // Sync the actual scroll element
+        marquee.scrollLeft = scrollPosRef.current;
+
+        // Reset when half-way through the duplicated content for seamless loop
+        if (scrollPosRef.current >= marquee.scrollWidth / 2) {
+          scrollPosRef.current = 0;
           marquee.scrollLeft = 0;
         }
       }
@@ -263,6 +269,21 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
     animationId = requestAnimationFrame(scroll);
     return () => cancelAnimationFrame(animationId);
   }, [isMarqueePaused, categoryData]);
+
+  // Synchronize scrollPosRef when manual scroll happens
+  React.useEffect(() => {
+    const marquee = marqueeRef.current;
+    if (!marquee) return;
+
+    const handleScroll = () => {
+      if (isMarqueePaused) {
+        scrollPosRef.current = marquee.scrollLeft;
+      }
+    };
+
+    marquee.addEventListener('scroll', handleScroll);
+    return () => marquee.removeEventListener('scroll', handleScroll);
+  }, [isMarqueePaused]);
 
 
   const formatDateDisplay = (dateStr: string) => {
