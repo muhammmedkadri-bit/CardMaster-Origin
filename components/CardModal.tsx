@@ -151,10 +151,18 @@ const CardModal: React.FC<CardModalProps> = ({ onClose, onSave, initialData, tit
                         </div>
                       )}
                       {network.id === 'visa' && (
-                        <span className="italic font-black text-[10px] text-blue-800 dark:text-white"><span className="text-amber-500">V</span>ISA</span>
+                        <div className="flex items-center italic font-black text-[10px] text-blue-800 dark:text-white leading-none">
+                          VISA
+                        </div>
                       )}
                       {network.id === 'troy' && (
-                        <span className="font-black text-[10px] text-emerald-600 dark:text-emerald-400">troy</span>
+                        <div className="flex items-center gap-0.5">
+                          <span className="font-black text-[10px] text-slate-800 dark:text-white leading-none">troy</span>
+                          <div className="flex flex-col gap-0.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          </div>
+                        </div>
                       )}
                       {network.id === 'amex' && (
                         <div className="bg-sky-600 px-1 rounded-[1px] text-[6px] text-white font-bold leading-none py-0.5 text-center">AMEX</div>

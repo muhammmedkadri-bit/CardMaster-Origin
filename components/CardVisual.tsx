@@ -134,13 +134,22 @@ const CardVisual: React.FC<CardVisualProps> = ({ card, onAddToCalendar, onEdit, 
                 </div>
               )}
               {card.network === 'visa' && (
-                <div className="italic font-black text-[12px] sm:text-[22px] tracking-tighter text-white flex items-center pr-1">
-                  <span className="text-amber-400">V</span>ISA
-                </div>
+                <svg viewBox="0 0 100 32" className="h-4 sm:h-7">
+                  <path
+                    fill="#FFFFFF"
+                    d="M37.89 1.2h-6.2c-1.8 0-3.3 1.1-3.9 2.7l-13.8 23.9c-.3.6-.5 1.5.5 1.5h6.6c.9 0 1.5-.5 1.8-1l2.5-4.2h8.2c.4 1 1 1.7 1.9 1.7h5.8s1.6 0 1.1-1.6L37.89 1.2zm-7.6 18.2l3.2-5.4l1.6 5.4h-4.8zM57.7 21.6c-4.4 0-7.3-2.3-7.3-5.8 0-3.3 2.5-5.3 6.6-5.3h.8c0-1.2-.5-2.2-2.1-2.2-1.2 0-2.3.4-3.5 1.2-.5.3-.8.2-.9-.3l-.7-2.3c-.2-.5 0-.8.4-1 1.8-1.2 3.9-1.9 6.2-1.9 4.8 0 7.4 2.1 7.4 6.3v10c0 .9.8 1.4 1.4 1.4h.4c.5 0 .8.3.6.8l-.9 3c0 .5-.4.8-.9.8-1.7 0-3-.4-4-1.2l-.3-1h-.2c-1 1.5-3 2.5-5.4 2.5zm1.5-8c-2 0-3.2 1-3.2 2.5 0 1.5 1.1 2.3 2.9 2.3 2.2 0 3.8-1.7 3.8-3.8v-1h-3.5zM12.9 1.2l-6.2 18.2L2.8 3.5c-.3-1.4-1.3-2.3-2.8-2.3H0l-.2.2C1.5 2 3.5 3.5 6 6.5l5.5 19.5c.3 1 1 1.7 2.1 1.7h6.8c1 0 1.8-.7 2.1-1.7L31.2 1.2h-6.8c-1.1 0-1.8.7-2.1 1.7l-3.3 11-3.3-11c-.3-1-1.1-1.7-2.1-1.7h-.7z"
+                  />
+                </svg>
               )}
               {card.network === 'troy' && (
-                <div className="font-black text-[10px] sm:text-[18px] tracking-tight text-white flex items-baseline gap-0.5">
-                  troy <div className="w-1.5 h-1.5 sm:w-3 sm:h-3 rounded-full bg-emerald-400" />
+                <div className="flex items-center gap-1 sm:gap-1.5">
+                  <svg viewBox="0 0 80 30" className="h-4 sm:h-7">
+                    <path fill="#FFFFFF" d="M12.4 9.1c-1.5 0-2.6.5-3.5 1.4V9.3H4.7v16.1h4.2v-7.1c0-2.6 1.7-4.1 3.5-4.1 1.8 0 3.2 1.4 3.2 3.9V25.4h4.2v-8.2c0-5-3.3-8.1-7.4-8.1zm11.3 0c-4.1 0-7.4 3.2-7.4 8.1v.2c0 4.9 3.3 8.1 7.4 8.1s7.4-3.2 7.4-8.1v-.2c0-4.9-3.3-8.1-7.4-8.1zm3.2 8.3c0 2.5-1.4 3.9-3.2 3.9s-3.2-1.4-3.2-3.9v-.2c0-2.5 1.4-3.9 3.2-3.9s3.2 1.4 3.2 3.9v.2zm11.3-8.3c-2.4 0-4.4 1.1-5.4 2.8h-.1V9.3h-4.2V30h4.2v-6.9h.1c1 1.7 3 2.8 5.4 2.8 4.1 0 7.4-3.1 7.4-8.1v-.2c0-5-3.3-8.1-7.4-8.1zm-3.2 12c-1.8 0-3.2-1.4-3.2-3.9v-.2c0-2.5 1.4-3.9 3.2-3.9s3.2 1.4 3.2 3.9v.2c.1 2.5-1.4 3.9-3.2 3.9zm17.9-10.8V3.6h-4.2v4.2h-3.2v3.7h3.2v8.2c0 3.5 1.8 5.7 5.4 5.7 1.3 0 2.4-.2 3.3-.6l-.7-3.5c-.6.2-1.1.2-1.6.2-1.2 0-2.1-.7-2.1-2.2v-7.8h3.7v-3.7H53.1z" />
+                  </svg>
+                  <div className="flex flex-col gap-0.5 sm:gap-1">
+                    <div className="w-2 h-2 sm:w-4 sm:h-4 rounded-full bg-blue-500 shadow-sm" />
+                    <div className="w-2 h-2 sm:w-4 sm:h-4 rounded-full bg-emerald-500 shadow-sm" />
+                  </div>
                 </div>
               )}
               {card.network === 'amex' && (
