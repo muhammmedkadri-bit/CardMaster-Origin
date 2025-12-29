@@ -125,58 +125,10 @@ const CardVisual: React.FC<CardVisualProps> = ({ card, onAddToCalendar, onEdit, 
           </div>
 
           <div className="flex flex-col items-end">
-            {/* Dynamic Network Logo Area */}
-            <div className="mb-2 sm:mb-3 filter drop-shadow-lg">
-              {card.network === 'mastercard' && (
-                <div className="flex -space-x-2 sm:-space-x-4">
-                  <div className="w-5 h-5 sm:w-10 sm:h-10 rounded-full bg-rose-500/95 border border-white/10"></div>
-                  <div className="w-5 h-5 sm:w-10 sm:h-10 rounded-full bg-amber-500/95 border border-white/10 backdrop-blur-sm"></div>
-                </div>
-              )}
-              {card.network === 'visa' && (
-                <div className="flex items-center gap-1">
-                  <svg viewBox="0 0 100 32" className="h-4 sm:h-7 overflow-visible">
-                    {/* Yellow Flick */}
-                    <path fill="#F7B600" d="M12 2c-2 0-5 1.5-7 3.5l2 2c1.5-1 3-2 5-2L12 2z" />
-                    {/* V */}
-                    <path fill="#FFFFFF" d="M14 2L8 28h6l6-26h-6z" />
-                    {/* I */}
-                    <path fill="#FFFFFF" d="M22 2h6v26h-6z" />
-                    {/* S */}
-                    <path fill="#FFFFFF" d="M48 8c0-4-4.5-5.5-9-5.5-6 0-10 2-10 2l1.5 5c2-1 4-1.5 7.5-1.5 4 0 5 1.5 5 2.5s-1 2-3 3c-5 2-9 4-9 10c0 5 4 7 10 7c5 0 10-2 10-2l-1.5-5c-2 1-4 1.5-7.5 1.5-4 0-5-1.5-5-2.5s1-2 3-3c5-2 10-4 10-10z" />
-                    {/* A */}
-                    <path fill="#FFFFFF" d="M68 2h-9L48 28h6.5l1.5-4.5h7.5l1.5 4.5h6.5L68 2zm-7.5 18l2.5-7l2.5 7h-5z" />
-                  </svg>
-                </div>
-              )}
-              {card.network === 'troy' && (
-                <div className="flex items-center gap-1 sm:gap-2">
-                  <svg viewBox="0 0 120 40" className="h-5 sm:h-9 overflow-visible">
-                    {/* t */}
-                    <path fill="#FFFFFF" d="M12 10v4h-4v4h4v9c0 3.5 2 6 5.5 6 1.5 0 3-.2 4-.6l-.8-4.5c-.7.3-1.4.3-2.2.3-1.5 0-2.5-.5-2.5-1.5v-8.7h5v-4H16.5v-4H12z" />
-                    {/* r */}
-                    <path fill="#FFFFFF" d="M25 18c-1.5 0-3 .5-4.5 1.8h-.1V18h-4.5v15.5h4.5v-10c0-2.5 1.5-4 3.5-4 .8 0 1.5.1 2.2.4l1-4.2c-.8-.3-1.6-.5-2.6-.5z" />
-                    {/* o dual circles */}
-                    <path fill="#00CED1" d="M45 15.5c-5 0-9 4-9 9.5s4 9.5 9 9.5v-5c-2.3 0-4-1.7-4-4.5s1.7-4.5 4-4.5v-5zM48 15.5v5c2.3 0 4 1.7 4 4.5s-1.7 4.5-4 4.5v5c5 0 9-4 9-9.5s-4-9.5-9-9.5z" />
-                    {/* y */}
-                    <path fill="#FFFFFF" d="M68 18h-4.8l-4 10-4-10h-5l6.5 16-2.5 6.5h4.5l9.8-22.5z" />
-                  </svg>
-                </div>
-              )}
-              {card.network === 'amex' && (
-                <div className="bg-sky-600/90 p-0.5 sm:p-1 rounded-sm border border-white/20">
-                  <div className="font-bold text-[6px] sm:text-[10px] text-white leading-tight text-center px-1">
-                    AMERICAN<br />EXPRESS
-                  </div>
-                </div>
-              )}
-              {/* Fallback to Mastercard style if no network selected */}
-              {!card.network && (
-                <div className="flex -space-x-2 sm:-space-x-4">
-                  <div className="w-5 h-5 sm:w-10 sm:h-10 rounded-full bg-rose-500/95 border border-white/10"></div>
-                  <div className="w-5 h-5 sm:w-10 sm:h-10 rounded-full bg-amber-500/95 border border-white/10 backdrop-blur-sm"></div>
-                </div>
-              )}
+            {/* Mastercard-style Logo Area */}
+            <div className="flex -space-x-2 sm:-space-x-4 mb-1 sm:mb-2.5 filter drop-shadow-lg">
+              <div className="w-5 h-5 sm:w-10 sm:h-10 rounded-full bg-rose-500/95 border border-white/10"></div>
+              <div className="w-5 h-5 sm:w-10 sm:h-10 rounded-full bg-amber-500/95 border border-white/10 backdrop-blur-sm"></div>
             </div>
             {/* Utilization Bar */}
             <div className="w-12 sm:w-28 bg-black/40 h-0.5 sm:h-1.5 rounded-full overflow-hidden border border-white/10 p-[0.5px]">
