@@ -15,7 +15,8 @@ import {
     CreditCard as CardIcon,
     ShoppingBag,
     Zap,
-    ArrowRight
+    ArrowRight,
+    Eye
 } from 'lucide-react';
 
 interface StatementArchiveModalProps {
@@ -48,19 +49,35 @@ const StatementArchiveModal: React.FC<StatementArchiveModalProps> = ({ card, tra
 
             const spending = monthTxs.filter(t => t.type === 'spending').reduce((sum, t) => sum + t.amount, 0);
             const payment = monthTxs.filter(t => t.type === 'payment').reduce((sum, t) => sum + t.amount, 0);
+            const netDebt = Math.max(0, spending - payment);
+            const minPayment = netDebt * (card.minPaymentRatio / 100);
+
+            // Calculate dates
+            const statementDate = `${card.statementDay} ${new Date(selectedYear, monthIdx).toLocaleString('tr-TR', { month: 'long' })}`;
+
+            // Due date might be in the next month logic
+            const dueDateRaw = new Date(selectedYear, monthIdx, card.dueDay);
+            if (card.dueDay < card.statementDay) {
+                dueDateRaw.setMonth(dueDateRaw.getMonth() + 1);
+            }
+            const dueDate = `${card.dueDay} ${dueDateRaw.toLocaleString('tr-TR', { month: 'long' })}`;
 
             return {
                 monthIdx,
                 monthName: new Date(selectedYear, monthIdx).toLocaleString('tr-TR', { month: 'long' }).toLocaleUpperCase('tr-TR'),
                 spending,
                 payment,
+                netDebt,
+                minPayment,
+                statementDate,
+                dueDate,
                 transactionCount: monthTxs.length,
                 transactions: monthTxs
             };
         }).reverse(); // Most recent months first
-    }, [card.id, transactions, selectedYear]);
+    }, [card.id, transactions, selectedYear, card.statementDay, card.dueDay, card.minPaymentRatio]);
 
-    const exportMonthToPDF = async (monthData: typeof monthlyStatements[0]) => {
+    const exportMonthToPDF = async (monthData: typeof monthlyStatements[0], preview = false) => {
         const reportPeriod = `${monthData.monthName} ${selectedYear}`;
         const currentDate = new Date().toLocaleString('tr-TR');
 
@@ -161,7 +178,11 @@ const StatementArchiveModal: React.FC<StatementArchiveModalProps> = ({ card, tra
                 styles: { font: 'Roboto' }
             });
 
-            doc.save(`Ekstre_${card.cardName}_${monthData.monthName}_${selectedYear}.pdf`);
+            if (preview) {
+                window.open(doc.output('bloburl'), '_blank');
+            } else {
+                doc.save(`Ekstre_${card.cardName}_${monthData.monthName}_${selectedYear}.pdf`);
+            }
         } catch (err) {
             console.error('PDF Export Error:', err);
             alert('Ekstre oluşturulurken bir hata oluştu.');
@@ -244,20 +265,23 @@ const StatementArchiveModal: React.FC<StatementArchiveModalProps> = ({ card, tra
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col gap-4 relative z-10">
+                                <div className="flex flex-col gap-3 relative z-10 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
                                     <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500"><TrendingDown size={14} /></div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ÖDEME</p>
-                                        </div>
-                                        <p className={`text-base font-black tracking-tighter ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>{m.payment.toLocaleString('tr-TR')} ₺</p>
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">HESAP KESİM</p>
+                                        <p className={`text-[10px] font-black ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>{m.statementDate}</p>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-500"><TrendingUp size={14} /></div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">HARCAMA</p>
-                                        </div>
-                                        <p className={`text-base font-black tracking-tighter ${isDarkMode ? 'text-rose-400' : 'text-rose-600'}`}>-{m.spending.toLocaleString('tr-TR')} ₺</p>
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">SON ÖDEME</p>
+                                        <p className={`text-[10px] font-black ${isDarkMode ? 'text-amber-500' : 'text-amber-600'}`}>{m.dueDate}</p>
+                                    </div>
+                                    <div className="h-px bg-slate-200 dark:bg-slate-800 my-1" />
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">DÖNEM BORCU</p>
+                                        <p className={`text-sm font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{m.netDebt.toLocaleString('tr-TR')} ₺</p>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest">ASGARİ TUTAR</p>
+                                        <p className="text-sm font-black tracking-tighter text-blue-500">{m.minPayment.toLocaleString('tr-TR')} ₺</p>
                                     </div>
                                 </div>
 
@@ -269,10 +293,23 @@ const StatementArchiveModal: React.FC<StatementArchiveModalProps> = ({ card, tra
                                         <Download size={14} /> PDF
                                     </button>
                                     <button
-                                        onClick={() => window.print()}
+                                        onClick={async () => {
+                                            // Open PDF in new tab for previewing
+                                            const reportPeriod = `${m.monthName} ${selectedYear}`;
+                                            const jspdfLib = (window as any).jspdf;
+                                            if (!jspdfLib) return;
+
+                                            // Helper for Görüntüle: Open PDF in new tab instead of saving
+                                            const doc = new jspdfLib.jsPDF('p', 'mm', 'a4');
+                                            // Re-use logic or just call a modified export specifically for preview
+                                            // For simplicity, we can trigger the save but user asked for "Görüntüle"
+                                            // jsPDF.output('dataurlnewwindow') is standard for this
+                                            // We'll call exportMonthToPDF but modify it to choose output
+                                            await exportMonthToPDF(m, true);
+                                        }}
                                         className={`flex-1 rounded-2xl py-3 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 ${isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                                     >
-                                        <Printer size={14} /> YAZDIR
+                                        <Eye size={14} /> GÖRÜNTÜLE
                                     </button>
                                 </div>
 
