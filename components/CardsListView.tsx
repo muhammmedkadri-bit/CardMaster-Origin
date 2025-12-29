@@ -315,10 +315,10 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                             key={r}
                             onClick={() => setLocalRange(r)}
                             className={`px-3 py-4 rounded-[20px] text-[10px] font-black uppercase tracking-wider transition-all duration-300 select-none border ${localRange === r
-                                ? 'bg-blue-600 text-white border-blue-500 shadow-[0_10px_20px_-5px_rgba(37,99,235,0.4),inset_0_2px_4px_rgba(255,255,255,0.2)] scale-[1.02]'
-                                : isDarkMode
-                                  ? 'bg-[#0f172a]/80 text-slate-400 border-slate-800/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] hover:bg-[#1e293b]'
-                                  : 'bg-white text-slate-500 border-slate-100 shadow-sm hover:bg-slate-50 hover:border-slate-200'
+                              ? 'bg-blue-600 text-white border-blue-500 shadow-[0_10px_20px_-5px_rgba(37,99,235,0.4),inset_0_2px_4px_rgba(255,255,255,0.2)] scale-[1.02]'
+                              : isDarkMode
+                                ? 'bg-[#0f172a]/80 text-slate-400 border-slate-800/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] hover:bg-[#1e293b]'
+                                : 'bg-white text-slate-500 border-slate-100 shadow-sm hover:bg-slate-50 hover:border-slate-200'
                               } active:scale-95`}
                           >
                             {r === 'today' ? 'Bugün' : r === 'thisweek' ? 'B.Hafta' : r === 'thismonth' ? 'Bu Ay' : r === 'thisyear' ? 'Bu Yıl' : 'Özel'}
@@ -367,12 +367,12 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                           <div key={tx.id} className={`relative p-5 sm:p-6 rounded-[32px] border transition-all mb-4 ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
                             {/* Mobile Layout (User Requested Specific Style) */}
                             <div className="flex flex-col gap-5 sm:hidden">
-                              {/* Top Row: Category & Buttons */}
+                              {/* Top Row: Type & Buttons */}
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                   <div className={`w-1.5 h-6 rounded-full shrink-0 ${isSpending ? 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.4)]' : 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]'}`} />
                                   <span className={`text-[11px] font-black uppercase tracking-[0.2em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                                    {tx.category || 'Diğer'}
+                                    {isSpending ? 'HARCAMA' : 'ÖDEME'}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -388,10 +388,10 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                                 </p>
                               </div>
 
-                              {/* Third Row: Card Pill & Amount */}
+                              {/* Third Row: Category Pill & Amount */}
                               <div className="flex items-center justify-between gap-4">
-                                <div className="px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-[0.1em] whitespace-nowrap" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
-                                  {card.cardName}
+                                <div className="px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] whitespace-nowrap text-white shadow-sm" style={{ backgroundColor: categoryColor }}>
+                                  {tx.category}
                                 </div>
                                 <p className={`text-xl font-black tracking-tighter ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
                                   {isSpending ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
