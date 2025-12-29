@@ -42,7 +42,7 @@ interface CardsListViewProps {
   categories: Category[];
 }
 
-type LocalTimeRange = 'all' | '7days' | '30days';
+type LocalTimeRange = 'today' | 'thisweek' | 'thismonth' | 'thisyear' | 'custom';
 
 const CardsListView: React.FC<CardsListViewProps> = ({
   cards,
@@ -59,7 +59,9 @@ const CardsListView: React.FC<CardsListViewProps> = ({
   categories
 }) => {
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
-  const [localRange, setLocalRange] = useState<LocalTimeRange>('30days');
+  const [localRange, setLocalRange] = useState<LocalTimeRange>('thismonth');
+  const [customStart, setCustomStart] = useState<string>(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
+  const [customEnd, setCustomEnd] = useState<string>(new Date().toISOString().split('T')[0]);
 
   const formatDateDisplay = (dateStr: string) => {
     if (!dateStr) return '';
@@ -73,15 +75,39 @@ const CardsListView: React.FC<CardsListViewProps> = ({
   const getFilteredTransactions = (cardId: string) => {
     let list = transactions.filter(t => t.cardId === cardId);
     const now = new Date();
+    const start = new Date(now);
+    const end = new Date(now);
 
-    if (localRange === '7days') {
-      const limit = new Date();
-      limit.setDate(now.getDate() - 7);
-      list = list.filter(t => new Date(t.date) >= limit);
-    } else if (localRange === '30days') {
-      const limit = new Date();
-      limit.setDate(now.getDate() - 30);
-      list = list.filter(t => new Date(t.date) >= limit);
+    if (localRange === 'today') {
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+      list = list.filter(t => {
+        const d = new Date(t.date);
+        return d >= start && d <= end;
+      });
+    } else if (localRange === 'thisweek') {
+      const day = now.getDay();
+      const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+      start.setDate(diff);
+      start.setHours(0, 0, 0, 0);
+      list = list.filter(t => new Date(t.date) >= start);
+    } else if (localRange === 'thismonth') {
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+      list = list.filter(t => new Date(t.date) >= start);
+    } else if (localRange === 'thisyear') {
+      start.setMonth(0, 1);
+      start.setHours(0, 0, 0, 0);
+      list = list.filter(t => new Date(t.date) >= start);
+    } else if (localRange === 'custom') {
+      const cStart = new Date(customStart);
+      cStart.setHours(0, 0, 0, 0);
+      const cEnd = new Date(customEnd);
+      cEnd.setHours(23, 59, 59, 999);
+      list = list.filter(t => {
+        const d = new Date(t.date);
+        return d >= cStart && d <= cEnd;
+      });
     }
 
     return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -277,24 +303,58 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                 {/* Expanded Transaction List Area */}
                 {isExpanded && (
                   <div className={`mt-2 p-6 sm:p-8 rounded-[32px] border animate-in slide-in-from-top-4 duration-500 ${isDarkMode ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50/80 border-slate-200'}`}>
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-8">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-600/10 text-blue-600 rounded-xl"><History size={18} /></div>
-                        <h4 className={`text-sm font-black uppercase tracking-widest ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>KART HAREKETLERİ</h4>
+                        <div className="p-2.5 bg-blue-600/10 text-blue-600 rounded-2xl shrink-0"><History size={20} /></div>
+                        <h4 className={`text-base font-black uppercase tracking-widest leading-none ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>KART HAREKETLERİ</h4>
                       </div>
 
-                      <div className="flex items-center gap-1 p-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                        {(['all', '7days', '30days'] as LocalTimeRange[]).map(r => (
+                      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-3 sm:pb-0 -mx-6 px-6 sm:mx-0 sm:px-0">
+                        {(['today', 'thisweek', 'thismonth', 'thisyear', 'custom'] as LocalTimeRange[]).map(r => (
                           <button
                             key={r}
                             onClick={() => setLocalRange(r)}
-                            className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${localRange === r ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
+                            className={`px-6 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all duration-300 shrink-0 select-none border-b-4 ${localRange === r
+                                ? 'bg-blue-600 text-white border-blue-800 shadow-[inset_0_2px_4px_rgba(0,0,0,0.2),0_10px_15px_-3px_rgba(37,99,235,0.4)] translate-y-[1px]'
+                                : isDarkMode
+                                  ? 'bg-[#0f172a] text-slate-400 border-black/40 hover:text-slate-200'
+                                  : 'bg-white text-slate-500 border-slate-200 shadow-sm hover:text-slate-700'
+                              } active:translate-y-[2px] active:border-b-0 active:shadow-none`}
                           >
-                            {r === 'all' ? 'Tümü' : r === '7days' ? '7 Gün' : '30 Gün'}
+                            {r === 'today' ? 'Bugün' : r === 'thisweek' ? 'Bu Hafta' : r === 'thismonth' ? 'Bu Ay' : r === 'thisyear' ? 'Bu Yıl' : 'Özel'}
                           </button>
                         ))}
                       </div>
                     </div>
+
+                    {localRange === 'custom' && (
+                      <div className="flex flex-col sm:flex-row gap-3 mb-8 animate-in slide-in-from-top-4 duration-500">
+                        <div className={`flex-1 p-4 rounded-2xl border transition-all ${isDarkMode ? 'bg-slate-900 border-slate-800 focus-within:border-blue-500' : 'bg-white border-slate-100 shadow-sm focus-within:border-blue-500'}`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">BAŞLANGIÇ</label>
+                            <History size={12} className="text-slate-300" />
+                          </div>
+                          <input
+                            type="date"
+                            value={customStart}
+                            onChange={e => setCustomStart(e.target.value)}
+                            className={`w-full bg-transparent outline-none text-sm font-black ${isDarkMode ? 'text-white' : 'text-slate-800'}`}
+                          />
+                        </div>
+                        <div className={`flex-1 p-4 rounded-2xl border transition-all ${isDarkMode ? 'bg-slate-900 border-slate-800 focus-within:border-blue-500' : 'bg-white border-slate-100 shadow-sm focus-within:border-blue-500'}`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">BİTİŞ</label>
+                            <Clock size={12} className="text-slate-300" />
+                          </div>
+                          <input
+                            type="date"
+                            value={customEnd}
+                            onChange={e => setCustomEnd(e.target.value)}
+                            className={`w-full bg-transparent outline-none text-sm font-black ${isDarkMode ? 'text-white' : 'text-slate-800'}`}
+                          />
+                        </div>
+                      </div>
+                    )}
 
                     <div className="space-y-3 max-h-[400px] overflow-y-auto no-scrollbar pr-1">
                       {cardTransactions.length > 0 ? cardTransactions.map(tx => {
