@@ -25,6 +25,7 @@ import {
   CreditCard as CardIcon,
   Filter,
   ChevronRight,
+  ChevronLeft,
   PieChart as PieIcon,
   Zap,
   CalendarDays,
@@ -66,6 +67,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
   const [customEnd, setCustomEnd] = React.useState<string>(new Date().toISOString().split('T')[0]);
   const [isExporting, setIsExporting] = React.useState(false);
   const [isMobile, setIsMobile] = React.useState(false);
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   React.useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -134,6 +137,18 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
       .filter(t => t._ts >= startMs && t._ts <= endMs)
       .sort((a, b) => b._ts - a._ts);
   }, [selectedCardId, transactions, timeRange, customStart, customEnd, lastUpdate]);
+
+  const paginatedTransactions = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredTransactions.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredTransactions, currentPage]);
+
+  const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE);
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCardId, timeRange, customStart, customEnd]);
 
   const cardStats = useMemo(() => {
     const cardData = selectedCardId === 'all'
@@ -461,7 +476,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
         </div>
       </div>
 
-      <div className="mb-12">
+      <div className="mb-8">
         <div className={`p-10 rounded-[40px] border ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-sm'}`}>
           <div className="flex items-center gap-4 mb-10">
             <div className="w-1.5 h-6 bg-rose-500 rounded-full"></div>
@@ -469,19 +484,18 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
           </div>
           <div className="h-[320px] sm:h-[400px] -ml-4 sm:-ml-2">
             <ResponsiveContainer width="100%" height="100%">
+              {/* ... chart content remains the same ... */}
               <BarChart
                 data={trendData}
                 margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                 barGap={8}
               >
                 <defs>
-                  {/* 3D-like Gradients for Spending */}
                   <linearGradient id="3dSpending" x1="0" y1="0" x2="1" y2="0">
                     <stop offset="0%" stopColor="#e11d48" />
                     <stop offset="50%" stopColor="#fb7185" />
                     <stop offset="100%" stopColor="#e11d48" />
                   </linearGradient>
-                  {/* 3D-like Gradients for Payments */}
                   <linearGradient id="3dPayment" x1="0" y1="0" x2="1" y2="0">
                     <stop offset="0%" stopColor="#059669" />
                     <stop offset="50%" stopColor="#34d399" />
@@ -536,7 +550,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                   name="Harcamalar"
                   fill="url(#3dSpending)"
                   radius={[6, 6, 0, 0]}
-                  maxBarSize={timeRange === 'year' ? 20 : 12}
+                  maxBarSize={timeRange === 'thisyear' ? 20 : 12}
                   animationDuration={800}
                 />
                 <Bar
@@ -544,7 +558,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                   name="Ödemeler"
                   fill="url(#3dPayment)"
                   radius={[6, 6, 0, 0]}
-                  maxBarSize={timeRange === 'year' ? 20 : 12}
+                  maxBarSize={timeRange === 'thisyear' ? 20 : 12}
                   animationDuration={800}
                 />
               </BarChart>
@@ -553,24 +567,93 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
         </div>
       </div>
 
-      {/* Transactions & Category Distribution Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-16">
-        {/* Transactions Table Section */}
-        <div className={`lg:col-span-8 p-8 sm:p-12 rounded-[40px] border transition-all ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-sm'}`}>
+      {/* Category Distribution Sliding Banner */}
+      <div className="mb-12 overflow-hidden relative group">
+        <style>
+          {`
+            @keyframes slide-infinite {
+              0% { transform: translateX(0); }
+              100% { transform: translateX(-50%); }
+            }
+            .marquee-animation {
+              display: flex;
+              width: fit-content;
+              animation: slide-infinite 40s linear infinite;
+            }
+            .marquee-animation:hover {
+              animation-play-state: paused;
+            }
+            .no-scrollbar::-webkit-scrollbar {
+              display: none;
+            }
+            .no-scrollbar {
+              -ms-overflow-style: none;
+              scrollbar-width: none;
+            }
+          `}
+        </style>
+        <div className="flex items-center gap-4 mb-6 px-2">
+          <div className="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
+          <h3 className={`text-xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>KATEGORİ DAĞILIMI</h3>
+        </div>
+
+        <div className="relative overflow-x-auto no-scrollbar py-2">
+          <div className="marquee-animation gap-6 px-6">
+            {/* Double the list for infinite effect or use a sufficient amount */}
+            {[...categoryData, ...categoryData].map((cat, idx) => (
+              <div
+                key={idx}
+                className={`flex-shrink-0 min-w-[240px] p-5 rounded-[32px] border flex items-center justify-between transition-all hover:scale-105 active:scale-95 ${isDarkMode ? 'bg-white/5 border-white/5 shadow-xl shadow-black/20' : 'bg-white border-slate-100 shadow-xl shadow-slate-200/50'
+                  }`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-1.5 h-10 rounded-full shadow-lg" style={{ backgroundColor: cat.color, boxShadow: `0 0 15px ${cat.color}40` }} />
+                  <div>
+                    <p className={`text-[12px] font-black tracking-[0.1em] ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                      {cat.name}
+                    </p>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
+                      %{((cat.value / (cardStats.spending || 1)) * 100).toFixed(0)} PAY
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <RollingNumber
+                    value={cat.value}
+                    className={`text-lg font-black tracking-tighter ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}
+                  />
+                  <span className="text-[11px] font-bold text-slate-500 ml-1">₺</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Transactions Section */}
+      <div className="grid grid-cols-1 gap-8 mb-16">
+        <div className={`p-8 sm:p-12 rounded-[40px] border transition-all ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-sm'}`}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-8 mb-12">
             <div className="flex items-center gap-4">
               <div className="w-1.5 h-10 bg-blue-600 rounded-full"></div>
               <h3 className={`text-2xl font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>İŞLEM GEÇMİŞİ</h3>
             </div>
-            <div className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest ${isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-500'}`}>
-              TOPLAM {filteredTransactions.length} KAYIT
+            <div className="flex items-center gap-4">
+              <div className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest ${isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-500'}`}>
+                TOPLAM {filteredTransactions.length} KAYIT
+              </div>
+              {totalPages > 1 && (
+                <div className={`px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest ${isDarkMode ? 'bg-blue-600/20 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
+                  SAYFA {currentPage} / {totalPages}
+                </div>
+              )}
             </div>
           </div>
 
           {filteredTransactions.length > 0 ? (
             <>
               {/* Desktop Table View */}
-              <div className="hidden sm:block overflow-x-auto no-scrollbar">
+              <div className="hidden sm:block overflow-x-auto no-scrollbar min-h-[600px]">
                 <table className="w-full border-separate border-spacing-y-4">
                   <thead>
                     <tr className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-[0.25em] text-left">
@@ -581,7 +664,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredTransactions.map(tx => {
+                    {paginatedTransactions.map(tx => {
                       const card = cards.find(c => c.id === tx.cardId);
                       const cardColor = card?.color || '#3b82f6';
                       const cardName = card?.cardName || tx.cardName || 'Bilinmeyen Kart';
@@ -627,9 +710,9 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                 </table>
               </div>
 
-              {/* Mobile Card List View */}
+              {/* Mobile Transaction List View (Paginated) */}
               <div className="sm:hidden space-y-4">
-                {filteredTransactions.map(tx => {
+                {paginatedTransactions.map(tx => {
                   const card = cards.find(c => c.id === tx.cardId);
                   const cardColor = card?.color || '#3b82f6';
                   const cardName = card?.cardName || tx.cardName || 'Bilinmeyen Kart';
@@ -637,42 +720,19 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
 
                   return (
                     <div key={tx.id} className={`p-6 rounded-[32px] border flex flex-col gap-4 ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50/50 border-slate-100'}`}>
-                      {/* Header: Type Indicator, Category and Actions */}
+                      {/* ... mobile transaction content same as before ... */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          {/* Type Indicator (Vertical Pill) */}
                           <div className={`w-1.5 h-6 rounded-full ${isSpending ? 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.4)]' : 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]'}`} />
-
-                          {/* Category */}
                           <span className={`text-[11px] font-black uppercase tracking-[0.15em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                             {tx.category || 'Diğer'}
                           </span>
                         </div>
-
-                        {/* Actions */}
                         <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => onEditTransaction?.(tx)}
-                            className={`p-2.5 rounded-xl transition-all active:scale-95 ${isDarkMode
-                              ? 'bg-blue-500/10 text-blue-400 border border-blue-500/10'
-                              : 'bg-blue-50 text-blue-600 border border-blue-100'
-                              }`}
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button
-                            onClick={() => onDeleteTransaction?.(tx)}
-                            className={`p-2.5 rounded-xl transition-all active:scale-95 ${isDarkMode
-                              ? 'bg-rose-500/10 text-rose-400 border border-rose-500/10'
-                              : 'bg-rose-50 text-rose-600 border border-rose-100'
-                              }`}
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          <button onClick={() => onEditTransaction?.(tx)} className={`p-2.5 rounded-xl transition-all active:scale-95 ${isDarkMode ? 'bg-blue-500/10 text-blue-400 border border-blue-500/10' : 'bg-blue-50 text-blue-600 border border-blue-100'}`}><Edit2 size={14} /></button>
+                          <button onClick={() => onDeleteTransaction?.(tx)} className={`p-2.5 rounded-xl transition-all active:scale-95 ${isDarkMode ? 'bg-rose-500/10 text-rose-400 border border-rose-500/10' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}><Trash2 size={14} /></button>
                         </div>
                       </div>
-
-                      {/* Description Area */}
                       <div className="py-1">
                         <div className="flex items-center gap-2">
                           <p className={`text-[15px] font-black tracking-tight leading-relaxed break-words ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
@@ -683,23 +743,16 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                           )}
                         </div>
                       </div>
-
-                      {/* Footer: Card Name, Amount and Date */}
                       <div className="flex flex-col gap-4 pt-4 border-t border-slate-200/10 dark:border-white/5">
                         <div className="flex items-center justify-between gap-4">
-                          {/* Card Name Pill */}
                           <div className="px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-widest whitespace-nowrap" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
                             {cardName}
                           </div>
-
-                          {/* Amount */}
                           <p className={`text-xl font-black tracking-tighter ${isSpending ? 'text-rose-500' : 'text-emerald-500'} whitespace-nowrap shrink-0 flex items-center`}>
                             <span className="opacity-70 mr-1">{isSpending ? '-' : '+'}</span>
                             <span>{tx.amount.toLocaleString('tr-TR')} ₺</span>
                           </p>
                         </div>
-
-                        {/* Date and Time */}
                         <div className="flex items-center gap-2 opacity-50">
                           <Clock size={12} className="text-slate-400" />
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{formatDateDisplay(tx.date)}</p>
@@ -709,6 +762,61 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                   );
                 })}
               </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-6">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className={`w-12 h-12 flex items-center justify-center rounded-2xl transition-all border ${currentPage === 1
+                        ? 'opacity-30 cursor-not-allowed border-slate-200'
+                        : (isDarkMode ? 'bg-slate-800 border-white/5 text-white hover:bg-slate-700' : 'bg-white border-slate-100 text-slate-800 shadow-sm hover:border-blue-200')
+                        }`}
+                    >
+                      <ChevronLeft size={20} />
+                    </button>
+
+                    <div className="flex items-center gap-2 px-4">
+                      {/* Show current, first, last and dots if necessary */}
+                      {[...Array(totalPages)].map((_, i) => {
+                        const pg = i + 1;
+                        const isCurrent = pg === currentPage;
+                        // Show first, last, current, and pages around current
+                        if (pg === 1 || pg === totalPages || (pg >= currentPage - 1 && pg <= currentPage + 1)) {
+                          return (
+                            <button
+                              key={pg}
+                              onClick={() => setCurrentPage(pg)}
+                              className={`w-12 h-12 rounded-2xl text-xs font-black transition-all border ${isCurrent
+                                ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/30'
+                                : (isDarkMode ? 'bg-slate-800/50 border-white/5 text-slate-400 hover:text-white' : 'bg-slate-50 border-slate-100 text-slate-500 hover:border-blue-200')
+                                }`}
+                            >
+                              {pg}
+                            </button>
+                          );
+                        } else if (pg === currentPage - 2 || pg === currentPage + 2) {
+                          return <span key={pg} className="text-slate-400">...</span>;
+                        }
+                        return null;
+                      })}
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className={`w-12 h-12 flex items-center justify-center rounded-2xl transition-all border ${currentPage === totalPages
+                        ? 'opacity-30 cursor-not-allowed border-slate-200'
+                        : (isDarkMode ? 'bg-slate-800 border-white/5 text-white hover:bg-slate-700' : 'bg-white border-slate-100 text-slate-800 shadow-sm hover:border-blue-200')
+                        }`}
+                    >
+                      <ChevronRight size={20} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <div className="py-32 text-center">
@@ -716,43 +824,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
               <p className="text-slate-500 font-black uppercase tracking-[0.3em] text-sm animate-pulse italic">KAYIT BULUNAMADI</p>
             </div>
           )}
-        </div>
-
-        {/* Category Distribution Section */}
-        <div className={`lg:col-span-4 p-10 rounded-[40px] border flex flex-col ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-sm'}`}>
-          <div className="flex items-center gap-4 mb-10">
-            <div className="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
-            <h3 className={`text-xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>KATEGORİ DAĞILIMI</h3>
-          </div>
-          <div className="flex-1 space-y-6 overflow-y-auto pr-4 no-scrollbar">
-            {categoryData.length > 0 ? categoryData.map((cat, idx) => (
-              <div key={idx} className={`p-4 rounded-[24px] border flex items-center justify-between transition-all hover:translate-x-1 ${isDarkMode ? 'bg-white/5 border-white/5 hover:bg-white/10' : 'bg-slate-50 border-slate-100 hover:bg-slate-50'}`}>
-                <div className="flex items-center gap-4">
-                  <div className="w-1.5 h-8 rounded-full shadow-sm" style={{ backgroundColor: cat.color }} />
-                  <div>
-                    <p className={`text-[11px] font-black tracking-[0.1em] ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-                      {cat.name}
-                    </p>
-                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">
-                      %{((cat.value / (cardStats.spending || 1)) * 100).toFixed(0)} PAY
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <RollingNumber
-                    value={cat.value}
-                    className={`text-base font-black tracking-tighter ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}
-                  />
-                  <span className="text-[10px] font-bold text-slate-500 ml-1">₺</span>
-                </div>
-              </div>
-            )) : (
-              <div className="h-full flex flex-col items-center justify-center py-10 opacity-30">
-                <PieIcon size={48} className="mb-4" />
-                <p className="font-black text-[10px] tracking-widest">VERİ BULUNAMADI</p>
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </div>
