@@ -302,57 +302,59 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                         const categoryColor = categoryInfo?.color || card.color;
 
                         return (
-                          <div key={tx.id} className={`flex items-stretch justify-between p-4 sm:p-5 rounded-[28px] border transition-all group/item mb-3 ${isDarkMode ? 'bg-slate-900/60 border-slate-800 hover:bg-slate-800/40' : 'bg-white border-slate-100 hover:shadow-md'}`}>
-                            {/* Left: Icon */}
-                            <div className="flex items-center gap-4 min-w-0 flex-1">
-                              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${tx.type === 'spending' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                                {tx.type === 'spending' ? <ShoppingBag size={20} /> : <PaymentIcon size={20} />}
+                          <div key={tx.id} className={`relative p-5 sm:p-6 rounded-[32px] border transition-all mb-4 ${isDarkMode ? 'bg-slate-900/60 border-slate-800 hover:bg-slate-800/40' : 'bg-white border-slate-100 hover:shadow-lg shadow-sm'}`}>
+                            <div className="flex items-start gap-4">
+                              {/* Left: Solid Icon Container */}
+                              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${tx.type === 'spending' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                                {tx.type === 'spending' ? <ShoppingBag size={24} /> : <PaymentIcon size={24} />}
                               </div>
 
-                              {/* Middle: Info Column */}
-                              <div className="flex flex-col gap-1.5 min-w-0 flex-1">
-                                <p className={`text-sm font-black tracking-tight truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-                                  {tx.description || (tx.type === 'spending' ? 'Harcama' : 'Ödeme')}
-                                </p>
+                              {/* Middle & Right Content Wrapper */}
+                              <div className="flex-1 min-w-0 grid grid-cols-[1fr_auto] gap-x-4">
+                                {/* Middle: Details Stack */}
+                                <div className="flex flex-col gap-2 min-w-0">
+                                  <h5 className={`text-base font-black tracking-tight leading-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                                    {tx.description || (tx.type === 'spending' ? 'Harcama' : 'Ödeme')}
+                                  </h5>
 
-                                <div className="flex items-center">
-                                  <span
-                                    className="px-2.5 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider text-white shadow-sm"
-                                    style={{ backgroundColor: categoryColor }}
-                                  >
-                                    {tx.category}
-                                  </span>
+                                  <div className="flex flex-col gap-2">
+                                    <div className="flex">
+                                      <span
+                                        className="px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest text-white shadow-sm inline-block"
+                                        style={{ backgroundColor: categoryColor }}
+                                      >
+                                        {tx.category}
+                                      </span>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">
+                                      {formatDateDisplay(tx.date)}
+                                    </span>
+                                  </div>
                                 </div>
 
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                                  {formatDateDisplay(tx.date)}
-                                </p>
-                              </div>
-                            </div>
+                                {/* Right: Actions & Large Amount Stack */}
+                                <div className="flex flex-col items-end justify-between min-h-[60px] py-0.5">
+                                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                                    <button
+                                      onClick={() => onEditTransaction(tx)}
+                                      className={`p-1.5 rounded-lg transition-all hover:scale-110 active:scale-95 ${isDarkMode ? 'text-slate-400 hover:text-blue-400' : 'text-slate-400 hover:text-blue-600'}`}
+                                    >
+                                      <Edit2 size={16} />
+                                    </button>
+                                    <button
+                                      onClick={() => onDeleteTransaction(tx)}
+                                      className={`p-1.5 rounded-lg transition-all hover:scale-110 active:scale-95 ${isDarkMode ? 'text-slate-400 hover:text-rose-400' : 'text-slate-400 hover:text-rose-600'}`}
+                                    >
+                                      <Trash2 size={16} />
+                                    </button>
+                                  </div>
 
-                            {/* Right: Actions and Amount Column */}
-                            <div className="flex flex-col justify-between items-end shrink-0 ml-4">
-                              <div className="flex items-center gap-1">
-                                <button
-                                  onClick={() => onEditTransaction(tx)}
-                                  className={`p-1.5 rounded-lg transition-all hover:scale-110 active:scale-90 ${isDarkMode ? 'text-slate-400 hover:text-blue-400 hover:bg-slate-800' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-100'}`}
-                                  title="İşlemi Düzenle"
-                                >
-                                  <Edit2 size={14} />
-                                </button>
-                                <button
-                                  onClick={() => onDeleteTransaction(tx)}
-                                  className={`p-1.5 rounded-lg transition-all hover:scale-110 active:scale-90 ${isDarkMode ? 'text-slate-400 hover:text-rose-400 hover:bg-slate-800' : 'text-slate-400 hover:text-rose-600 hover:bg-slate-100'}`}
-                                  title="İşlemi Sil"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              </div>
-
-                              <div className="text-right">
-                                <p className={`text-base sm:text-lg font-black tracking-tighter ${tx.type === 'spending' ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                  {tx.type === 'spending' ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
-                                </p>
+                                  <div className="mt-4 text-right">
+                                    <p className={`text-lg sm:text-xl font-black tracking-tighter whitespace-nowrap ${tx.type === 'spending' ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                      {tx.type === 'spending' ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
+                                    </p>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           </div>
