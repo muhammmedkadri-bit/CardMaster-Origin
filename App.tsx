@@ -255,21 +255,42 @@ const App: React.FC = () => {
 
     try {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) {
-        const mapped = parsed.map((item: any, index: number) => {
-          if (typeof item === 'string') {
-            return {
-              id: `migrated-${index}`,
-              name: item,
-              color: defaultCategories.find(dc => dc.name === item)?.color || '#3B82F6'
-            };
-          }
-          return item;
-        });
-        return deduplicateCategories(mapped);
+      if (!Array.isArray(parsed)) return defaultCategories;
+
+      // 1. Migrate strings to objects and rename old category
+      const migrated = parsed.map((item: any, index: number) => {
+        let catObj: Category;
+        if (typeof item === 'string') {
+          catObj = {
+            id: `migrated-${index}`,
+            name: item,
+            color: defaultCategories.find(dc => dc.name === item)?.color || '#3B82F6'
+          };
+        } else {
+          catObj = item;
+        }
+
+        // Rename logic
+        if (catObj.name === 'Faiz/Ekstralar' || catObj.name === 'Faiz/ekstralar') {
+          return { ...catObj, name: 'Faiz & Ek Ücretler' };
+        }
+        return catObj;
+      });
+
+      // 2. Ensure "Faiz & Ek Ücretler" exists
+      if (!migrated.some(c => c.name === 'Faiz & Ek Ücretler')) {
+        const digerIndex = migrated.findIndex(c => c.name === 'Diğer');
+        const fe = defaultCategories.find(dc => dc.name === 'Faiz & Ek Ücretler')!;
+        if (digerIndex > -1) {
+          migrated.splice(digerIndex, 0, fe);
+        } else {
+          migrated.push(fe);
+        }
       }
-      return deduplicateCategories(parsed);
+
+      return deduplicateCategories(migrated);
     } catch (e) {
+      console.error("Category load error:", e);
       return defaultCategories;
     }
   });

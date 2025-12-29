@@ -271,7 +271,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <div className="p-1 bg-rose-500 text-white rounded-md"><TrendingUp size={12} /></div>
-                    <label className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-[0.2em]">Ekstra Faiz ve Ücret (TL)</label>
+                    <label className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-[0.2em]">Faiz & ek ücret (İsteğe Bağlı)</label>
                   </div>
                 </div>
                 <input
@@ -283,7 +283,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
                   onFocus={handleFocus}
                   placeholder="0.00"
                 />
-                <p className="mt-2 text-[10px] font-bold text-slate-400 italic">Bu tutar 'Faiz & Ek Ücretler' kategorisinde harcama olarak kaydedilir.</p>
+                <p className="mt-2 text-[10px] font-bold text-slate-400 italic leading-relaxed">Faiz veya ek ödemeniz var ise bu alanı doldurun. Bu tutar 'Faiz & Ek Ücretler' kategorisinde harcama olarak kaydedilir.</p>
               </div>
             </div>
           )}
