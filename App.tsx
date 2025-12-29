@@ -56,6 +56,7 @@ import AuthModal from './components/AuthModal';
 import { User } from '@supabase/supabase-js';
 import { dataSyncService } from './services/dataSyncService';
 import RollingNumber from './components/RollingNumber';
+import StatementArchiveModal from './components/StatementArchiveModal';
 
 // Ultra-Modern & Aesthetic Layered Card Logo Component
 const Logo: React.FC<{ isDarkMode: boolean; isAnimated?: boolean }> = ({ isDarkMode, isAnimated }) => (
@@ -279,7 +280,7 @@ const App: React.FC = () => {
 
   const [view, setView] = useState<'dashboard' | 'cards' | 'analysis' | 'settings'>('dashboard');
   const [statusIndex, setStatusIndex] = useState(0);
-  const [modalMode, setModalMode] = useState<'add' | 'edit' | 'spending' | 'payment' | 'edit_transaction' | 'calendar' | 'statement' | 'reset_confirm' | 'auto_payment' | null>(null);
+  const [modalMode, setModalMode] = useState<'add' | 'edit' | 'spending' | 'payment' | 'edit_transaction' | 'calendar' | 'statement' | 'archive_statement' | 'reset_confirm' | 'auto_payment' | null>(null);
   const [editingCard, setEditingCard] = useState<CreditCard | undefined>(undefined);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | undefined>(undefined);
   const [selectedCardForAction, setSelectedCardForAction] = useState<CreditCard | null>(null);
@@ -1315,6 +1316,11 @@ const App: React.FC = () => {
     setModalMode('statement');
   };
 
+  const handleShowArchiveClick = (card: CreditCard) => {
+    setSelectedCardForAction(card);
+    setModalMode('archive_statement');
+  };
+
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!userMessage.trim() || isAIThinking) return;
@@ -1784,7 +1790,7 @@ const App: React.FC = () => {
               </div>
             </>
           ) : view === 'cards' ? (
-            <CardsListView cards={cards} transactions={transactions} isDarkMode={isDarkMode} onEdit={startEdit} onDelete={setCardToDelete} onAddToCalendar={handleAddToCalendarClick} onShowStatement={handleShowStatementClick} onAddCard={() => setModalMode('add')} onBack={() => setView('dashboard')} onEditTransaction={startEditTransaction} onDeleteTransaction={setTransactionToDelete} categories={categories} />
+            <CardsListView cards={cards} transactions={transactions} isDarkMode={isDarkMode} onEdit={startEdit} onDelete={setCardToDelete} onAddToCalendar={handleAddToCalendarClick} onShowStatement={handleShowStatementClick} onShowArchive={handleShowArchiveClick} onAddCard={() => setModalMode('add')} onBack={() => setView('dashboard')} onEditTransaction={startEditTransaction} onDeleteTransaction={setTransactionToDelete} categories={categories} />
           ) : view === 'analysis' ? (
             <AnalysisView
               cards={cards}
@@ -1936,6 +1942,11 @@ const App: React.FC = () => {
       {
         modalMode === 'statement' && selectedCardForAction && (
           <StatementModal card={selectedCardForAction} transactions={transactions} isDarkMode={isDarkMode} onClose={() => { setModalMode(null); setSelectedCardForAction(null); }} />
+        )
+      }
+      {
+        modalMode === 'archive_statement' && selectedCardForAction && (
+          <StatementArchiveModal card={selectedCardForAction} transactions={transactions} isDarkMode={isDarkMode} onClose={() => { setModalMode(null); setSelectedCardForAction(null); }} />
         )
       }
       {

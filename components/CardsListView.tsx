@@ -23,7 +23,8 @@ import {
   Inbox,
   ShoppingBag,
   Zap,
-  CreditCard as PaymentIcon
+  CreditCard as PaymentIcon,
+  ArrowRight
 } from 'lucide-react';
 
 interface CardsListViewProps {
@@ -34,6 +35,7 @@ interface CardsListViewProps {
   onDelete: (card: CreditCard) => void;
   onAddToCalendar: (card: CreditCard) => void;
   onShowStatement: (card: CreditCard) => void;
+  onShowArchive: (card: CreditCard) => void;
   onAddCard: () => void;
   onBack: () => void;
   onEditTransaction: (tx: Transaction) => void;
@@ -51,6 +53,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
   onDelete,
   onAddToCalendar,
   onShowStatement,
+  onShowArchive,
   onAddCard,
   onBack,
   onEditTransaction,
@@ -280,17 +283,29 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => setExpandedCardId(isExpanded ? null : card.id)}
-                    className={`lg:col-span-12 w-full mt-8 p-5 rounded-[32px] border border-dashed font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-4 ${isExpanded
-                      ? (isDarkMode ? 'bg-blue-500/10 border-blue-500/40 text-blue-400' : 'bg-blue-50 border-blue-200 text-blue-600 shadow-sm')
-                      : (isDarkMode ? 'border-slate-800 text-slate-500 hover:bg-slate-800/30 hover:text-blue-400 hover:border-blue-500/50' : 'border-slate-200 text-slate-400 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200')
-                      }`}
-                  >
-                    <History size={18} className={`transition-transform duration-500 ${isExpanded ? 'rotate-180' : ''}`} />
-                    <span className="font-black text-[10px] uppercase tracking-[0.35em]">İŞLEM GEÇMİŞİ</span>
-                    {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                  </button>
+                  <div className="lg:col-span-12 grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
+                    <button
+                      onClick={() => setExpandedCardId(isExpanded ? null : card.id)}
+                      className={`w-full p-5 rounded-[24px] border border-dashed font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-4 ${isExpanded
+                        ? (isDarkMode ? 'bg-blue-500/10 border-blue-500/40 text-blue-400' : 'bg-blue-50 border-blue-200 text-blue-600 shadow-sm')
+                        : (isDarkMode ? 'border-slate-800 text-slate-500 hover:bg-slate-800/30 hover:text-blue-400 hover:border-blue-500/50' : 'border-slate-200 text-slate-400 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200')
+                        }`}
+                    >
+                      <History size={18} className={`transition-transform duration-500 ${isExpanded ? 'rotate-180' : ''}`} />
+                      <span className="font-black text-[10px] uppercase tracking-[0.35em]">İŞLEM GEÇMİŞİ</span>
+                      {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                    </button>
+
+                    <button
+                      onClick={() => onShowArchive(card)}
+                      className={`w-full p-5 rounded-[24px] border border-dashed font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-4 ${isDarkMode ? 'border-slate-800 text-slate-500 hover:bg-slate-800/30 hover:text-indigo-400 hover:border-indigo-500/50' : 'border-slate-200 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200'
+                        }`}
+                    >
+                      <FileText size={18} />
+                      <span className="font-black text-[10px] uppercase tracking-[0.35em]">DÖNEM EKSTRELERİ</span>
+                      <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Expanded Transaction List Area */}
