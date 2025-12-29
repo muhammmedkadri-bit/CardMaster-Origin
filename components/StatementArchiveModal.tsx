@@ -285,31 +285,16 @@ const StatementArchiveModal: React.FC<StatementArchiveModalProps> = ({ card, tra
                                     </div>
                                 </div>
 
-                                <div className="pt-2 flex gap-2 relative z-10">
-                                    <button
-                                        onClick={() => exportMonthToPDF(m)}
-                                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl py-3 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blue-500/20"
-                                    >
-                                        <Download size={14} /> PDF
-                                    </button>
+                                <div className="pt-2 flex relative z-10">
                                     <button
                                         onClick={async () => {
-                                            // Open PDF in new tab for previewing
-                                            const reportPeriod = `${m.monthName} ${selectedYear}`;
                                             const jspdfLib = (window as any).jspdf;
                                             if (!jspdfLib) return;
-
-                                            // Helper for Görüntüle: Open PDF in new tab instead of saving
-                                            const doc = new jspdfLib.jsPDF('p', 'mm', 'a4');
-                                            // Re-use logic or just call a modified export specifically for preview
-                                            // For simplicity, we can trigger the save but user asked for "Görüntüle"
-                                            // jsPDF.output('dataurlnewwindow') is standard for this
-                                            // We'll call exportMonthToPDF but modify it to choose output
                                             await exportMonthToPDF(m, true);
                                         }}
-                                        className={`flex-1 rounded-2xl py-3 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 ${isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl py-4 flex items-center justify-center gap-3 text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blue-500/20"
                                     >
-                                        <Eye size={14} /> GÖRÜNTÜLE
+                                        <Eye size={16} /> EKSTREYİ GÖRÜNTÜLE
                                     </button>
                                 </div>
 
