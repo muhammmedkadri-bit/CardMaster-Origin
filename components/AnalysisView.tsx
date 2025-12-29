@@ -68,32 +68,9 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
   const [isExporting, setIsExporting] = React.useState(false);
   const [isMobile, setIsMobile] = React.useState(false);
   const [currentPage, setCurrentPage] = React.useState(1);
+  const [isMarqueePaused, setIsMarqueePaused] = React.useState(false);
+  const marqueeRef = useRef<HTMLDivElement>(null);
   const ITEMS_PER_PAGE = 10;
-
-  React.useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-
-  const formatDateDisplay = (dateStr: string) => {
-    if (!dateStr) return '';
-    try {
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) return dateStr;
-
-      const hh = String(date.getHours()).padStart(2, '0');
-      const mm = String(date.getMinutes()).padStart(2, '0');
-      const monthName = date.toLocaleDateString('tr-TR', { month: 'long' });
-      const year = date.getFullYear();
-
-      return `${date.getDate()} ${monthName} ${year} - ${hh}:${mm}`;
-    } catch (e) {
-      return dateStr;
-    }
-  };
 
   const filteredTransactions = useMemo(() => {
     const cardFiltered = selectedCardId === 'all'
@@ -144,11 +121,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
   }, [filteredTransactions, currentPage]);
 
   const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE);
-
-  // Reset page when filters change
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedCardId, timeRange, customStart, customEnd]);
 
   const cardStats = useMemo(() => {
     const cardData = selectedCardId === 'all'
@@ -257,6 +229,58 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
       })
       .sort((a, b) => b.value - a.value);
   }, [filteredTransactions, categories, lastUpdate]);
+
+  React.useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCardId, timeRange, customStart, customEnd]);
+
+  // Infinite Scroll Animation Logic
+  React.useEffect(() => {
+    const marquee = marqueeRef.current;
+    if (!marquee || isMarqueePaused) return;
+
+    let animationId: number;
+    const scroll = () => {
+      if (marquee) {
+        marquee.scrollLeft += 0.8; // Smooth slow scroll
+
+        // Reset to 0 when half-way through the duplicated content for seamless loop
+        if (marquee.scrollLeft >= marquee.scrollWidth / 2) {
+          marquee.scrollLeft = 0;
+        }
+      }
+      animationId = requestAnimationFrame(scroll);
+    };
+
+    animationId = requestAnimationFrame(scroll);
+    return () => cancelAnimationFrame(animationId);
+  }, [isMarqueePaused, categoryData]);
+
+
+  const formatDateDisplay = (dateStr: string) => {
+    if (!dateStr) return '';
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return dateStr;
+
+      const hh = String(date.getHours()).padStart(2, '0');
+      const mm = String(date.getMinutes()).padStart(2, '0');
+      const monthName = date.toLocaleDateString('tr-TR', { month: 'long' });
+      const year = date.getFullYear();
+
+      return `${date.getDate()} ${monthName} ${year} - ${hh}:${mm}`;
+    } catch (e) {
+      return dateStr;
+    }
+  };
 
   const exportToPDF = async () => {
     setIsExporting(true);
@@ -571,18 +595,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
       <div className="mb-12 overflow-hidden relative group">
         <style>
           {`
-            @keyframes slide-infinite {
-              0% { transform: translateX(0); }
-              100% { transform: translateX(-50%); }
-            }
-            .marquee-animation {
-              display: flex;
-              width: fit-content;
-              animation: slide-infinite 40s linear infinite;
-            }
-            .marquee-animation:hover {
-              animation-play-state: paused;
-            }
             .no-scrollbar::-webkit-scrollbar {
               display: none;
             }
@@ -597,8 +609,15 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
           <h3 className={`text-xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>KATEGORİ DAĞILIMI</h3>
         </div>
 
-        <div className="relative overflow-x-auto no-scrollbar py-2">
-          <div className="marquee-animation gap-6 px-6">
+        <div
+          ref={marqueeRef}
+          onMouseEnter={() => setIsMarqueePaused(true)}
+          onMouseLeave={() => setIsMarqueePaused(false)}
+          onTouchStart={() => setIsMarqueePaused(true)}
+          onTouchEnd={() => setIsMarqueePaused(false)}
+          className="relative overflow-x-auto no-scrollbar py-2 cursor-grab active:cursor-grabbing"
+        >
+          <div className="flex w-fit gap-6 px-6">
             {/* Create a block with a spacer at the end, then duplicate for infinite effect */}
             {[...categoryData, null, ...categoryData, null].map((cat, idx) => (
               cat ? (
