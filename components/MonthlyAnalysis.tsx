@@ -80,7 +80,8 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
           value: c.amount,
           color: catInfo ? catInfo.color : '#3B82F6'
         };
-      });
+      })
+      .sort((a, b) => b.value - a.value);
 
     return { monthlyChart, categoryBreakdown };
   }, [transactions, selectedCardId, categories]);
