@@ -9,9 +9,10 @@ interface CardModalProps {
   onSave: (card: CreditCard) => void;
   initialData?: CreditCard;
   title: string;
+  isDarkMode: boolean;
 }
 
-const CardModal: React.FC<CardModalProps> = ({ onClose, onSave, initialData, title }) => {
+const CardModal: React.FC<CardModalProps> = ({ onClose, onSave, initialData, title, isDarkMode }) => {
   const [formData, setFormData] = useState<Omit<CreditCard, 'id'>>({
     bankName: '',
     cardName: '',
@@ -212,24 +213,65 @@ const CardModal: React.FC<CardModalProps> = ({ onClose, onSave, initialData, tit
           </div>
 
           <div>
-            <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-[0.2em]">Kart Teması</label>
-            <div className="flex gap-2.5 flex-wrap bg-slate-50 dark:bg-slate-800/30 p-4 rounded-[20px] border border-slate-100 dark:border-slate-700/50">
+            <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-4 uppercase tracking-[0.2em]">Kart Teması</label>
+
+            {/* 10 Mini Card Visuals */}
+            <div className="grid grid-cols-5 gap-3 mb-6">
               {COLORS.map(color => (
                 <button
                   key={color}
                   type="button"
                   onClick={() => setFormData({ ...formData, color })}
-                  className={`w-9 h-9 rounded-full border-2 transition-all transform hover:scale-110 ${formData.color === color ? 'border-slate-800 dark:border-white scale-110 ring-4 ring-blue-500/10' : 'border-transparent'}`}
-                  style={{ backgroundColor: color }}
-                />
+                  className={`relative aspect-[1.6/1] rounded-lg transition-all transform hover:scale-105 overflow-hidden group ${formData.color === color
+                    ? 'ring-4 ring-blue-500 ring-offset-4 dark:ring-offset-[#1a1f2e] scale-110 z-10'
+                    : 'opacity-70 hover:opacity-100 border border-transparent'
+                    }`}
+                  style={{
+                    background: `linear-gradient(135deg, ${color}, ${color}dd)`,
+                    boxShadow: formData.color === color ? `0 10px 20px ${color}40` : 'none'
+                  }}
+                >
+                  {/* Card Design Elements */}
+                  <div className="absolute top-1 left-1.5 w-2 h-1.5 bg-yellow-400/30 rounded-sm" />
+                  <div className="absolute bottom-1 right-1.5 flex gap-0.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
+                  </div>
+                  {formData.color === color && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-blue-600/20">
+                      <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-lg">
+                        <div className="w-2.5 h-2.5 bg-blue-600 rounded-full" />
+                      </div>
+                    </div>
+                  )}
+                </button>
               ))}
-              <div className="flex items-center ml-auto">
+            </div>
+
+            {/* Custom Color Selector */}
+            <div className={`p-4 rounded-2xl border flex items-center gap-4 transition-all ${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
+              <div className="relative w-12 h-12 shrink-0">
                 <input
                   type="color"
                   value={formData.color}
                   onChange={e => setFormData({ ...formData, color: e.target.value })}
-                  className="w-9 h-9 rounded-full cursor-pointer bg-transparent border-none overflow-hidden scale-110"
+                  className="absolute inset-0 w-full h-full cursor-pointer opacity-0 z-10"
                 />
+                <div
+                  className="w-full h-full rounded-xl border-2 border-white dark:border-slate-800 shadow-lg"
+                  style={{ backgroundColor: formData.color }}
+                />
+              </div>
+              <div className="flex flex-col">
+                <span className={`text-[11px] font-black uppercase tracking-wider ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                  Kart renginizi kendiniz seçin
+                </span>
+                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">
+                  Özel bir renk paleti oluşturun
+                </span>
+              </div>
+              <div className="ml-auto w-6 h-6 rounded-full bg-blue-500/10 flex items-center justify-center">
+                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
               </div>
             </div>
           </div>

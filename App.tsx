@@ -1920,7 +1920,7 @@ const App: React.FC = () => {
 
       {
         (modalMode === 'add' || modalMode === 'edit') && (
-          <CardModal title={modalMode === 'add' ? 'Yeni Kart Ekle' : 'Kartı Düzenle'} initialData={editingCard} onClose={() => { setModalMode(null); setEditingCard(undefined); }} onSave={handleSaveCard} />
+          <CardModal title={modalMode === 'add' ? 'Yeni Kart Ekle' : 'Kartı Düzenle'} initialData={editingCard} isDarkMode={isDarkMode} onClose={() => { setModalMode(null); setEditingCard(undefined); }} onSave={handleSaveCard} />
         )
       }
       {
