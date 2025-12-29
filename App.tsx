@@ -247,6 +247,7 @@ const App: React.FC = () => {
       { id: '3', name: 'Restoran', color: '#F59E0B' },
       { id: '4', name: 'Fatura', color: '#EF4444' },
       { id: '5', name: 'Eğlence', color: '#8B5CF6' },
+      { id: '7', name: 'Faiz/Ekstralar', color: '#F43F5E' },
       { id: '6', name: 'Diğer', color: '#64748B' }
     ];
 

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { CreditCard, Transaction, Category } from '../types';
-import { X, ArrowDownRight, ArrowUpRight, Link as LinkIcon, Calendar, Plus } from 'lucide-react';
+import { X, ArrowDownRight, ArrowUpRight, Link as LinkIcon, Calendar, Plus, TrendingUp } from 'lucide-react';
 
 interface TransactionModalProps {
   type: 'spending' | 'payment';
@@ -29,7 +29,8 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
     category: initialData?.category || (type === 'payment' ? 'Ödeme' : (categories[0]?.name || 'Diğer')),
     description: initialData?.description || '',
     date: initialData?.date ? initialData.date.split('T')[0] : new Date().toISOString().split('T')[0],
-    confirmationUrl: initialData?.confirmationUrl || ''
+    confirmationUrl: initialData?.confirmationUrl || '',
+    extraAmount: 0
   });
 
   const [newCategory, setNewCategory] = useState('');
@@ -101,6 +102,20 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
       description: formData.description,
       confirmationUrl: formData.confirmationUrl || undefined
     });
+
+    if (type === 'payment' && Number(formData.extraAmount) > 0) {
+      onSave({
+        id: crypto.randomUUID(),
+        cardId: formData.cardId,
+        cardName: selectedCard.cardName,
+        type: 'spending',
+        amount: Number(formData.extraAmount),
+        category: 'Faiz/Ekstralar',
+        date: finalDate,
+        description: formData.description ? `${formData.description} (Faiz/Ücret)` : 'Faiz ve Ücret Ödemesi',
+        confirmationUrl: formData.confirmationUrl || undefined
+      });
+    }
     onClose();
   };
 
@@ -243,9 +258,33 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
           )}
 
           {type === 'payment' && (
-            <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-800/30">
-              <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.2em]">İŞLEM KATEGORİSİ</span>
-              <p className="text-sm font-bold text-emerald-800 dark:text-emerald-200 mt-1">Ödeme / Borç Kapatma</p>
+            <div className="space-y-4">
+              <div className="p-5 bg-emerald-500/5 dark:bg-emerald-500/5 rounded-2xl border border-emerald-500/20 shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="p-1 bg-emerald-500 text-white rounded-md"><ArrowDownRight size={12} /></div>
+                  <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.2em]">İŞLEM KATEGORİSİ</span>
+                </div>
+                <p className="text-sm font-bold text-emerald-800 dark:text-emerald-200">Ödeme / Borç Kapatma</p>
+              </div>
+
+              <div className="p-5 bg-rose-500/5 dark:bg-rose-500/5 rounded-2xl border border-rose-500/20 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1 bg-rose-500 text-white rounded-md"><TrendingUp size={12} /></div>
+                    <label className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-[0.2em]">Ekstra Faiz ve Ücret (TL)</label>
+                  </div>
+                </div>
+                <input
+                  type="number"
+                  step="0.01"
+                  className="w-full px-4 py-3 border border-rose-100 dark:border-rose-900/40 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none bg-white dark:bg-slate-800 dark:text-white text-lg font-black appearance-none"
+                  value={formData.extraAmount}
+                  onChange={e => setFormData({ ...formData, extraAmount: Number(e.target.value) })}
+                  onFocus={handleFocus}
+                  placeholder="0.00"
+                />
+                <p className="mt-2 text-[10px] font-bold text-slate-400 italic">Bu tutar 'Faiz/Ekstralar' kategorisinde harcama olarak kaydedilir.</p>
+              </div>
             </div>
           )}
 
