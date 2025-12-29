@@ -61,7 +61,10 @@ const CardsListView: React.FC<CardsListViewProps> = ({
 
   const formatDateDisplay = (dateStr: string) => {
     if (!dateStr) return '';
-    const [y, m, d] = dateStr.split('-');
+    const onlyDate = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    const parts = onlyDate.split('-');
+    if (parts.length < 3) return onlyDate;
+    const [y, m, d] = parts;
     return `${d}.${m}.${y.slice(-2)}`;
   };
 
@@ -294,21 +297,21 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                     <div className="space-y-3 max-h-[400px] overflow-y-auto no-scrollbar pr-1">
                       {cardTransactions.length > 0 ? cardTransactions.map(tx => (
                         <div key={tx.id} className={`flex items-center justify-between p-4 rounded-2xl border transition-all group/item ${isDarkMode ? 'bg-slate-900/60 border-slate-800 hover:bg-slate-800/40' : 'bg-white border-slate-100 hover:shadow-md'}`}>
-                          <div className="flex items-center gap-4">
-                            <div className={`p-2.5 rounded-xl ${tx.type === 'spending' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                          <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                            <div className={`p-2.5 rounded-xl shrink-0 ${tx.type === 'spending' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
                               {tx.type === 'spending' ? <ShoppingBag size={14} /> : <PaymentIcon size={14} />}
                             </div>
-                            <div>
-                              <p className={`text-xs font-black tracking-tight ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>{tx.description}</p>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{formatDateDisplay(tx.date)}</span>
-                                <span className="text-slate-300 dark:text-slate-700 text-[8px]">•</span>
-                                <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">{tx.category}</span>
+                            <div className="min-w-0 flex-1">
+                              <p className={`text-xs font-black tracking-tight truncate ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>{tx.description || (tx.type === 'spending' ? 'Harcama' : 'Ödeme')}</p>
+                              <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 overflow-hidden">
+                                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest shrink-0">{formatDateDisplay(tx.date)}</span>
+                                <span className="text-slate-300 dark:text-slate-700 text-[8px] shrink-0">•</span>
+                                <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest truncate">{tx.category}</span>
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-4">
-                            <div className="text-right">
+                          <div className="flex items-center gap-2 sm:gap-4 shrink-0 ml-3">
+                            <div className="text-right shrink-0">
                               <p className={`text-sm font-black tracking-tighter ${tx.type === 'spending' ? 'text-rose-500' : 'text-emerald-500'}`}>
                                 {tx.type === 'spending' ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
                               </p>

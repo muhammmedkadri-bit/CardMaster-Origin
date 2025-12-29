@@ -32,7 +32,10 @@ const StatementModal: React.FC<StatementModalProps> = ({ card, transactions, isD
 
   const formatDateDisplay = (dateStr: string) => {
     if (!dateStr) return '';
-    const [y, m, d] = dateStr.split('-');
+    const onlyDate = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    const parts = onlyDate.split('-');
+    if (parts.length < 3) return onlyDate;
+    const [y, m, d] = parts;
     return `${d}.${m}.${y.slice(-2)}`;
   };
 
