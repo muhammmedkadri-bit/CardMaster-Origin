@@ -305,43 +305,43 @@ const CardsListView: React.FC<CardsListViewProps> = ({
 
                         return (
                           <div key={tx.id} className={`relative p-5 sm:p-6 rounded-[32px] border transition-all mb-4 ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
-                            {/* Mobile Layout (Dashboard Style) */}
-                            <div className="flex flex-col gap-4 sm:hidden">
-                              {/* Header: Indicator, Category, Actions */}
+                            {/* Mobile Layout (User Requested Specific Style) */}
+                            <div className="flex flex-col gap-5 sm:hidden">
+                              {/* Top Row: Category & Buttons */}
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                  <div className={`w-1.5 h-6 rounded-full ${isSpending ? 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.4)]' : 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]'}`} />
-                                  <span className={`text-[11px] font-black uppercase tracking-[0.15em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                                  <div className={`w-1.5 h-6 rounded-full shrink-0 ${isSpending ? 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.4)]' : 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]'}`} />
+                                  <span className={`text-[11px] font-black uppercase tracking-[0.2em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                                     {tx.category || 'Diğer'}
                                   </span>
                                 </div>
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-2">
                                   <button onClick={() => onEditTransaction(tx)} className={`p-2.5 rounded-xl transition-all ${isDarkMode ? 'bg-blue-500/10 text-blue-400 border border-blue-500/10' : 'bg-blue-50 text-blue-600 border border-blue-100'}`}><Edit2 size={14} /></button>
                                   <button onClick={() => onDeleteTransaction(tx)} className={`p-2.5 rounded-xl transition-all ${isDarkMode ? 'bg-rose-500/10 text-rose-400 border border-rose-500/10' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}><Trash2 size={14} /></button>
                                 </div>
                               </div>
 
-                              {/* Description Area */}
-                              <div className="py-1">
-                                <p className={`text-[15px] font-black tracking-tight leading-relaxed break-words ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-                                  {tx.description || (isSpending ? 'HARCAMA' : 'ÖDEME')}
+                              {/* Middle Row: Description */}
+                              <div className="text-left">
+                                <p className={`text-[16px] font-black tracking-tight leading-relaxed ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                                  {tx.description || (isSpending ? 'Harcama' : 'Ödeme')}
                                 </p>
                               </div>
 
-                              {/* Footer: Card, Amount, Date */}
-                              <div className="flex flex-col gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                                <div className="flex items-center justify-between gap-4">
-                                  <div className="px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-widest" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
-                                    {card.cardName}
-                                  </div>
-                                  <p className={`text-xl font-black tracking-tighter ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                    {isSpending ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
-                                  </p>
+                              {/* Third Row: Card Pill & Amount */}
+                              <div className="flex items-center justify-between gap-4">
+                                <div className="px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-[0.1em] whitespace-nowrap" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
+                                  {card.cardName}
                                 </div>
-                                <div className="flex items-center gap-2 opacity-50">
-                                  <Clock size={12} className="text-slate-400" />
-                                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{formatDateDisplay(tx.date)}</p>
-                                </div>
+                                <p className={`text-xl font-black tracking-tighter ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                  {isSpending ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
+                                </p>
+                              </div>
+
+                              {/* Bottom Row: Date & Time */}
+                              <div className="flex items-center gap-2 opacity-60">
+                                <Clock size={12} className="text-slate-500" />
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{formatDateDisplay(tx.date)}</p>
                               </div>
                             </div>
 
