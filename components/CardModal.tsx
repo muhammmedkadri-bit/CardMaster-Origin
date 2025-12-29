@@ -151,17 +151,17 @@ const CardModal: React.FC<CardModalProps> = ({ onClose, onSave, initialData, tit
                         </div>
                       )}
                       {network.id === 'visa' && (
-                        <div className="flex items-center gap-0.5 scale-90 sm:scale-100">
-                          <div className="w-1.5 h-1.5 -mb-2 bg-[#F7B600] rounded-sm -rotate-45" style={{ clipPath: 'polygon(0% 0%, 100% 0%, 50% 100%)' }} />
-                          <span className="italic font-black text-[10px] text-blue-800 dark:text-white leading-none">VISA</span>
+                        <div className="flex items-center gap-0.5 scale-90 sm:scale-110">
+                          <div className="w-1.5 h-1.5 -mb-2.5 bg-[#F7B600] rounded-sm -rotate-45" style={{ clipPath: 'polygon(0% 0%, 100% 0%, 50% 100%)' }} />
+                          <span className="italic font-black text-[10px] text-blue-800 dark:text-white leading-none tracking-tighter">VISA</span>
                         </div>
                       )}
                       {network.id === 'troy' && (
-                        <div className="flex items-center gap-0.5">
+                        <div className="flex items-center gap-0.5 scale-90 sm:scale-110">
                           <span className="font-black text-[10px] text-slate-800 dark:text-white leading-none">tr</span>
                           <div className="flex items-center">
-                            <div className="w-2 h-3 bg-[#00CED1] rounded-l-full" />
-                            <div className="w-2 h-3 bg-[#00CED1] rounded-r-full ml-[1px]" />
+                            <div className="w-1.5 h-3 bg-[#00CED1] rounded-l-full" />
+                            <div className="w-1.5 h-3 bg-[#00CED1] rounded-r-full ml-[1px]" />
                           </div>
                           <span className="font-black text-[10px] text-slate-800 dark:text-white leading-none">y</span>
                         </div>
