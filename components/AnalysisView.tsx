@@ -18,7 +18,6 @@ import {
 } from 'recharts';
 import { Transaction, CreditCard, Category } from '../types';
 import {
-  ArrowLeft,
   FileText,
   TrendingUp,
   TrendingDown,
@@ -294,18 +293,12 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
       <div className="flex flex-col gap-8 mb-12">
         {/* Top Row: Title and Back Button */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-5">
-            <button
-              onClick={onBack}
-              className={`w-12 h-12 flex items-center justify-center rounded-full transition-all hover:scale-105 active:scale-95 ${isDarkMode
-                ? 'bg-slate-800/50 text-white backdrop-blur-md hover:bg-slate-700'
-                : 'bg-white text-slate-800 shadow-sm border border-slate-100 hover:shadow-md'
-                }`}
-            >
-              <ArrowLeft size={20} />
-            </button>
+          <div className="flex items-center gap-4">
+            <div className={`w-12 h-12 flex items-center justify-center rounded-2xl ${isDarkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
+              <BarChart3 size={24} />
+            </div>
             <div>
-              <h1 className={`text-2xl sm:text-3xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Analiz & Rapor</h1>
+              <h1 className={`text-2xl sm:text-3xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Analiz & Rapor</h1>
             </div>
           </div>
         </div>
