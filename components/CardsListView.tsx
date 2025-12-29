@@ -309,19 +309,19 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                         <h4 className={`text-base font-black uppercase tracking-widest leading-none ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>KART HAREKETLERİ</h4>
                       </div>
 
-                      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-3 sm:pb-0 -mx-6 px-6 sm:mx-0 sm:px-0">
+                      <div className="grid grid-cols-3 gap-2 mb-8">
                         {(['today', 'thisweek', 'thismonth', 'thisyear', 'custom'] as LocalTimeRange[]).map(r => (
                           <button
                             key={r}
                             onClick={() => setLocalRange(r)}
-                            className={`px-6 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all duration-300 shrink-0 select-none border-b-4 ${localRange === r
-                                ? 'bg-blue-600 text-white border-blue-800 shadow-[inset_0_2px_4px_rgba(0,0,0,0.2),0_10px_15px_-3px_rgba(37,99,235,0.4)] translate-y-[1px]'
+                            className={`px-3 py-4 rounded-[20px] text-[10px] font-black uppercase tracking-wider transition-all duration-300 select-none border ${localRange === r
+                                ? 'bg-blue-600 text-white border-blue-500 shadow-[0_10px_20px_-5px_rgba(37,99,235,0.4),inset_0_2px_4px_rgba(255,255,255,0.2)] scale-[1.02]'
                                 : isDarkMode
-                                  ? 'bg-[#0f172a] text-slate-400 border-black/40 hover:text-slate-200'
-                                  : 'bg-white text-slate-500 border-slate-200 shadow-sm hover:text-slate-700'
-                              } active:translate-y-[2px] active:border-b-0 active:shadow-none`}
+                                  ? 'bg-[#0f172a]/80 text-slate-400 border-slate-800/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] hover:bg-[#1e293b]'
+                                  : 'bg-white text-slate-500 border-slate-100 shadow-sm hover:bg-slate-50 hover:border-slate-200'
+                              } active:scale-95`}
                           >
-                            {r === 'today' ? 'Bugün' : r === 'thisweek' ? 'Bu Hafta' : r === 'thismonth' ? 'Bu Ay' : r === 'thisyear' ? 'Bu Yıl' : 'Özel'}
+                            {r === 'today' ? 'Bugün' : r === 'thisweek' ? 'B.Hafta' : r === 'thismonth' ? 'Bu Ay' : r === 'thisyear' ? 'Bu Yıl' : 'Özel'}
                           </button>
                         ))}
                       </div>
