@@ -71,6 +71,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
   const [isMarqueePaused, setIsMarqueePaused] = React.useState(false);
   const marqueeRef = useRef<HTMLDivElement>(null);
   const scrollPosRef = useRef(0);
+  const dragRef = useRef({ isDragging: false, startX: 0, currentTranslation: 0 });
   const ITEMS_PER_PAGE = 10;
 
   const filteredTransactions = useMemo(() => {
@@ -243,48 +244,71 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
     setCurrentPage(1);
   }, [selectedCardId, timeRange, customStart, customEnd]);
 
-  // Infinite Scroll Animation Logic
+  // Ultra-Smooth GPU-Accelerated Infinite Scroll Logic
   React.useEffect(() => {
-    const marquee = marqueeRef.current;
-    if (!marquee || isMarqueePaused) return;
+    const list = marqueeRef.current?.firstElementChild as HTMLDivElement;
+    if (!list || isMarqueePaused || dragRef.current.isDragging) return;
 
     let animationId: number;
-    const scroll = () => {
-      if (marquee) {
-        // Use a ref to store the fractional position and avoid subpixel rounding issues
-        scrollPosRef.current += 0.8;
+    const animate = () => {
+      if (list) {
+        scrollPosRef.current -= 1.0; // Moving items to the left (negative translation)
 
-        // Sync the actual scroll element
-        marquee.scrollLeft = scrollPosRef.current;
+        const singleSetWidth = list.scrollWidth / 3; // We use triple-duplication
 
-        // Reset when half-way through the duplicated content for seamless loop
-        if (scrollPosRef.current >= marquee.scrollWidth / 2) {
-          scrollPosRef.current = 0;
-          marquee.scrollLeft = 0;
+        // Loop back seamlessly
+        if (Math.abs(scrollPosRef.current) >= singleSetWidth * 2) {
+          scrollPosRef.current = -singleSetWidth;
+        } else if (scrollPosRef.current >= 0) {
+          scrollPosRef.current = -singleSetWidth;
         }
+
+        list.style.transform = `translate3d(${scrollPosRef.current}px, 0, 0)`;
+        dragRef.current.currentTranslation = scrollPosRef.current;
       }
-      animationId = requestAnimationFrame(scroll);
+      animationId = requestAnimationFrame(animate);
     };
 
-    animationId = requestAnimationFrame(scroll);
+    animationId = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationId);
   }, [isMarqueePaused, categoryData]);
 
-  // Synchronize scrollPosRef when manual scroll happens
-  React.useEffect(() => {
-    const marquee = marqueeRef.current;
-    if (!marquee) return;
+  // High-Performance Drag & Touch Handling
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    setIsMarqueePaused(true);
+    dragRef.current.isDragging = true;
+    dragRef.current.startX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const list = marqueeRef.current?.firstElementChild as HTMLDivElement;
+    if (list) {
+      list.style.transition = 'none';
+    }
+  };
 
-    const handleScroll = () => {
-      if (isMarqueePaused) {
-        scrollPosRef.current = marquee.scrollLeft;
-      }
-    };
+  const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!dragRef.current.isDragging) return;
+    const x = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const walk = x - dragRef.current.startX;
+    dragRef.current.startX = x;
 
-    marquee.addEventListener('scroll', handleScroll);
-    return () => marquee.removeEventListener('scroll', handleScroll);
-  }, [isMarqueePaused]);
+    const list = marqueeRef.current?.firstElementChild as HTMLDivElement;
+    if (list) {
+      scrollPosRef.current += walk;
 
+      const singleSetWidth = list.scrollWidth / 3;
+      // Infinite Logic during drag
+      if (Math.abs(scrollPosRef.current) >= singleSetWidth * 2) scrollPosRef.current = -singleSetWidth;
+      if (scrollPosRef.current > 0) scrollPosRef.current = -singleSetWidth;
+
+      list.style.transform = `translate3d(${scrollPosRef.current}px, 0, 0)`;
+      dragRef.current.currentTranslation = scrollPosRef.current;
+    }
+  };
+
+  const handleDragEnd = () => {
+    dragRef.current.isDragging = false;
+    // Delay resuming slightly for better UX
+    setTimeout(() => setIsMarqueePaused(false), 50);
+  };
 
   const formatDateDisplay = (dateStr: string) => {
     if (!dateStr) return '';
@@ -614,17 +638,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
 
       {/* Category Distribution Sliding Banner */}
       <div className="mb-12 overflow-hidden relative group">
-        <style>
-          {`
-            .no-scrollbar::-webkit-scrollbar {
-              display: none;
-            }
-            .no-scrollbar {
-              -ms-overflow-style: none;
-              scrollbar-width: none;
-            }
-          `}
-        </style>
         <div className="flex items-center gap-4 mb-6 px-2">
           <div className="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
           <h3 className={`text-xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>KATEGORİ DAĞILIMI</h3>
@@ -634,13 +647,22 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
           ref={marqueeRef}
           onMouseEnter={() => setIsMarqueePaused(true)}
           onMouseLeave={() => setIsMarqueePaused(false)}
-          onTouchStart={() => setIsMarqueePaused(true)}
-          onTouchEnd={() => setIsMarqueePaused(false)}
-          className="relative overflow-x-auto no-scrollbar py-2 cursor-grab active:cursor-grabbing"
+          onMouseDown={handleDragStart}
+          onMouseMove={handleDragMove}
+          onMouseUp={handleDragEnd}
+          onMouseLeaveCapture={handleDragEnd}
+          onTouchStart={handleDragStart}
+          onTouchMove={handleDragMove}
+          onTouchEnd={handleDragEnd}
+          className="relative overflow-hidden no-scrollbar py-6 cursor-grab active:cursor-grabbing select-none"
+          style={{ touchAction: 'pan-y' }}
         >
-          <div className="flex w-fit gap-6 px-6">
-            {/* Create a block with a spacer at the end, then duplicate for infinite effect */}
-            {[...categoryData, null, ...categoryData, null].map((cat, idx) => (
+          <div
+            className="flex w-fit gap-6 px-6"
+            style={{ willChange: 'transform', backfaceVisibility: 'hidden' }}
+          >
+            {/* Triple the list for robust infinite multi-directional effect */}
+            {[...categoryData, null, ...categoryData, null, ...categoryData, null].map((cat, idx) => (
               cat ? (
                 <div
                   key={idx}
