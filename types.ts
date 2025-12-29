@@ -11,6 +11,7 @@ export interface CreditCard {
   color: string;
   reminderDaysBefore: number;
   minPaymentRatio: number; // Asgari ödeme yüzdesi (örn: 20 veya 40)
+  network?: 'mastercard' | 'visa' | 'troy' | 'amex';
   // Added optional property used for utilization alerts in visualization components
   alertThreshold?: number;
 }

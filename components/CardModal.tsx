@@ -24,7 +24,8 @@ const CardModal: React.FC<CardModalProps> = ({ onClose, onSave, initialData, tit
     dueDay: 10,
     color: COLORS[0],
     reminderDaysBefore: 1,
-    minPaymentRatio: 20
+    minPaymentRatio: 20,
+    network: 'mastercard'
   });
 
   // Create a temporary card object for preview
@@ -122,6 +123,49 @@ const CardModal: React.FC<CardModalProps> = ({ onClose, onSave, initialData, tit
                 placeholder="Örn: Bonus Platinum"
               />
             </div>
+
+            {/* Card Network Selection */}
+            <div>
+              <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-widest">KART AĞI</label>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { id: 'mastercard', label: 'Mastercard', color: 'bg-[#EB001B]' },
+                  { id: 'visa', label: 'Visa', color: 'bg-[#1A1F71]' },
+                  { id: 'troy', label: 'Troy', color: 'bg-[#00AEEF]' },
+                  { id: 'amex', label: 'Amex', color: 'bg-[#007BC1]' }
+                ].map((network) => (
+                  <button
+                    key={network.id}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, network: network.id as any })}
+                    className={`flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all gap-1.5 ${formData.network === network.id
+                      ? 'border-blue-500 bg-blue-500/10 scale-105 shadow-md'
+                      : 'border-slate-100 dark:border-slate-800 bg-transparent opacity-60 hover:opacity-100'
+                      }`}
+                  >
+                    <div className="h-6 flex items-center justify-center">
+                      {network.id === 'mastercard' && (
+                        <div className="flex -space-x-2">
+                          <div className="w-4 h-4 rounded-full bg-rose-500"></div>
+                          <div className="w-4 h-4 rounded-full bg-amber-500 opacity-80"></div>
+                        </div>
+                      )}
+                      {network.id === 'visa' && (
+                        <span className="italic font-black text-[10px] text-blue-800 dark:text-white"><span className="text-amber-500">V</span>ISA</span>
+                      )}
+                      {network.id === 'troy' && (
+                        <span className="font-black text-[10px] text-emerald-600 dark:text-emerald-400">troy</span>
+                      )}
+                      {network.id === 'amex' && (
+                        <div className="bg-sky-600 px-1 rounded-[1px] text-[6px] text-white font-bold leading-none py-0.5 text-center">AMEX</div>
+                      )}
+                    </div>
+                    <span className="text-[7px] font-black uppercase tracking-tighter opacity-80">{network.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-widest">Son 4 Hane</label>

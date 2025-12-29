@@ -125,10 +125,38 @@ const CardVisual: React.FC<CardVisualProps> = ({ card, onAddToCalendar, onEdit, 
           </div>
 
           <div className="flex flex-col items-end">
-            {/* Mastercard-style Logo Area - Adjusted margins to prevent pushing down */}
-            <div className="flex -space-x-2 sm:-space-x-4 mb-1 sm:mb-2.5 filter drop-shadow-lg">
-              <div className="w-5 h-5 sm:w-10 sm:h-10 rounded-full bg-rose-500/95 border border-white/10"></div>
-              <div className="w-5 h-5 sm:w-10 sm:h-10 rounded-full bg-amber-500/95 border border-white/10 backdrop-blur-sm"></div>
+            {/* Dynamic Network Logo Area */}
+            <div className="mb-2 sm:mb-3 filter drop-shadow-lg">
+              {card.network === 'mastercard' && (
+                <div className="flex -space-x-2 sm:-space-x-4">
+                  <div className="w-5 h-5 sm:w-10 sm:h-10 rounded-full bg-rose-500/95 border border-white/10"></div>
+                  <div className="w-5 h-5 sm:w-10 sm:h-10 rounded-full bg-amber-500/95 border border-white/10 backdrop-blur-sm"></div>
+                </div>
+              )}
+              {card.network === 'visa' && (
+                <div className="italic font-black text-[12px] sm:text-[22px] tracking-tighter text-white flex items-center pr-1">
+                  <span className="text-amber-400">V</span>ISA
+                </div>
+              )}
+              {card.network === 'troy' && (
+                <div className="font-black text-[10px] sm:text-[18px] tracking-tight text-white flex items-baseline gap-0.5">
+                  troy <div className="w-1.5 h-1.5 sm:w-3 sm:h-3 rounded-full bg-emerald-400" />
+                </div>
+              )}
+              {card.network === 'amex' && (
+                <div className="bg-sky-600/90 p-0.5 sm:p-1 rounded-sm border border-white/20">
+                  <div className="font-bold text-[6px] sm:text-[10px] text-white leading-tight text-center px-1">
+                    AMERICAN<br />EXPRESS
+                  </div>
+                </div>
+              )}
+              {/* Fallback to Mastercard style if no network selected */}
+              {!card.network && (
+                <div className="flex -space-x-2 sm:-space-x-4">
+                  <div className="w-5 h-5 sm:w-10 sm:h-10 rounded-full bg-rose-500/95 border border-white/10"></div>
+                  <div className="w-5 h-5 sm:w-10 sm:h-10 rounded-full bg-amber-500/95 border border-white/10 backdrop-blur-sm"></div>
+                </div>
+              )}
             </div>
             {/* Utilization Bar */}
             <div className="w-12 sm:w-28 bg-black/40 h-0.5 sm:h-1.5 rounded-full overflow-hidden border border-white/10 p-[0.5px]">
