@@ -1857,7 +1857,9 @@ const App: React.FC = () => {
               </div>
             </>
           ) : view === 'cards' ? (
-            <CardsListView cards={cards} transactions={transactions} isDarkMode={isDarkMode} onEdit={startEdit} onDelete={setCardToDelete} onAddToCalendar={handleAddToCalendarClick} onShowStatement={handleShowStatementClick} onShowArchive={handleShowArchiveClick} onAddCard={() => setModalMode('add')} onBack={() => setView('dashboard')} onEditTransaction={startEditTransaction} onDeleteTransaction={setTransactionToDelete} categories={categories} />
+            <div className="animate-none transition-none transform-none">
+              <CardsListView cards={cards} transactions={transactions} isDarkMode={isDarkMode} onEdit={startEdit} onDelete={setCardToDelete} onAddToCalendar={handleAddToCalendarClick} onShowStatement={handleShowStatementClick} onShowArchive={handleShowArchiveClick} onAddCard={() => setModalMode('add')} onBack={() => setView('dashboard')} onEditTransaction={startEditTransaction} onDeleteTransaction={setTransactionToDelete} categories={categories} />
+            </div>
           ) : view === 'analysis' ? (
             <AnalysisView
               cards={cards}

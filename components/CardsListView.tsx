@@ -253,7 +253,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
   };
 
   return (
-    <div className="pt-0 pb-0">
+    <div className="pt-0 pb-0 animate-none transition-none transform-none">
       {/* Header Area */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-12">
         <div className="flex items-center gap-4">
