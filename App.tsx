@@ -801,9 +801,9 @@ const App: React.FC = () => {
             const element = document.getElementById(scrollId);
             if (element) {
               const isMobile = window.innerWidth < 768;
-              // Desktop: 20px offset (as agreed)
-              // Mobile: 90px offset upwards (user requested 30px more from -60px)
-              const offset = isMobile ? -90 : 20;
+              // Desktop: 20px offset
+              // Mobile: 3px offset - positions container top border 3px below viewport top
+              const offset = isMobile ? 3 : 20;
               const y = element.getBoundingClientRect().top + window.scrollY - offset;
               window.scrollTo({ top: y, behavior: 'smooth' });
             }
