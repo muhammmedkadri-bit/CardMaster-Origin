@@ -34,19 +34,19 @@ export const dataSyncService = {
         // Use a persistent channel name for the user to allow cross-device broadcasting
         // Session ID is removed to allow multiple devices to join the SAME physical room for broadcasts
         const channelName = `user_sync_${userId}`;
-        console.log(`[Realtime] Subscribing to: ${channelName}`);
+
 
         const channel = supabase.channel(channelName)
             .on('postgres_changes', { event: '*', schema: 'public' }, (p) => {
-                console.log(`[Realtime] DB Change [${p.table}]:`, p.eventType);
+
                 onEvent(p.table, p);
             })
             .on('broadcast', { event: 'refresh' }, () => {
-                console.log("[Realtime] Sync broadcast received! Forcing refetch...");
+
                 onEvent('force_refresh', {});
             })
             .subscribe((status, err) => {
-                console.log(`[Realtime] Status [${channelName}]:`, status);
+
                 if (status === 'CHANNEL_ERROR') {
                     console.error('[Realtime] Connection Error:', err);
                 }

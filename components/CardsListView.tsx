@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import RollingNumber from './RollingNumber';
+import AutoFitText from './AutoFitText';
 import DateRangePicker from './DateRangePicker';
 import PagePicker from './PagePicker';
 import { CreditCard, Transaction, Category } from '../types';
@@ -48,38 +49,7 @@ interface CardsListViewProps {
 
 type LocalTimeRange = 'today' | 'thisweek' | 'thismonth' | 'thisyear' | 'custom';
 
-const AutoFitText = React.memo(({ text, color, baseClass = "text-sm font-black truncate" }: { text: string; color?: string; baseClass?: string }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const textRef = useRef<HTMLParagraphElement>(null);
 
-  useEffect(() => {
-    if (!containerRef.current || !textRef.current) return;
-
-    const container = containerRef.current;
-    const textEl = textRef.current;
-
-    let size = baseClass.includes('sm:text-base') ? 16 : 14;
-    textEl.style.fontSize = `${size}px`;
-
-    // Instant calculation
-    while (textEl.scrollWidth > container.offsetWidth && size > 7) {
-      size -= 0.5;
-      textEl.style.fontSize = `${size}px`;
-    }
-  }, [text, baseClass]);
-
-  return (
-    <div ref={containerRef} className="w-full overflow-hidden">
-      <p
-        ref={textRef}
-        className={baseClass}
-        style={{ color, whiteSpace: 'nowrap' }}
-      >
-        {text}
-      </p>
-    </div>
-  );
-});
 
 const CardsListView: React.FC<CardsListViewProps> = ({
   cards,

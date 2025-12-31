@@ -298,24 +298,26 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
               <div className="bg-slate-50 dark:bg-slate-900/50 p-1.5 rounded-[24px] border border-slate-100 dark:border-slate-800 shadow-inner">
                 <div className="grid grid-cols-2 xs:grid-cols-3 gap-1.5">
                   {(() => {
-                    const seen = new Set<string>();
-                    let uniqueCats = categories.filter(c => {
-                      const key = c.name.toLocaleLowerCase('tr-TR').trim();
-                      if (seen.has(key)) return false;
-                      seen.add(key);
-                      return true;
-                    });
+                    const uniqueCats = React.useMemo(() => {
+                      const seen = new Set<string>();
+                      let list = categories.filter(c => {
+                        const key = c.name.toLocaleLowerCase('tr-TR').trim();
+                        if (seen.has(key)) return false;
+                        seen.add(key);
+                        return true;
+                      });
 
-                    // Ensure "Diğer" is always there and at the end
-                    const hasOther = uniqueCats.some(c => c.name.toLocaleLowerCase('tr-TR') === 'diğer');
-                    if (!hasOther) {
-                      uniqueCats.push({ id: 'default-other', name: 'Diğer', color: '#64748B' });
-                    } else {
-                      // Move it to the end if it exists
-                      const otherIndex = uniqueCats.findIndex(c => c.name.toLocaleLowerCase('tr-TR') === 'diğer');
-                      const otherCat = uniqueCats.splice(otherIndex, 1)[0];
-                      uniqueCats.push(otherCat);
-                    }
+                      const hasOther = list.some(c => c.name.toLocaleLowerCase('tr-TR') === 'diğer');
+                      if (!hasOther) {
+                        list.push({ id: 'default-other', name: 'Diğer', color: '#64748B' });
+                      } else {
+                        const otherIndex = list.findIndex(c => c.name.toLocaleLowerCase('tr-TR') === 'diğer');
+                        const otherCat = list.splice(otherIndex, 1)[0];
+                        list.push(otherCat);
+                      }
+                      return list;
+                    }, [categories]);
+
                     return uniqueCats.length > 0 ? uniqueCats.map(cat => {
                       const isSelected = formData.category.toLocaleLowerCase('tr-TR') === cat.name.toLocaleLowerCase('tr-TR');
                       return (

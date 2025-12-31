@@ -44,6 +44,7 @@ import AutoPaymentModal from './components/AutoPaymentModal';
 import MonthlyAnalysis from './components/MonthlyAnalysis';
 import CalendarReminderModal from './components/CalendarReminderModal';
 import CardsListView from './components/CardsListView';
+import AutoFitText from './components/AutoFitText';
 import AnalysisView from './components/AnalysisView';
 import SettingsView from './components/SettingsView';
 import StatementModal from './components/StatementModal';
@@ -161,38 +162,7 @@ const Toast: React.FC<{ message: string; type: 'warning' | 'info' | 'success'; o
   );
 };
 
-const AutoFitText: React.FC<{ text: string; color?: string; baseClass?: string }> = ({ text, color, baseClass = "text-sm font-black truncate" }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const textRef = useRef<HTMLParagraphElement>(null);
 
-  useEffect(() => {
-    if (!containerRef.current || !textRef.current) return;
-
-    const container = containerRef.current;
-    const textEl = textRef.current;
-
-    let size = 14; // base text-sm
-    textEl.style.fontSize = `${size}px`;
-
-    // Instant calculation to prevent resizing animation
-    while (textEl.scrollWidth > container.offsetWidth && size > 7) {
-      size -= 0.5;
-      textEl.style.fontSize = `${size}px`;
-    }
-  }, [text]);
-
-  return (
-    <div ref={containerRef} className="w-full overflow-hidden">
-      <p
-        ref={textRef}
-        className={baseClass}
-        style={{ color, whiteSpace: 'nowrap' }}
-      >
-        {text}
-      </p>
-    </div>
-  );
-};
 
 const deduplicateCategories = (cats: Category[]) => {
   const seen = new Set<string>();
@@ -577,7 +547,7 @@ const App: React.FC = () => {
         });
 
         if (newHash !== lastDataHash) {
-          console.log("[App] Data changed, updating UI...");
+
           if (data.cards) setCards(data.cards);
           if (data.transactions) setTransactions(data.transactions);
           if (data.categories) setCategories(deduplicateCategories(data.categories));
@@ -597,7 +567,7 @@ const App: React.FC = () => {
       }
 
       const channel = dataSyncService.subscribeToChanges(user.id, async (table, payload) => {
-        console.log(`[Realtime] Event on ${table}:`, payload.eventType);
+
 
         // Incremental Update for Notifications (Fast & Reliable)
         // Optimized realtime handling for instant updates
@@ -628,7 +598,7 @@ const App: React.FC = () => {
             setTransactions(prev => {
               const exists = prev.some(t => t.id === newTx.id);
               if (exists) {
-                console.log('[Realtime] Transaction already exists locally, skipping duplicate');
+
                 return prev;
               }
               return [newTx, ...prev];
@@ -665,7 +635,7 @@ const App: React.FC = () => {
             setCards(prev => {
               const exists = prev.some(c => c.id === newCard.id);
               if (exists) {
-                console.log('[Realtime] Card already exists locally, skipping duplicate');
+
                 return prev;
               }
               return [...prev, newCard];
@@ -678,7 +648,7 @@ const App: React.FC = () => {
         }
 
         // For other changes, do a full sync
-        console.log(`[Realtime] Full sync triggered by ${table} change`);
+
         await syncAll();
       });
 
@@ -694,7 +664,7 @@ const App: React.FC = () => {
     // Critical: Browser throttles/pauses Realtime when tab is in background
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        console.log("[Visibility] Tab became active, syncing immediately...");
+
         syncAll();
       }
     };
@@ -727,7 +697,7 @@ const App: React.FC = () => {
     const checkInterval = setInterval(() => {
       const isBroken = !realtimeChannelRef.current || realtimeChannelRef.current.state !== 'joined';
       if (isBroken) {
-        console.log("[Health] Realtime connection broken, reconnecting...");
+
         connectRealtime();
       }
     }, 10000);
@@ -751,7 +721,7 @@ const App: React.FC = () => {
 
     const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible') {
-        console.log("[App] App became visible (Active), refreshing data...");
+
 
         // 1. Immediate Data Refresh
         const data = await dataSyncService.fetchAllData(user.id);
@@ -1301,7 +1271,7 @@ const App: React.FC = () => {
       // Broadcast sync signal to other devices
       await dataSyncService.sendSyncSignal(user.id);
 
-      console.log('[Delete] Transaction deleted and card balance updated in DB');
+
     } catch (error) {
       console.error('[Delete] Failed to sync:', error);
       showToast('Senkronizasyon hatası', 'warning');
