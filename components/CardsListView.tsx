@@ -525,7 +525,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                     <div className="flex gap-4 sm:gap-6 items-stretch">
                       <div
                         id="cards-transactions-list"
-                        className={`flex-1 space-y-2.5 min-w-0 transition-all duration-200 ease-out min-h-[460px] scroll-mt-24 ${slideDirection !== null ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'
+                        className={`flex-1 space-y-2.5 min-w-0 transition-all duration-200 ease-out min-h-[457px] scroll-mt-24 ${slideDirection !== null ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'
                           }`}
                       >
                         {paginatedTransactions.length > 0 ? paginatedTransactions.map(tx => {
