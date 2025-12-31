@@ -407,6 +407,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                       />
                     </div>
                     <div className={`p-3 sm:p-5 rounded-[28px] flex flex-col justify-center ${isDarkMode ? 'bg-slate-800/30' : 'bg-slate-50'}`}>
+                      <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1 leading-tight">KALAN LİMİT</p>
                       <p className={`text-xs sm:text-base font-black truncate ${isDarkMode ? 'text-[#34d399]' : 'text-[#059669]'}`}>
                         {`${remainingLimit.toLocaleString('tr-TR')} ₺`}
                       </p>
