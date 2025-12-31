@@ -224,6 +224,12 @@ const CardsListView: React.FC<CardsListViewProps> = ({
     } else {
       setExpandedCardId(cardId);
       setCurrentPage(1);
+      setTimeout(() => {
+        const el = document.getElementById(`expanded-ctrl-${cardId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 300);
     }
   };
 
@@ -434,7 +440,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                     </div>
                   </div>
 
-                  <div className="lg:col-span-12 grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
+                  <div id={`expanded-ctrl-${card.id}`} className="lg:col-span-12 grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8 scroll-mt-28">
                     <button
                       onClick={() => handleCardExpand(card.id)}
                       className={`w-full p-5 rounded-[24px] border border-dashed font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-4 ${isExpanded
