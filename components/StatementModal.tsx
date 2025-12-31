@@ -65,7 +65,7 @@ const StatementModal: React.FC<StatementModalProps> = ({ card, transactions, isD
     return cardFiltered.filter(t => {
       const d = new Date(t.date);
       return d >= start && d <= end;
-    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }).sort((a, b) => b.date.localeCompare(a.date));
   }, [card.id, transactions, timeRange, customStart, customEnd]);
 
   const stats = useMemo(() => {

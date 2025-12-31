@@ -19,11 +19,16 @@ export interface Transaction {
   cardId: string;
   cardName: string;
   type: 'spending' | 'payment';
-  amount: number;
+  amount: number; // This remains the 'impact' amount (e.g., total for limit, or monthly installment depending on logic)
   category: string;
   date: string;
   description: string;
   confirmationUrl?: string;
+  // Enhanced Fields
+  expenseType?: 'regular' | 'installment' | 'cash_advance';
+  installments?: number;
+  installmentAmount?: number;
+  totalAmount?: number;
 }
 
 export interface AIInsight {

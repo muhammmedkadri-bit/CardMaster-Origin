@@ -1,6 +1,7 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import RollingNumber from './RollingNumber';
+import DateRangePicker from './DateRangePicker';
 import { CreditCard, Transaction, Category } from '../types';
 import {
   Plus,
@@ -10,6 +11,7 @@ import {
   CalendarPlus,
   TrendingUp,
   ChevronRight,
+  ChevronLeft,
   ShieldCheck,
   AlertCircle,
   TrendingDown,
@@ -45,6 +47,43 @@ interface CardsListViewProps {
 
 type LocalTimeRange = 'today' | 'thisweek' | 'thismonth' | 'thisyear' | 'custom';
 
+const AutoFitText: React.FC<{ text: string; color?: string; baseClass?: string }> = ({ text, color, baseClass = "text-sm font-black truncate" }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current || !textRef.current) return;
+
+    const container = containerRef.current;
+    const textEl = textRef.current;
+
+    let size = baseClass.includes('sm:text-base') ? 16 : 14;
+    textEl.style.fontSize = `${size}px`;
+
+    const checkAndShrink = () => {
+      if (textEl.scrollWidth > container.offsetWidth && size > 7) {
+        size -= 0.5;
+        textEl.style.fontSize = `${size}px`;
+        requestAnimationFrame(checkAndShrink);
+      }
+    };
+
+    checkAndShrink();
+  }, [text, baseClass]);
+
+  return (
+    <div ref={containerRef} className="w-full overflow-hidden">
+      <p
+        ref={textRef}
+        className={baseClass}
+        style={{ color, whiteSpace: 'nowrap', transition: 'font-size 0.2s ease' }}
+      >
+        {text}
+      </p>
+    </div>
+  );
+};
+
 const CardsListView: React.FC<CardsListViewProps> = ({
   cards,
   transactions,
@@ -64,6 +103,19 @@ const CardsListView: React.FC<CardsListViewProps> = ({
   const [localRange, setLocalRange] = useState<LocalTimeRange>('thismonth');
   const [customStart, setCustomStart] = useState<string>(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
   const [customEnd, setCustomEnd] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedBank, setSelectedBank] = useState<string>('all');
+  const ITEMS_PER_PAGE = 5;
+
+  const banks = useMemo(() => {
+    const uniqueBanks = Array.from(new Set(cards.map(c => c.bankName))).filter(Boolean).sort();
+    return ['all', ...uniqueBanks];
+  }, [cards]);
+
+  const filteredCards = useMemo(() => {
+    if (selectedBank === 'all') return cards;
+    return cards.filter(c => c.bankName === selectedBank);
+  }, [cards, selectedBank]);
 
   const formatDateDisplay = (dateStr: string) => {
     if (!dateStr) return '';
@@ -115,6 +167,20 @@ const CardsListView: React.FC<CardsListViewProps> = ({
     return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   };
 
+  const handleRangeChange = (r: LocalTimeRange) => {
+    setLocalRange(r);
+    setCurrentPage(1);
+  };
+
+  const handleCardExpand = (cardId: string) => {
+    if (expandedCardId === cardId) {
+      setExpandedCardId(null);
+    } else {
+      setExpandedCardId(cardId);
+      setCurrentPage(1);
+    }
+  };
+
   return (
     <div className="pt-0 pb-10">
       {/* Header Area */}
@@ -128,26 +194,58 @@ const CardsListView: React.FC<CardsListViewProps> = ({
           </div>
         </div>
 
-        <button
-          onClick={onAddCard}
-          className="w-full sm:w-auto flex items-center justify-center gap-3 bg-blue-600 text-white px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-600/20 hover:bg-blue-700 active:scale-95 transition-all"
-        >
-          <Plus size={20} strokeWidth={3} />
-          <span>YENİ KART EKLE</span>
-        </button>
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+          <div className="relative w-full sm:w-auto sm:min-w-[200px]">
+            <select
+              value={selectedBank}
+              onChange={(e) => {
+                setSelectedBank(e.target.value);
+                setExpandedCardId(null);
+              }}
+              className={`w-full appearance-none pl-11 pr-10 py-4 rounded-2xl border font-black text-xs uppercase tracking-widest outline-none transition-all cursor-pointer ${isDarkMode
+                ? 'bg-slate-800 border-slate-700 text-white focus:ring-blue-500/50'
+                : 'bg-white border-slate-200 text-slate-800 focus:ring-blue-500/20 shadow-sm'
+                }`}
+            >
+              {banks.map(b => (
+                <option key={b} value={b}>
+                  {b === 'all' ? 'TÜM BANKALAR' : b.toLocaleUpperCase('tr-TR')}
+                </option>
+              ))}
+            </select>
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-blue-500">
+              <Filter size={16} strokeWidth={3} />
+            </div>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
+              <ChevronDown size={14} strokeWidth={3} />
+            </div>
+          </div>
+
+          <button
+            onClick={onAddCard}
+            className="w-full sm:w-auto flex items-center justify-center gap-3 bg-blue-600 text-white px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-600/20 hover:bg-blue-700 active:scale-95 transition-all"
+          >
+            <Plus size={20} strokeWidth={3} />
+            <span>YENİ KART EKLE</span>
+          </button>
+        </div>
       </div>
 
       {/* Cards Detailed List */}
       <div className="space-y-6">
-        {cards.length > 0 ? cards.map((card) => {
-          const isCreditBalance = card.balance < 0;
-          const displayBalance = Math.abs(card.balance);
-          const utilization = isCreditBalance ? 0 : (card.balance / card.limit) * 100;
+        {filteredCards.length > 0 ? filteredCards.map((card) => {
+          const balanceValue = card.balance;
+          const isCreditBalance = balanceValue < 0;
+          const isNeutralBalance = balanceValue === 0;
+          const displayBalance = Math.abs(balanceValue);
+          const utilization = isNeutralBalance ? 0 : (balanceValue > 0 ? (balanceValue / card.limit) * 100 : 0);
           const remainingLimit = card.limit - card.balance;
           const isHighUsage = utilization >= 80;
           const estimatedMinPayment = card.balance > 0 ? (card.balance * (card.minPaymentRatio / 100)) : 0;
           const isExpanded = expandedCardId === card.id;
           const cardTransactions = getFilteredTransactions(card.id);
+          const totalPages = Math.ceil(cardTransactions.length / ITEMS_PER_PAGE);
+          const paginatedTransactions = cardTransactions.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
           return (
             <div
@@ -163,7 +261,10 @@ const CardsListView: React.FC<CardsListViewProps> = ({
 
               <div className="flex flex-col gap-8">
                 {/* Header Section */}
-                <div className="flex items-start gap-4 sm:gap-6">
+                <div
+                  className="flex items-start gap-4 sm:gap-6 cursor-pointer select-none"
+                  onClick={() => handleCardExpand(card.id)}
+                >
                   {/* Card Visual Identity */}
                   <div
                     className="w-16 h-11 sm:w-20 sm:h-14 rounded-xl flex items-center justify-center text-white shadow-lg shrink-0 transform -rotate-2 group-hover:rotate-0 transition-transform duration-500"
@@ -180,7 +281,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                       </h3>
 
                       {/* Actions Group */}
-                      <div className={`flex items-center gap-1 p-1 rounded-xl border shrink-0 ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-100 shadow-inner'}`}>
+                      <div className={`flex items-center gap-1 p-1 rounded-xl border shrink-0 ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-100 shadow-inner'}`} onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => onShowStatement(card)}
                           className={`p-1.5 rounded-lg transition-all hover:scale-110 active:scale-90 ${isDarkMode ? 'text-blue-400 hover:bg-blue-500 hover:text-white' : 'text-blue-600 hover:bg-blue-600 hover:text-white'}`}
@@ -259,15 +360,19 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                   <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 pr-0 sm:pr-12">
                     <div className={`p-3 sm:p-5 rounded-[28px] flex flex-col justify-center border ${isDarkMode ? 'bg-amber-500/5 border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.05)]' : 'bg-amber-50 border-amber-100 shadow-sm'}`}>
                       <p className="text-[8px] font-black text-amber-600 uppercase tracking-widest mb-1 leading-tight">TAHMİNİ ASGARİ</p>
-                      <p className={`text-xs sm:text-base font-black truncate ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`}>
-                        {estimatedMinPayment.toLocaleString('tr-TR')} ₺
-                      </p>
+                      <AutoFitText
+                        text={`${estimatedMinPayment.toLocaleString('tr-TR')} ₺`}
+                        color={isDarkMode ? '#fbbf24' : '#d97706'}
+                        baseClass="text-xs sm:text-base font-black"
+                      />
                     </div>
                     <div className={`p-3 sm:p-5 rounded-[28px] flex flex-col justify-center ${isDarkMode ? 'bg-slate-800/30' : 'bg-slate-50'}`}>
                       <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1 leading-tight">KALAN LİMİT</p>
-                      <p className={`text-xs sm:text-base font-black truncate ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                        {remainingLimit.toLocaleString('tr-TR')} ₺
-                      </p>
+                      <AutoFitText
+                        text={`${remainingLimit.toLocaleString('tr-TR')} ₺`}
+                        color={isDarkMode ? '#34d399' : '#059669'}
+                        baseClass="text-xs sm:text-base font-black"
+                      />
                     </div>
                     <div className={`p-3 sm:p-5 rounded-[28px] flex flex-col justify-center ${isDarkMode ? 'bg-slate-800/30' : 'bg-slate-50'}`}>
                       <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1 leading-tight">HESAP KESİM</p>
@@ -285,7 +390,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
 
                   <div className="lg:col-span-12 grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
                     <button
-                      onClick={() => setExpandedCardId(isExpanded ? null : card.id)}
+                      onClick={() => handleCardExpand(card.id)}
                       className={`w-full p-5 rounded-[24px] border border-dashed font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-4 ${isExpanded
                         ? (isDarkMode ? 'bg-blue-500/10 border-blue-500/40 text-blue-400' : 'bg-blue-50 border-blue-200 text-blue-600 shadow-sm')
                         : (isDarkMode ? 'border-slate-800 text-slate-500 hover:bg-slate-800/30 hover:text-blue-400 hover:border-blue-500/50' : 'border-slate-200 text-slate-400 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200')
@@ -311,145 +416,229 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                 {/* Expanded Transaction List Area */}
                 {isExpanded && (
                   <div className={`mt-2 p-6 sm:p-8 rounded-[32px] border animate-in slide-in-from-top-4 duration-500 ${isDarkMode ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50/80 border-slate-200'}`}>
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-8">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-blue-600/10 text-blue-600 rounded-2xl shrink-0"><History size={20} /></div>
-                        <h4 className={`text-base font-black uppercase tracking-widest leading-none ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>KART HAREKETLERİ</h4>
-                      </div>
+                    {/* Transaction Header & Pagination Controls */}
+                    <div className="flex flex-col gap-6 mb-10">
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2.5 bg-blue-600/10 text-blue-600 rounded-2xl shrink-0"><History size={20} /></div>
+                          <h4 className={`text-sm sm:text-base font-black uppercase tracking-widest leading-none ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>KART HAREKETLERİ</h4>
+                        </div>
 
-                      <div className="grid grid-cols-3 gap-2 mb-8">
-                        {(['today', 'thisweek', 'thismonth', 'thisyear', 'custom'] as LocalTimeRange[]).map(r => (
-                          <button
-                            key={r}
-                            onClick={() => setLocalRange(r)}
-                            className={`px-2 py-4 rounded-[20px] text-[9px] font-black uppercase tracking-wider transition-all duration-300 select-none border ${localRange === r
-                              ? (isDarkMode
-                                ? 'bg-slate-700 text-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-black/20 translate-y-[1px]'
-                                : 'bg-white text-blue-600 shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)] border-slate-200/50 translate-y-[1px]')
-                              : isDarkMode
-                                ? 'bg-[#0f172a]/80 text-slate-400 border-slate-800/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] hover:bg-[#1e293b]'
-                                : 'bg-white text-slate-500 border-slate-100 shadow-sm hover:bg-slate-50 hover:border-slate-200'
-                              } active:scale-95`}
-                          >
-                            {r === 'today' ? 'Bugün' : r === 'thisweek' ? 'Bu Hafta' : r === 'thismonth' ? 'Bu Ay' : r === 'thisyear' ? 'Bu Yıl' : 'Özel'}
-                          </button>
-                        ))}
+                        {/* Time Range Filters - Moved to top-right */}
+                        <div className="grid grid-cols-3 sm:flex sm:items-center gap-2">
+                          {(['today', 'thisweek', 'thismonth', 'thisyear', 'custom'] as LocalTimeRange[]).map(r => (
+                            <button
+                              key={r}
+                              onClick={() => handleRangeChange(r)}
+                              className={`flex-1 sm:flex-none px-4 py-3 rounded-[20px] text-[9px] font-black uppercase tracking-widest transition-all duration-300 border ${localRange === r
+                                ? (isDarkMode
+                                  ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-600/20'
+                                  : 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-600/20')
+                                : isDarkMode
+                                  ? 'bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800 hover:border-slate-700'
+                                  : 'bg-white text-slate-500 border-slate-100 hover:bg-slate-50 hover:border-slate-200 shadow-sm'
+                                } active:scale-95`}
+                            >
+                              {r === 'today' ? 'Bugün' : r === 'thisweek' ? 'Hafta' : r === 'thismonth' ? 'Ay' : r === 'thisyear' ? 'Yıl' : 'Özel'}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
 
                     {localRange === 'custom' && (
-                      <div className="flex flex-col sm:flex-row gap-3 mb-8 animate-in slide-in-from-top-4 duration-500">
-                        <div className={`flex-1 p-4 rounded-2xl border transition-all ${isDarkMode ? 'bg-slate-900 border-slate-800 focus-within:border-blue-500' : 'bg-white border-slate-100 shadow-sm focus-within:border-blue-500'}`}>
-                          <div className="flex items-center justify-between mb-2">
-                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">BAŞLANGIÇ</label>
-                            <History size={12} className="text-slate-300" />
-                          </div>
-                          <input
-                            type="date"
-                            value={customStart}
-                            onChange={e => setCustomStart(e.target.value)}
-                            className={`w-full bg-transparent outline-none text-sm font-black ${isDarkMode ? 'text-white' : 'text-slate-800'}`}
-                          />
-                        </div>
-                        <div className={`flex-1 p-4 rounded-2xl border transition-all ${isDarkMode ? 'bg-slate-900 border-slate-800 focus-within:border-blue-500' : 'bg-white border-slate-100 shadow-sm focus-within:border-blue-500'}`}>
-                          <div className="flex items-center justify-between mb-2">
-                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">BİTİŞ</label>
-                            <Clock size={12} className="text-slate-300" />
-                          </div>
-                          <input
-                            type="date"
-                            value={customEnd}
-                            onChange={e => setCustomEnd(e.target.value)}
-                            className={`w-full bg-transparent outline-none text-sm font-black ${isDarkMode ? 'text-white' : 'text-slate-800'}`}
-                          />
-                        </div>
+                      <div className="mb-8 animate-in slide-in-from-top-4 duration-500 max-w-2xl">
+                        <DateRangePicker
+                          startDate={customStart}
+                          endDate={customEnd}
+                          onChange={(start, end) => {
+                            setCustomStart(start);
+                            setCustomEnd(end);
+                          }}
+                          isDarkMode={isDarkMode}
+                        />
                       </div>
                     )}
 
-                    <div className="space-y-3 max-h-[400px] overflow-y-auto no-scrollbar pr-1">
-                      {cardTransactions.length > 0 ? cardTransactions.map(tx => {
-                        const categoryInfo = categories.find(c => c.name.toLocaleLowerCase('tr-TR') === tx.category.toLocaleLowerCase('tr-TR'));
-                        const categoryColor = categoryInfo?.color || card.color;
-                        const cardColor = card.color;
-                        const isSpending = tx.type === 'spending';
+                    {/* Main Content Area with Vertical Pagination on the Right */}
+                    <div className="flex gap-4 sm:gap-6 items-center">
+                      {/* Left: Transaction List (Full Width) */}
+                      <div className="flex-1 space-y-2.5 min-w-0 min-h-[400px]">
+                        {paginatedTransactions.length > 0 ? paginatedTransactions.map(tx => {
+                          const categoryName = tx.category || 'Diğer';
+                          const categoryInfo = categories.find(c => c.name.toLocaleLowerCase('tr-TR') === categoryName.toLocaleLowerCase('tr-TR'));
+                          const categoryColor = categoryInfo?.color || card.color;
+                          const cardColor = card.color;
+                          const isSpending = tx.type === 'spending';
 
-                        return (
-                          <div key={tx.id} className={`relative p-5 sm:p-6 rounded-[32px] border transition-all mb-4 ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
-                            {/* Mobile Layout (User Requested Specific Style) */}
-                            <div className="flex flex-col gap-5 sm:hidden">
-                              {/* Top Row: Type & Buttons */}
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                  <div className={`w-1.5 h-6 rounded-full shrink-0 ${isSpending ? 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.4)]' : 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]'}`} />
-                                  <span className={`text-[11px] font-black uppercase tracking-[0.2em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                                    {isSpending ? 'HARCAMA' : 'ÖDEME'}
-                                  </span>
+                          return (
+                            <div key={tx.id} className={`relative p-3.5 sm:px-5 sm:py-3.5 rounded-[24px] border transition-all ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                              {/* Mobile Layout */}
+                              <div className="flex flex-col gap-3 sm:hidden">
+                                {/* Top Row: Type & Buttons */}
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <div className={`w-1 h-4 rounded-full shrink-0 ${isSpending ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]'}`} />
+                                    <span className={`text-[9px] font-black uppercase tracking-[0.15em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                                      {isSpending ? 'HARCAMA' : 'ÖDEME'}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <button onClick={() => onEditTransaction(tx)} className={`p-2 rounded-lg transition-all ${isDarkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}><Edit2 size={12} /></button>
+                                    <button onClick={() => onDeleteTransaction(tx)} className={`p-2 rounded-lg transition-all ${isDarkMode ? 'bg-rose-500/10 text-rose-400' : 'bg-rose-50 text-rose-600'}`}><Trash2 size={12} /></button>
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <button onClick={() => onEditTransaction(tx)} className={`p-2.5 rounded-xl transition-all ${isDarkMode ? 'bg-blue-500/10 text-blue-400 border border-blue-500/10' : 'bg-blue-50 text-blue-600 border border-blue-100'}`}><Edit2 size={14} /></button>
-                                  <button onClick={() => onDeleteTransaction(tx)} className={`p-2.5 rounded-xl transition-all ${isDarkMode ? 'bg-rose-500/10 text-rose-400 border border-rose-500/10' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}><Trash2 size={14} /></button>
-                                </div>
-                              </div>
 
-                              {/* Middle Row: Description */}
-                              <div className="text-left">
-                                <p className={`text-[16px] font-black tracking-tight leading-relaxed ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-                                  {tx.description || (isSpending ? 'Harcama' : 'Ödeme')}
-                                </p>
-                              </div>
-
-                              {/* Third Row: Category Pill & Amount */}
-                              <div className="flex items-center justify-between gap-4">
-                                <div className="px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] whitespace-nowrap text-white shadow-sm" style={{ backgroundColor: categoryColor }}>
-                                  {tx.category}
-                                </div>
-                                <p className={`text-xl font-black tracking-tighter ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                  {isSpending ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
-                                </p>
-                              </div>
-
-                              {/* Bottom Row: Date & Time */}
-                              <div className="flex items-center gap-2 opacity-60">
-                                <Clock size={12} className="text-slate-500" />
-                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{formatDateDisplay(tx.date)}</p>
-                              </div>
-                            </div>
-
-                            {/* Desktop Layout (Dashboard sm Style) */}
-                            <div className="hidden sm:flex items-center justify-between">
-                              <div className="flex items-center gap-5 flex-1 min-w-0">
-                                <div className={`p-4 rounded-2xl shrink-0 ${isSpending ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                                  {isSpending ? <ShoppingBag size={20} /> : <PaymentIcon size={20} />}
-                                </div>
-                                <div className="flex flex-col min-w-0 pr-4">
-                                  <p className={`font-black text-base tracking-tight truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-                                    {tx.description || (isSpending ? 'HARCAMA' : 'ÖDEME')}
+                                {/* Middle Row: Description & Amount */}
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="flex flex-col flex-1 min-w-0">
+                                    <p className={`text-[13px] font-black tracking-tight truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                                      {tx.description || (isSpending ? 'Harcama' : 'Ödeme')}
+                                    </p>
+                                    {isSpending && tx.expenseType === 'installment' && (
+                                      <div className="flex items-center gap-1.5 mt-0.5">
+                                        <TrendingUp size={10} className="text-blue-500" />
+                                        <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">
+                                          {tx.installments} TAKSİT ({tx.installmentAmount?.toLocaleString('tr-TR')} ₺ / Ay)
+                                        </span>
+                                      </div>
+                                    )}
+                                    {isSpending && tx.expenseType === 'cash_advance' && (
+                                      <div className="flex items-center gap-1.5 mt-0.5">
+                                        <Zap size={10} className="text-rose-500" />
+                                        <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest">
+                                          TAKSİTLİ NAKİT AVANS
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <p className={`text-sm font-black tracking-tighter shrink-0 ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                    {isSpending ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
                                   </p>
-                                  <div className="flex items-center gap-3 mt-1">
-                                    <div className="px-2.5 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
-                                      {card.cardName}
+                                </div>
+
+                                {/* Bottom Row: Category Pill & Date */}
+                                <div className="flex items-center justify-between">
+                                  <div className="px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest text-white shadow-sm" style={{ backgroundColor: categoryColor }}>
+                                    {tx.category}
+                                  </div>
+                                  <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest opacity-60">{formatDateDisplay(tx.date)}</p>
+                                </div>
+                              </div>
+
+                              {/* Desktop Layout (Slimmed Down) */}
+                              <div className="hidden sm:flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-4 flex-1 min-w-0">
+                                  <div className={`p-2.5 rounded-xl shrink-0 ${isSpending ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                                    {isSpending ? <ShoppingBag size={16} /> : <PaymentIcon size={16} />}
+                                  </div>
+                                  <div className="flex flex-col min-w-0">
+                                    <p className={`font-black text-sm tracking-tight truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+                                      {tx.description || (isSpending ? 'HARCAMA' : 'ÖDEME')}
+                                    </p>
+                                    {isSpending && tx.expenseType === 'installment' && (
+                                      <div className="flex items-center gap-1.5 mb-1">
+                                        <TrendingUp size={10} className="text-blue-600" />
+                                        <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest">
+                                          {tx.installments} TAKSİT ({tx.installmentAmount?.toLocaleString('tr-TR')} ₺ / AY)
+                                        </span>
+                                      </div>
+                                    )}
+                                    {isSpending && tx.expenseType === 'cash_advance' && (
+                                      <div className="flex items-center gap-1.5 mb-1">
+                                        <Zap size={10} className="text-rose-600" />
+                                        <span className="text-[9px] font-black text-rose-600 uppercase tracking-widest">
+                                          TAKSİTLİ NAKİT AVANS
+                                        </span>
+                                      </div>
+                                    )}
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                      <div className="px-2 py-0.5 rounded-md border text-[8px] font-black tracking-widest" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
+                                        {card.cardName.toLocaleUpperCase('tr-TR')}
+                                      </div>
+                                      <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">{formatDateDisplay(tx.date)}</span>
                                     </div>
-                                    <span className="text-[10px] text-slate-300 dark:text-slate-700">•</span>
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{formatDateDisplay(tx.date)}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-5">
+                                  <p className={`text-base font-black tracking-tighter ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                    {isSpending ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
+                                  </p>
+                                  <div className="flex items-center gap-1.5 opacity-100 transition-all">
+                                    <button onClick={() => onEditTransaction(tx)} className={`p-2 rounded-xl transition-all border ${isDarkMode ? 'bg-blue-500/5 text-blue-400 border-blue-500/10 hover:bg-blue-500/20' : 'bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100'}`} title="Düzenle"><Edit2 size={14} /></button>
+                                    <button onClick={() => onDeleteTransaction(tx)} className={`p-2 rounded-xl transition-all border ${isDarkMode ? 'bg-rose-500/5 text-rose-400 border-rose-500/10 hover:bg-rose-500/20' : 'bg-rose-50 text-rose-600 border-rose-100 hover:bg-rose-100'}`} title="Sil"><Trash2 size={14} /></button>
                                   </div>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-6">
-                                <p className={`text-xl font-black tracking-tighter ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                  {isSpending ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
-                                </p>
-                                <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all">
-                                  <button onClick={() => onEditTransaction(tx)} className={`p-2.5 rounded-xl transition-all ${isDarkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}><Edit2 size={16} /></button>
-                                  <button onClick={() => onDeleteTransaction(tx)} className={`p-2.5 rounded-xl transition-all ${isDarkMode ? 'bg-rose-500/10 text-rose-400' : 'bg-rose-50 text-rose-600'}`}><Trash2 size={16} /></button>
-                                </div>
+                            </div>
+                          );
+                        }) : (
+                          <div className="py-12 text-center">
+                            <Inbox size={32} className="text-slate-300 dark:text-slate-700 mx-auto mb-4" />
+                            <p className="text-xs font-bold text-slate-500 italic uppercase tracking-widest">İşlem kaydı bulunmuyor</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Right: Vertical Pagination Control Tower - Centered Vertically */}
+                      {totalPages > 1 && (
+                        <div className={`flex flex-col items-center gap-4 p-2.5 sm:p-3.5 rounded-[32px] border transition-all duration-500 self-center ${isDarkMode
+                          ? 'bg-[#0f172a]/90 border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.5),_inset_0_1px_1px_rgba(255,255,255,0.05)] backdrop-blur-xl'
+                          : 'bg-white/90 border-slate-200/60 shadow-[0_20px_50px_rgba(37,99,235,0.1),_inset_0_1px_1px_rgba(255,255,255,0.8)] backdrop-blur-xl'
+                          }`}>
+                          <button
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            className={`p-3 rounded-2xl transition-all duration-300 border ${currentPage === 1
+                              ? 'opacity-20 cursor-not-allowed border-transparent'
+                              : `hover:bg-blue-600 hover:text-white active:scale-95 shadow-lg ${isDarkMode
+                                ? 'bg-slate-900 border-slate-800 text-slate-400 hover:shadow-blue-500/20'
+                                : 'bg-slate-50 border-slate-200 text-slate-500 hover:shadow-blue-500/20 shadow-[0_4px_10px_rgba(0,0,0,0.05)]'
+                              }`
+                              }`}
+                            title="Önceki Sayfa"
+                          >
+                            <ChevronUp size={20} className="stroke-[2.5px]" />
+                          </button>
+
+                          <div className="flex flex-col items-center gap-1.5 py-1">
+                            {/* Animated Vertical Counter Window - Menu Bar Style Depth */}
+                            <div className={`relative w-10 h-14 overflow-hidden rounded-[20px] border transition-all duration-500 ${isDarkMode
+                              ? 'bg-slate-800 border-slate-700 shadow-[inset_0_3px_8px_rgba(0,0,0,0.5),_0_1px_1px_rgba(255,255,255,0.05)]'
+                              : 'bg-white border-slate-200 shadow-[inset_0_3px_8px_rgba(0,0,0,0.1),_0_1px_2px_rgba(0,0,0,0.05)]'
+                              }`}>
+                              <div
+                                className="absolute inset-0 flex flex-col transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+                                style={{ transform: `translateY(-${(currentPage - 1) * 100}%)` }}
+                              >
+                                {[...Array(totalPages)].map((_, i) => (
+                                  <div
+                                    key={i}
+                                    className={`min-h-full w-full flex items-center justify-center text-[13px] font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-blue-600'}`}
+                                  >
+                                    {i + 1}
+                                  </div>
+                                ))}
                               </div>
                             </div>
+                            <div className="h-px w-5 bg-slate-300/50 dark:bg-slate-700/50 my-1" />
+                            <span className={`text-[11px] font-black tracking-tighter ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{totalPages}</span>
                           </div>
-                        );
-                      }) : (
-                        <div className="py-12 text-center">
-                          <Inbox size={32} className="text-slate-300 dark:text-slate-700 mx-auto mb-4" />
-                          <p className="text-xs font-bold text-slate-500 italic uppercase tracking-widest">İşlem kaydı bulunmuyor</p>
+
+                          <button
+                            disabled={currentPage === totalPages}
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            className={`p-3 rounded-2xl transition-all duration-300 border ${currentPage === totalPages
+                              ? 'opacity-20 cursor-not-allowed border-transparent'
+                              : `hover:bg-blue-600 hover:text-white active:scale-95 shadow-lg ${isDarkMode
+                                ? 'bg-slate-900 border-slate-800 text-slate-400 hover:shadow-blue-500/20'
+                                : 'bg-slate-50 border-slate-200 text-slate-500 hover:shadow-blue-500/20 shadow-[0_4px_10px_rgba(0,0,0,0.05)]'
+                              }`
+                              }`}
+                            title="Sonraki Sayfa"
+                          >
+                            <ChevronDown size={20} className="stroke-[2.5px]" />
+                          </button>
                         </div>
                       )}
                     </div>
@@ -484,7 +673,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
             </div>
             <div>
               <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block mb-0.5">TOPLAM KART</span>
-              <span className={`text-xl font-black ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{cards.length} Adet</span>
+              <span className={`text-xl font-black ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{filteredCards.length} Adet</span>
             </div>
           </div>
 
@@ -495,7 +684,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
             <div>
               <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block mb-0.5">TOPLAM LİMİT</span>
               <RollingNumber
-                value={cards.reduce((a, b) => a + b.limit, 0)}
+                value={filteredCards.reduce((a, b) => a + b.limit, 0)}
                 className={`text-xl font-black ${isDarkMode ? 'text-white' : 'text-slate-800'}`}
               />
             </div>
@@ -508,8 +697,9 @@ const CardsListView: React.FC<CardsListViewProps> = ({
             <div>
               <span className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] block mb-0.5">TOPLAM BORÇ</span>
               <RollingNumber
-                value={cards.reduce((a, b) => a + (b.balance > 0 ? b.balance : 0), 0)}
+                value={filteredCards.reduce((a, b) => a + (b.balance > 0 ? b.balance : 0), 0)}
                 className="text-xl font-black text-rose-500"
+                showSign={filteredCards.reduce((a, b) => a + (b.balance > 0 ? b.balance : 0), 0) > 0}
               />
             </div>
           </div>
@@ -521,7 +711,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
             <div>
               <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] block mb-0.5">TOPLAM ASGARİ</span>
               <RollingNumber
-                value={cards.reduce((acc, c) => acc + (c.balance > 0 ? (c.balance * (c.minPaymentRatio / 100)) : 0), 0)}
+                value={filteredCards.reduce((acc, c) => acc + (c.balance > 0 ? (c.balance * (c.minPaymentRatio / 100)) : 0), 0)}
                 className="text-xl font-black text-blue-600"
               />
             </div>

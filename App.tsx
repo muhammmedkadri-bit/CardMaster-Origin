@@ -814,9 +814,42 @@ const App: React.FC = () => {
     }
   };
 
-  const handleViewChange = (newView: 'dashboard' | 'cards' | 'analysis' | 'settings') => {
-    if (newView === view) return;
-    setView(newView);
+  const handleViewChange = (newView: 'dashboard' | 'cards' | 'analysis' | 'settings', scrollId?: string) => {
+    if (newView !== view) {
+      if (!scrollId) {
+        window.scrollTo({ top: 0, behavior: 'auto' });
+      }
+      setView(newView);
+
+      if (scrollId) {
+        setTimeout(() => {
+          const element = document.getElementById(scrollId);
+          if (element) {
+            const offset = 80;
+            const elementPosition = element.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - offset;
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: "smooth"
+            });
+          }
+        }, 150);
+      }
+    } else if (scrollId) {
+      // If already on the same view, lead the eye with a smooth scroll
+      const element = document.getElementById(scrollId);
+      if (element) {
+        const offset = 40;
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - offset;
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth"
+        });
+      }
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   const handleSaveAutoPayment = async (ap: AutoPayment) => {
@@ -1131,7 +1164,7 @@ const App: React.FC = () => {
 
 
   const sortedTransactions = useMemo(() => {
-    return [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
+    return [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [transactions]);
 
   const handleSaveCard = async (savedCard: CreditCard) => {
@@ -1163,56 +1196,81 @@ const App: React.FC = () => {
         const newCat: Category = {
           id: crypto.randomUUID(),
           name: finalTx.category,
-          color: '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0') // Random color
+          color: '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')
         };
-        // Add before "Diğer"
         const diger = categories.find(c => c.name === 'Diğer');
         const rest = categories.filter(c => c.name !== 'Diğer');
         updatedCategories = [...rest, newCat, diger].filter(Boolean) as Category[];
         setCategories(updatedCategories);
-
-        // Save to DB
         dataSyncService.upsertCategory(user.id, newCat);
       }
     }
 
-    // 1. Find affected card and calculate new balance
+    // 1. Find affected card
     const affectedCard = cards.find(c => c.id === finalTx.cardId);
     if (!affectedCard) {
       showToast('Kart bulunamadı', 'warning');
       return;
     }
 
-    // Calculate balance impact
-    const impact = finalTx.type === 'spending' ? finalTx.amount : -finalTx.amount;
-    const updatedCard = { ...affectedCard, balance: affectedCard.balance + impact };
+    // 2. Calculate balance impact logic
+    const calculateImpact = (tx: Transaction) => {
+      // "Faiz & Ek Ücretler" mantığı: 
+      // Harcama ise borcu artırır (+ amount).
+      // Ödeme ise; karta borç eklenip ( +amount ) sonra ödendiği ( -amount ) varsayılarak net etki 0 olur.
+      if (tx.category === 'Faiz & Ek Ücretler') {
+        return tx.type === 'spending' ? tx.amount : 0;
+      }
+      return tx.type === 'spending' ? tx.amount : -tx.amount;
+    };
 
-    // 2. IMMEDIATE UI UPDATE
+    // Handle updates by reversing old impact if transaction existed
+    const existingTx = transactions.find(t => t.id === finalTx.id);
+    let netBalanceDiff = 0;
+
+    if (existingTx) {
+      // Revert old impact on the ORIGINAL card (might be different if card changed)
+      const oldCard = cards.find(c => c.id === existingTx.cardId);
+      if (oldCard) {
+        const reverseOldImpact = -calculateImpact(existingTx);
+        // If card is same, we'll accumulate diff. If different, we'll update both.
+        if (oldCard.id === finalTx.cardId) {
+          netBalanceDiff += reverseOldImpact;
+        } else {
+          // Different card: update the old card immediately
+          const updatedOldCard = { ...oldCard, balance: oldCard.balance + reverseOldImpact };
+          setCards(prev => prev.map(c => c.id === oldCard.id ? updatedOldCard : c));
+          dataSyncService.upsertCard(user.id, updatedOldCard);
+        }
+      }
+    }
+
+    netBalanceDiff += calculateImpact(finalTx);
+    const updatedCard = { ...affectedCard, balance: affectedCard.balance + netBalanceDiff };
+
+    // 3. IMMEDIATE UI UPDATE
     const optimisticTx = { ...finalTx, cardName: affectedCard.cardName };
-    setTransactions(prev => [optimisticTx, ...prev]);
+    setTransactions(prev => {
+      const exists = prev.some(t => t.id === finalTx.id);
+      if (exists) return prev.map(t => t.id === finalTx.id ? optimisticTx : t);
+      return [optimisticTx, ...prev];
+    });
     setCards(prev => prev.map(c => c.id === finalTx.cardId ? updatedCard : c));
 
     setModalMode(null);
     setEditingTransaction(undefined);
-    showToast('İşlem başarıyla eklendi', 'success');
+    showToast(existingTx ? 'İşlem güncellendi' : 'İşlem başarıyla eklendi', 'success');
 
-    // 3. IMMEDIATE DATABASE SYNC (CRITICAL FOR CROSS-DEVICE)
+    // 4. DATABASE SYNC
     try {
-      // Save transaction AND update card balance in parallel
       await Promise.all([
         dataSyncService.saveTransaction(user.id, finalTx),
         dataSyncService.upsertCard(user.id, updatedCard)
       ]);
-
-      // Broadcast sync signal to other devices
       await dataSyncService.sendSyncSignal(user.id);
-
-      console.log('[Add] Transaction added and card balance updated in DB');
     } catch (error) {
-      console.error('[Add] Failed to sync:', error);
+      console.error('[Transaction] Failed to sync:', error);
       showToast('Senkronizasyon hatası', 'warning');
-
-      // Revert on error
       const data = await dataSyncService.fetchAllData(user.id);
       if (data) {
         setCards(data.cards);
@@ -1229,7 +1287,14 @@ const App: React.FC = () => {
     if (!deletedTx) return;
 
     // 1. Calculate new balance
-    const reverseImpact = deletedTx.type === 'spending' ? -deletedTx.amount : deletedTx.amount;
+    const calculateImpact = (tx: Transaction) => {
+      if (tx.category === 'Faiz & Ek Ücretler') {
+        return tx.type === 'spending' ? tx.amount : 0;
+      }
+      return tx.type === 'spending' ? tx.amount : -tx.amount;
+    };
+
+    const reverseImpact = -calculateImpact(deletedTx);
     const affectedCard = cards.find(c => c.id === deletedTx.cardId);
 
     if (!affectedCard) return;
@@ -1440,8 +1505,9 @@ const App: React.FC = () => {
         <div className="max-w-7xl mx-auto relative">
           {/* Logo - Perfectly Centered */}
           <div
-            onClick={() => handleViewChange('dashboard')}
-            className="absolute left-1/2 -translate-x-1/2 cursor-pointer transition-opacity duration-200 active:scale-95 pointer-events-auto"
+            onClick={() => logoOpacity > 0.1 && handleViewChange('dashboard')}
+            className={`absolute left-1/2 -translate-x-1/2 cursor-pointer transition-opacity duration-200 ${logoOpacity > 0.1 ? 'pointer-events-auto' : 'pointer-events-none'
+              }`}
             style={{
               opacity: logoOpacity,
               willChange: 'opacity',
@@ -1650,93 +1716,85 @@ const App: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    <div className="flex overflow-x-auto gap-4 px-10 pb-4 -mb-4 snap-x snap-mandatory no-scrollbar sm:px-0 sm:space-y-5 sm:block">
+
+                    <div className="space-y-2.5">
                       {sortedTransactions.length > 0 ? (
                         <>
-                          {sortedTransactions.slice(0, 10).map(tx => {
+                          {sortedTransactions.slice(0, 5).map(tx => {
                             const card = cards.find(c => c.id === tx.cardId);
-                            const cardColor = card?.color || '#3B82F6';
+                            const cardColor = card?.color || '#3b82f6';
+                            const cardName = card?.cardName || tx.cardName || 'Bilinmeyen Kart';
+                            const categoryInfo = categories.find(c => c.name.toLocaleLowerCase('tr-TR') === (tx.category || 'Diğer').toLocaleLowerCase('tr-TR'));
+                            const categoryColor = categoryInfo?.color || cardColor;
                             const isSpending = tx.type === 'spending';
 
                             return (
-                              <div key={tx.id} className={`snap-center shrink-0 w-[300px] sm:w-auto relative p-5 sm:p-6 rounded-[32px] sm:rounded-[28px] transition-all group border ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
-                                {/* Mobile: New Card Layout */}
-                                <div className="flex flex-col gap-4 sm:hidden">
-                                  {/* Header: Indicator, Category, Actions */}
+                              <div key={tx.id} className={`relative p-3.5 sm:px-5 sm:py-3.5 rounded-[24px] border transition-all ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-white border-slate-100 shadow-sm'}`}>
+                                {/* Mobile Layout */}
+                                <div className="flex flex-col gap-3 sm:hidden">
                                   <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                      <div className={`w-1.5 h-6 rounded-full ${isSpending ? 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.4)]' : 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]'}`} />
-                                      <span className={`text-[11px] font-black uppercase tracking-[0.15em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                                        {tx.category || 'Diğer'}
+                                    <div className="flex items-center gap-2">
+                                      <div className={`w-1 h-4 rounded-full shrink-0 ${isSpending ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]'}`} />
+                                      <span className={`text-[9px] font-black uppercase tracking-[0.15em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                                        {isSpending ? 'HARCAMA' : 'ÖDEME'}
                                       </span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
-                                      <button onClick={() => startEditTransaction(tx)} className={`p-2.5 rounded-xl transition-all ${isDarkMode ? 'bg-blue-500/10 text-blue-400 border border-blue-500/10' : 'bg-blue-50 text-blue-600 border border-blue-100'}`}><Edit2 size={14} /></button>
-                                      <button onClick={() => setTransactionToDelete(tx)} className={`p-2.5 rounded-xl transition-all ${isDarkMode ? 'bg-rose-500/10 text-rose-400 border border-rose-500/10' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}><Trash2 size={14} /></button>
+                                      <button onClick={() => startEditTransaction(tx)} className={`p-2 rounded-lg transition-all ${isDarkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}><Edit2 size={12} /></button>
+                                      <button onClick={() => setTransactionToDelete(tx)} className={`p-2 rounded-lg transition-all ${isDarkMode ? 'bg-rose-500/10 text-rose-400' : 'bg-rose-50 text-rose-600'}`}><Trash2 size={12} /></button>
                                     </div>
                                   </div>
-
-                                  {/* Description Area */}
-                                  <div className="py-1">
-                                    <div className="flex items-center gap-2">
-                                      <p className={`text-[15px] font-black tracking-tight leading-relaxed break-words ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-                                        {tx.description || (isSpending ? 'HARCAMA' : 'ÖDEME')}
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <p className={`text-[13px] font-black tracking-tight truncate flex-1 ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                                        {tx.description || (isSpending ? 'Harcama' : 'Ödeme')}
                                       </p>
                                       {tx.confirmationUrl && (
-                                        <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 text-blue-500" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={14} /></a>
+                                        <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 text-blue-500" onClick={(e) => e.stopPropagation()}><ExternalLink size={12} /></a>
                                       )}
                                     </div>
+                                    <p className={`text-sm font-black tracking-tighter shrink-0 ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                      {isSpending ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
+                                    </p>
                                   </div>
-
-                                  {/* Footer: Card, Amount, Date */}
-                                  <div className="flex flex-col gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                                    <div className="flex items-center justify-between gap-4">
-                                      <div className="px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-widest" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
-                                        {tx.cardName || card?.cardName}
-                                      </div>
-                                      <p className={`text-xl font-black tracking-tighter ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                        {isSpending ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
-                                      </p>
+                                  <div className="flex items-center justify-between">
+                                    <div className="px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest text-white shadow-sm" style={{ backgroundColor: categoryColor }}>
+                                      {tx.category || 'Diğer'}
                                     </div>
-                                    <div className="flex items-center gap-2 opacity-50">
-                                      <Clock size={12} className="text-slate-400" />
-                                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{formatDateDisplay(tx.date)}</p>
-                                    </div>
+                                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest opacity-60">{formatDateDisplay(tx.date)}</p>
                                   </div>
                                 </div>
 
-                                {/* Desktop: Keep original layout */}
-                                <div className="hidden sm:flex items-center justify-between">
-                                  <div className="flex items-center gap-5 flex-1 min-w-0">
-                                    <div className={`p-4 rounded-2xl shrink-0 ${isSpending ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                                      {isSpending ? <ShoppingBag size={20} /> : <PaymentIcon size={20} />}
+                                {/* Desktop Layout */}
+                                <div className="hidden sm:flex items-center justify-between gap-4">
+                                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                                    <div className={`p-2.5 rounded-xl shrink-0 ${isSpending ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                                      {isSpending ? <ShoppingBag size={16} /> : <PaymentIcon size={16} />}
                                     </div>
-                                    <div className="flex flex-col min-w-0 pr-4">
+                                    <div className="flex flex-col min-w-0">
                                       <div className="flex items-center gap-2">
-                                        <p className={`font-black text-base tracking-tight truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+                                        <p className={`font-black text-sm tracking-tight truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
                                           {tx.description || (isSpending ? 'HARCAMA' : 'ÖDEME')}
                                         </p>
                                         {tx.confirmationUrl && (
-                                          <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 p-1 rounded-md text-blue-500 hover:bg-blue-500/10 transition-colors" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={14} /></a>
+                                          <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 p-1 rounded-md text-blue-500 hover:bg-blue-500/10 transition-colors" onClick={(e) => e.stopPropagation()}><ExternalLink size={12} /></a>
                                         )}
                                       </div>
-                                      <div className="flex items-center gap-3 mt-1">
-                                        <div className="px-2.5 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
-                                          {tx.cardName || card?.cardName}
+                                      <div className="flex items-center gap-2 mt-0.5">
+                                        <div className="px-2 py-0.5 rounded-md border text-[8px] font-black tracking-widest" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
+                                          {cardName.toLocaleUpperCase('tr-TR')}
                                         </div>
-                                        <span className="text-[10px] text-slate-300 dark:text-slate-700">•</span>
-                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{formatDateDisplay(tx.date)}</p>
+                                        <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">{formatDateDisplay(tx.date)}</span>
                                       </div>
                                     </div>
                                   </div>
-
-                                  <div className="flex flex-col items-end gap-2 shrink-0">
-                                    <p className={`font-black text-xl tracking-tighter ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                  <div className="flex items-center gap-5">
+                                    <p className={`text-base font-black tracking-tighter ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
                                       {isSpending ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
                                     </p>
-                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <button onClick={() => startEditTransaction(tx)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-500 hover:text-blue-400 hover:bg-slate-700' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-200'}`}><Edit2 size={16} /></button>
-                                      <button onClick={() => setTransactionToDelete(tx)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-500 hover:text-rose-400 hover:bg-slate-700' : 'text-slate-400 hover:text-rose-600 hover:bg-slate-200'}`}><Trash2 size={16} /></button>
+                                    <div className="flex items-center gap-1.5">
+                                      <button onClick={() => startEditTransaction(tx)} className={`p-2 rounded-xl transition-all border ${isDarkMode ? 'bg-blue-500/5 text-blue-400 border-blue-500/10 hover:bg-blue-500/20' : 'bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100'}`} title="Düzenle"><Edit2 size={14} /></button>
+                                      <button onClick={() => setTransactionToDelete(tx)} className={`p-2 rounded-xl transition-all border ${isDarkMode ? 'bg-rose-500/5 text-rose-400 border-rose-500/10 hover:bg-rose-500/20' : 'bg-rose-50 text-rose-600 border-rose-100 hover:bg-rose-100'}`} title="Sil"><Trash2 size={14} /></button>
                                     </div>
                                   </div>
                                 </div>
@@ -1744,15 +1802,14 @@ const App: React.FC = () => {
                             );
                           })}
                           <button
-                            onClick={() => handleViewChange('analysis')}
-                            className={`snap-center shrink-0 w-[300px] sm:w-full sm:mt-4 p-6 sm:p-5 rounded-[32px] sm:rounded-3xl border-2 border-dashed font-black text-xs sm:text-[10px] uppercase tracking-[0.3em] transition-all flex flex-col sm:flex-row items-center justify-center gap-3 ${isDarkMode
-                              ? 'border-slate-700 text-slate-400 hover:bg-slate-800/30 hover:text-blue-400 hover:border-blue-500/50'
+                            onClick={() => handleViewChange('analysis', 'analysis-transactions')}
+                            className={`w-full mt-4 p-5 rounded-[24px] border-2 border-dashed font-black text-xs uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3 ${isDarkMode
+                              ? 'border-slate-800 text-slate-400 hover:bg-slate-800/30 hover:text-blue-400 hover:border-blue-500/50'
                               : 'border-slate-200 text-slate-500 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200'
                               }`}
                           >
-                            <ArrowRight size={24} className="sm:hidden" />
-                            <span className="text-center">Tümünü<br className="sm:hidden" /> Görüntüle</span>
-                            <ChevronRight size={16} className="hidden sm:block" />
+                            <span className="text-center">TÜMÜNÜ GÖR</span>
+                            <ChevronRight size={16} />
                           </button>
                         </>
                       ) : (

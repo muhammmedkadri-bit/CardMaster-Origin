@@ -1,6 +1,7 @@
 
 import React, { useMemo, useState, useRef } from 'react';
 import RollingNumber from './RollingNumber';
+import DateRangePicker from './DateRangePicker';
 import {
   BarChart,
   Bar,
@@ -61,6 +62,7 @@ interface AnalysisViewProps {
 type TimeRange = 'today' | 'thisweek' | 'thismonth' | 'thisyear' | 'custom';
 
 const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDarkMode, onBack, onEditTransaction, onDeleteTransaction, categories, lastUpdate }) => {
+  const [selectedBank, setSelectedBank] = React.useState<string>('all');
   const [selectedCardId, setSelectedCardId] = React.useState<string>('all');
   const [timeRange, setTimeRange] = React.useState<TimeRange>('thismonth');
   const [customStart, setCustomStart] = React.useState<string>(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
@@ -72,12 +74,32 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
   const marqueeRef = useRef<HTMLDivElement>(null);
   const scrollPosRef = useRef(0);
   const dragRef = useRef({ isDragging: false, startX: 0, currentTranslation: 0 });
-  const ITEMS_PER_PAGE = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const ITEMS_PER_PAGE = 5;
+
+  const banks = useMemo(() => {
+    const uniqueBanks = Array.from(new Set(cards.map(c => c.bankName))).filter(Boolean).sort();
+    return ['all', ...uniqueBanks];
+  }, [cards]);
+
+  const bankFilteredCards = useMemo(() => {
+    if (selectedBank === 'all') return cards;
+    return cards.filter(c => c.bankName === selectedBank);
+  }, [cards, selectedBank]);
 
   const filteredTransactions = useMemo(() => {
-    const cardFiltered = selectedCardId === 'all'
-      ? transactions
-      : transactions.filter(t => t.cardId === selectedCardId);
+    let cardFiltered = transactions;
+
+    if (selectedBank !== 'all') {
+      const bankCardIds = cards.filter(c => c.bankName === selectedBank).map(c => c.id);
+      if (selectedCardId === 'all') {
+        cardFiltered = transactions.filter(t => bankCardIds.includes(t.cardId));
+      } else {
+        cardFiltered = transactions.filter(t => t.cardId === selectedCardId);
+      }
+    } else if (selectedCardId !== 'all') {
+      cardFiltered = transactions.filter(t => t.cardId === selectedCardId);
+    }
 
     const now = new Date();
     let start = new Date(now);
@@ -112,10 +134,12 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
     const endMs = end.getTime();
 
     return cardFiltered
-      .map(t => ({ ...t, _ts: new Date(t.date).getTime() }))
-      .filter(t => t._ts >= startMs && t._ts <= endMs)
-      .sort((a, b) => b._ts - a._ts);
-  }, [selectedCardId, transactions, timeRange, customStart, customEnd, lastUpdate]);
+      .filter(t => {
+        const d = new Date(t.date).getTime();
+        return d >= startMs && d <= endMs;
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [selectedBank, selectedCardId, transactions, timeRange, customStart, customEnd, lastUpdate, cards]);
 
   const paginatedTransactions = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -125,9 +149,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
   const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE);
 
   const cardStats = useMemo(() => {
-    const cardData = selectedCardId === 'all'
-      ? { bankName: 'Tüm Kartlar', cardName: 'Genel Bakış', limit: cards.reduce((a, b) => a + b.limit, 0), balance: cards.reduce((a, b) => a + b.balance, 0) }
-      : cards.find(c => c.id === selectedCardId);
+    const isBankOverview = selectedBank !== 'all' && selectedCardId === 'all';
+    const isGeneralOverview = selectedBank === 'all' && selectedCardId === 'all';
 
     const spending = filteredTransactions
       .filter(t => t.type === 'spending')
@@ -137,14 +160,25 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
       .filter(t => t.type === 'payment')
       .reduce((acc, t) => acc + t.amount, 0);
 
+    const periodBalance = spending - payment;
+
+    const cardData = isGeneralOverview
+      ? { bankName: 'Tüm Kartlar', cardName: 'Genel Bakış', limit: cards.reduce((a, b) => a + b.limit, 0), balance: periodBalance }
+      : isBankOverview
+        ? { bankName: selectedBank.toLocaleUpperCase('tr-TR'), cardName: 'Banka Özeti', limit: bankFilteredCards.reduce((a, b) => a + b.limit, 0), balance: periodBalance }
+        : { ...(cards.find(c => c.id === selectedCardId) || {}), cardName: cards.find(c => c.id === selectedCardId)?.cardName || 'Bilinmeyen Kart', balance: periodBalance };
+
     let minPayment = 0;
-    if (cardData) {
-      const ratio = (cardData as CreditCard).minPaymentRatio || 20;
-      minPayment = (cardData.balance * ratio) / 100;
+    if (selectedCardId !== 'all') {
+      const card = cards.find(c => c.id === selectedCardId);
+      if (card) minPayment = (card.balance * (card.minPaymentRatio || 20)) / 100;
+    } else {
+      // For bank or general overview, sum all relevant cards' min payments
+      minPayment = bankFilteredCards.reduce((acc, c) => acc + (c.balance > 0 ? (c.balance * (c.minPaymentRatio / 100)) : 0), 0);
     }
 
     return { cardData, spending, payment, minPayment };
-  }, [selectedCardId, cards, filteredTransactions, lastUpdate]);
+  }, [selectedBank, selectedCardId, cards, bankFilteredCards, filteredTransactions, lastUpdate]);
 
   const trendData = useMemo(() => {
     const data: Record<string, { label: string, spending: number, payment: number, net: number, timestamp: number }> = {};
@@ -449,47 +483,64 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">İşlem Yapılan Kart</label>
-              <div className="relative group">
-                <select
-                  value={selectedCardId}
-                  onChange={(e) => {
-                    React.startTransition(() => {
-                      setSelectedCardId(e.target.value);
-                    });
-                  }}
-                  className={`w-full h-16 px-6 pt-1 rounded-3xl border appearance-none outline-none font-black text-base cursor-pointer transition-all ${isDarkMode ? 'bg-slate-900/50 border-white/5 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-100 text-slate-800 focus:border-blue-500 shadow-sm'}`}
-                >
-                  <option value="all">TÜM KARTLAR</option>
-                  {cards.map(card => (
-                    <option key={card.id} value={card.id}>{card.bankName.toUpperCase()} - {card.cardName.toUpperCase()}</option>
-                  ))}
-                </select>
-                <Filter className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-blue-500 transition-colors" size={20} />
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Banka Seçimi</label>
+                <div className="relative group">
+                  <select
+                    value={selectedBank}
+                    onChange={(e) => {
+                      setSelectedBank(e.target.value);
+                      setSelectedCardId('all');
+                      setCurrentPage(1);
+                    }}
+                    className={`w-full h-16 px-6 pt-1 rounded-3xl border appearance-none outline-none font-black text-base cursor-pointer transition-all ${isDarkMode ? 'bg-slate-900/50 border-white/5 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-100 text-slate-800 focus:border-blue-500 shadow-sm'}`}
+                  >
+                    {banks.map(b => (
+                      <option key={b} value={b}>
+                        {b === 'all' ? 'TÜM BANKALAR' : b.toLocaleUpperCase('tr-TR')}
+                      </option>
+                    ))}
+                  </select>
+                  <Filter className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-blue-500 transition-colors" size={20} />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">İşlem Yapılan Kart</label>
+                <div className="relative group">
+                  <select
+                    value={selectedCardId}
+                    onChange={(e) => {
+                      React.startTransition(() => {
+                        setSelectedCardId(e.target.value);
+                        setCurrentPage(1);
+                      });
+                    }}
+                    className={`w-full h-16 px-6 pt-1 rounded-3xl border appearance-none outline-none font-black text-base cursor-pointer transition-all ${isDarkMode ? 'bg-slate-900/50 border-white/5 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-100 text-slate-800 focus:border-blue-500 shadow-sm'}`}
+                  >
+                    <option value="all">TÜM KARTLAR</option>
+                    {bankFilteredCards.map(card => (
+                      <option key={card.id} value={card.id}>{card.bankName.toLocaleUpperCase('tr-TR')} - {card.cardName.toLocaleUpperCase('tr-TR')}</option>
+                    ))}
+                  </select>
+                  <CardIcon className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-blue-500 transition-colors" size={20} />
+                </div>
               </div>
             </div>
 
             {timeRange === 'custom' && (
-              <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Başlangıç</label>
-                  <input
-                    type="date"
-                    value={customStart}
-                    onChange={(e) => setCustomStart(e.target.value)}
-                    className={`w-full h-16 px-6 rounded-3xl border outline-none font-black text-sm ${isDarkMode ? 'bg-slate-900/50 border-white/5 text-white' : 'bg-slate-50 border-slate-100'}`}
-                  />
-                </div>
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Bitiş</label>
-                  <input
-                    type="date"
-                    value={customEnd}
-                    onChange={(e) => setCustomEnd(e.target.value)}
-                    className={`w-full h-16 px-6 rounded-3xl border outline-none font-black text-sm ${isDarkMode ? 'bg-slate-900/50 border-white/5 text-white' : 'bg-slate-50 border-slate-100'}`}
-                  />
-                </div>
+              <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+                <DateRangePicker
+                  startDate={customStart}
+                  endDate={customEnd}
+                  onChange={(start, end) => {
+                    setCustomStart(start);
+                    setCustomEnd(end);
+                  }}
+                  isDarkMode={isDarkMode}
+                  label="Özel Tarih Seçimi"
+                />
               </div>
             )}
           </div>
@@ -506,12 +557,17 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
         <div className={`p-8 rounded-[40px] border relative overflow-hidden group ${isDarkMode ? 'bg-gradient-to-br from-blue-600/20 to-indigo-600/20 border-white/10' : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100 shadow-sm'}`}>
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl group-hover:scale-150 transition-transform duration-700"></div>
           <p className="text-[11px] font-black text-blue-500 uppercase tracking-[0.2em] mb-4">
-            {selectedCardId === 'all' ? 'TÜM KARTLARIN TOPLAM BORCU' : 'SEÇİLİ KARTIN BORCU'}
+            {selectedCardId === 'all' ? 'DÖNEM NET DURUMU' : 'SEÇİLİ KART DÖNEM NETİ'}
           </p>
-          <RollingNumber
-            value={cardStats.cardData!.balance}
-            className={`text-4xl font-black tracking-tighter mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}
-          />
+          <div className="flex items-baseline gap-2 mb-2">
+            <span className={`text-2xl font-black ${cardStats.cardData!.balance === 0 ? (isDarkMode ? 'text-white' : 'text-slate-900') : (cardStats.cardData!.balance < 0 ? 'text-emerald-500' : (isDarkMode ? 'text-white' : 'text-slate-900'))}`}>
+              {cardStats.cardData!.balance === 0 ? '' : (cardStats.cardData!.balance < 0 ? '+' : '-')}
+            </span>
+            <RollingNumber
+              value={Math.abs(cardStats.cardData!.balance)}
+              className={`text-4xl font-black tracking-tighter ${cardStats.cardData!.balance === 0 ? (isDarkMode ? 'text-white' : 'text-slate-900') : (cardStats.cardData!.balance < 0 ? 'text-emerald-500' : (isDarkMode ? 'text-white' : 'text-slate-900'))}`}
+            />
+          </div>
           <div className="flex items-center gap-2 text-slate-500 font-bold text-xs">
             <Clock size={14} />
             <span>Son Güncelleme: {new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
@@ -664,21 +720,21 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
               cat ? (
                 <div
                   key={idx}
-                  className={`flex-shrink-0 min-w-[240px] p-5 rounded-[32px] border flex items-center justify-between transition-all hover:scale-105 active:scale-95 ${isDarkMode ? 'bg-white/5 border-white/5 shadow-xl shadow-black/20' : 'bg-white border-slate-100 shadow-xl shadow-slate-200/50'
+                  className={`flex-shrink-0 min-w-[320px] p-5 rounded-[32px] border flex items-center gap-4 transition-all hover:scale-105 active:scale-95 ${isDarkMode ? 'bg-white/5 border-white/5 shadow-xl shadow-black/20' : 'bg-white border-slate-100 shadow-xl shadow-slate-200/50'
                     }`}
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="w-1.5 h-10 rounded-full shadow-lg" style={{ backgroundColor: (cat as any).color, boxShadow: `0 0 15px ${(cat as any).color}40` }} />
-                    <div>
-                      <p className={`text-[12px] font-black tracking-[0.1em] ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className="w-1.5 h-10 rounded-full shrink-0 shadow-lg" style={{ backgroundColor: (cat as any).color, boxShadow: `0 0 15px ${(cat as any).color}40` }} />
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-[13px] font-black tracking-tight truncate leading-tight uppercase ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
                         {(cat as any).name}
                       </p>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1 opacity-60">
                         %{(((cat as any).value / (cardStats.spending || 1)) * 100).toFixed(0)} PAY
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right shrink-0">
                     <RollingNumber
                       value={(cat as any).value}
                       className={`text-lg font-black tracking-tighter ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}
@@ -687,7 +743,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                   </div>
                 </div>
               ) : (
-                <div key={idx} className="flex-shrink-0 w-[240px] flex items-center justify-center">
+                <div key={idx} className="flex-shrink-0 w-[320px] flex items-center justify-center">
                   <div className={`w-1 h-8 rounded-full opacity-10 ${isDarkMode ? 'bg-white' : 'bg-slate-900'}`} />
                 </div>
               )
@@ -697,192 +753,168 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
       </div>
 
       {/* Transactions Section */}
-      <div className="grid grid-cols-1 gap-8 mb-16">
+      <div id="analysis-transactions" className="grid grid-cols-1 gap-8 mb-16">
         <div className={`p-8 sm:p-12 rounded-[40px] border transition-all ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-sm'}`}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-8 mb-12">
             <div className="flex items-center gap-4">
               <div className="w-1.5 h-10 bg-blue-600 rounded-full"></div>
               <h3 className={`text-2xl font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>İŞLEM GEÇMİŞİ</h3>
             </div>
-            <div className="flex items-center gap-4">
-              <div className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest ${isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-500'}`}>
-                TOPLAM {filteredTransactions.length} KAYIT
-              </div>
-              {totalPages > 1 && (
-                <div className={`px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest ${isDarkMode ? 'bg-blue-600/20 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
-                  SAYFA {currentPage} / {totalPages}
-                </div>
-              )}
-            </div>
           </div>
 
           {filteredTransactions.length > 0 ? (
             <>
-              {/* Desktop Table View */}
-              <div className="hidden sm:block overflow-x-auto no-scrollbar min-h-[600px]">
-                <table className="w-full border-separate border-spacing-y-4">
-                  <thead>
-                    <tr className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-[0.25em] text-left">
-                      <th className="px-6 py-2">TARİH</th>
-                      <th className="px-6 py-2">AÇIKLAMA</th>
-                      <th className="px-6 py-2">KART</th>
-                      <th className="px-6 py-2 text-right">TUTAR</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedTransactions.map(tx => {
-                      const card = cards.find(c => c.id === tx.cardId);
-                      const cardColor = card?.color || '#3b82f6';
-                      const cardName = card?.cardName || tx.cardName || 'Bilinmeyen Kart';
-                      return (
-                        <tr key={tx.id} className={`group transition-all ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}>
-                          <td className="py-6 px-6 first:rounded-l-[32px] last:rounded-r-[32px]">
-                            <p className="text-xs font-black text-slate-400">{formatDateDisplay(tx.date)}</p>
-                          </td>
-                          <td className="py-6 px-6">
-                            <div className="flex items-center gap-4">
-                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${tx.type === 'spending' ? 'bg-rose-500/10 text-rose-500 shadow-lg shadow-rose-500/10' : 'bg-emerald-500/10 text-emerald-500 shadow-lg shadow-emerald-500/10'}`}>
-                                {tx.type === 'spending' ? <ShoppingBag size={20} /> : <PaymentIcon size={20} />}
-                              </div>
+              <div className="flex gap-4 sm:gap-6 items-center">
+                {/* Left: Transaction List */}
+                <div className="flex-1 space-y-2.5 min-w-0 min-h-[400px]">
+                  {paginatedTransactions.map(tx => {
+                    const card = cards.find(c => c.id === tx.cardId);
+                    const cardColor = card?.color || '#3b82f6';
+                    const cardName = card?.cardName || tx.cardName || 'Bilinmeyen Kart';
+                    const categoryInfo = categories.find(c => c.name.toLocaleLowerCase('tr-TR') === (tx.category || 'Diğer').toLocaleLowerCase('tr-TR'));
+                    const categoryColor = categoryInfo?.color || cardColor;
+                    const isSpending = tx.type === 'spending';
+
+                    return (
+                      <div key={tx.id} className={`relative p-3.5 sm:px-5 sm:py-3.5 rounded-[24px] border transition-all ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-white border-slate-100 shadow-sm'}`}>
+                        {/* Mobile Layout */}
+                        <div className="flex flex-col gap-3 sm:hidden">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-1 h-4 rounded-full shrink-0 ${isSpending ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]'}`} />
+                              <span className={`text-[9px] font-black uppercase tracking-[0.15em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                                {isSpending ? 'HARCAMA' : 'ÖDEME'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <button onClick={() => onEditTransaction?.(tx)} className={`p-2 rounded-lg transition-all ${isDarkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}><Edit2 size={12} /></button>
+                              <button onClick={() => onDeleteTransaction?.(tx)} className={`p-2 rounded-lg transition-all ${isDarkMode ? 'bg-rose-500/10 text-rose-400' : 'bg-rose-50 text-rose-600'}`}><Trash2 size={12} /></button>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <p className={`text-[13px] font-black tracking-tight truncate flex-1 ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                                {tx.description || tx.category}
+                              </p>
+                              {tx.confirmationUrl && (
+                                <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 text-blue-500" onClick={(e) => e.stopPropagation()}><ExternalLink size={12} /></a>
+                              )}
+                            </div>
+                            <p className={`text-sm font-black tracking-tighter shrink-0 ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
+                              {isSpending ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
+                            </p>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest text-white shadow-sm" style={{ backgroundColor: categoryColor }}>
+                              {tx.category || 'Diğer'}
+                            </div>
+                            <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest opacity-60">{formatDateDisplay(tx.date)}</p>
+                          </div>
+                        </div>
+
+                        {/* Desktop Layout */}
+                        <div className="hidden sm:flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-4 flex-1 min-w-0">
+                            <div className={`p-2.5 rounded-xl shrink-0 ${isSpending ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                              {isSpending ? <ShoppingBag size={16} /> : <PaymentIcon size={16} />}
+                            </div>
+                            <div className="flex flex-col min-w-0">
                               <div className="flex items-center gap-2">
-                                <p className={`text-sm sm:text-base font-black tracking-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{tx.description || tx.category}</p>
+                                <p className={`font-black text-sm tracking-tight truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+                                  {tx.description || tx.category}
+                                </p>
                                 {tx.confirmationUrl && (
-                                  <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 transition-colors" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={14} /></a>
+                                  <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 p-1 rounded-md text-blue-500 hover:bg-blue-500/10 transition-colors" onClick={(e) => e.stopPropagation()}><ExternalLink size={12} /></a>
                                 )}
                               </div>
-                            </div>
-                          </td>
-                          <td className="py-6 px-6">
-                            <span className="px-4 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest whitespace-nowrap" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}05` }}>
-                              {cardName}
-                            </span>
-                          </td>
-                          <td className={`py-6 px-6 text-right first:rounded-l-[32px] last:rounded-r-[32px]`}>
-                            <div className="flex flex-col items-end gap-2">
-                              <p className={`text-xl sm:text-2xl font-black tracking-tighter ${tx.type === 'spending' ? 'text-rose-500' : 'text-emerald-500'} whitespace-nowrap flex items-center justify-end`}>
-                                <span className="opacity-70 mr-1">{tx.type === 'spending' ? '-' : '+'}</span>
-                                <span>{tx.amount.toLocaleString('tr-TR')} ₺</span>
-                              </p>
-                              <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => onEditTransaction?.(tx)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-400 hover:text-blue-400 hover:bg-slate-700' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-100'}`}><Edit2 size={16} /></button>
-                                <button onClick={() => onDeleteTransaction?.(tx)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'text-slate-400 hover:text-rose-400 hover:bg-slate-700' : 'text-slate-400 hover:text-rose-600 hover:bg-slate-100'}`}><Trash2 size={16} /></button>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <div className="px-2 py-0.5 rounded-md border text-[8px] font-black tracking-widest" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
+                                  {cardName.toLocaleUpperCase('tr-TR')}
+                                </div>
+                                <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">{formatDateDisplay(tx.date)}</span>
                               </div>
                             </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Mobile Transaction List View (Paginated) */}
-              <div className="sm:hidden space-y-4">
-                {paginatedTransactions.map(tx => {
-                  const card = cards.find(c => c.id === tx.cardId);
-                  const cardColor = card?.color || '#3b82f6';
-                  const cardName = card?.cardName || tx.cardName || 'Bilinmeyen Kart';
-                  const isSpending = tx.type === 'spending';
-
-                  return (
-                    <div key={tx.id} className={`p-6 rounded-[32px] border flex flex-col gap-4 ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50/50 border-slate-100'}`}>
-                      {/* ... mobile transaction content same as before ... */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-1.5 h-6 rounded-full ${isSpending ? 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.4)]' : 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]'}`} />
-                          <span className={`text-[11px] font-black uppercase tracking-[0.15em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                            {tx.category || 'Diğer'}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <button onClick={() => onEditTransaction?.(tx)} className={`p-2.5 rounded-xl transition-all active:scale-95 ${isDarkMode ? 'bg-blue-500/10 text-blue-400 border border-blue-500/10' : 'bg-blue-50 text-blue-600 border border-blue-100'}`}><Edit2 size={14} /></button>
-                          <button onClick={() => onDeleteTransaction?.(tx)} className={`p-2.5 rounded-xl transition-all active:scale-95 ${isDarkMode ? 'bg-rose-500/10 text-rose-400 border border-rose-500/10' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}><Trash2 size={14} /></button>
-                        </div>
-                      </div>
-                      <div className="py-1">
-                        <div className="flex items-center gap-2">
-                          <p className={`text-[15px] font-black tracking-tight leading-relaxed break-words ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-                            {tx.description || tx.category}
-                          </p>
-                          {tx.confirmationUrl && (
-                            <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 transition-colors shrink-0" title="Dekont" onClick={(e) => e.stopPropagation()}><ExternalLink size={14} /></a>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-4 pt-4 border-t border-slate-200/10 dark:border-white/5">
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-widest whitespace-nowrap" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
-                            {cardName}
                           </div>
-                          <p className={`text-xl font-black tracking-tighter ${isSpending ? 'text-rose-500' : 'text-emerald-500'} whitespace-nowrap shrink-0 flex items-center`}>
-                            <span className="opacity-70 mr-1">{isSpending ? '-' : '+'}</span>
-                            <span>{tx.amount.toLocaleString('tr-TR')} ₺</span>
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2 opacity-50">
-                          <Clock size={12} className="text-slate-400" />
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{formatDateDisplay(tx.date)}</p>
+                          <div className="flex items-center gap-5">
+                            <p className={`text-base font-black tracking-tighter ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
+                              {isSpending ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
+                            </p>
+                            <div className="flex items-center gap-1.5">
+                              <button onClick={() => onEditTransaction?.(tx)} className={`p-2 rounded-xl transition-all border ${isDarkMode ? 'bg-blue-500/5 text-blue-400 border-blue-500/10 hover:bg-blue-500/20' : 'bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100'}`} title="Düzenle"><Edit2 size={14} /></button>
+                              <button onClick={() => onDeleteTransaction?.(tx)} className={`p-2 rounded-xl transition-all border ${isDarkMode ? 'bg-rose-500/5 text-rose-400 border-rose-500/10 hover:bg-rose-500/20' : 'bg-rose-50 text-rose-600 border-rose-100 hover:bg-rose-100'}`} title="Sil"><Trash2 size={14} /></button>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
 
-              {/* Pagination Controls */}
-              {totalPages > 1 && (
-                <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-6">
-                  <div className="flex items-center gap-2">
+                {/* Right: Vertical Pagination tower */}
+                {totalPages > 1 && (
+                  <div className={`flex flex-col items-center gap-4 p-2.5 sm:p-3.5 rounded-[32px] border transition-all duration-500 self-center ${isDarkMode
+                    ? 'bg-[#0f172a]/90 border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.5),_inset_0_1px_1px_rgba(255,255,255,0.05)] backdrop-blur-xl'
+                    : 'bg-white/90 border-slate-200/60 shadow-[0_20px_50px_rgba(37,99,235,0.1),_inset_0_1px_1px_rgba(255,255,255,0.8)] backdrop-blur-xl'
+                    }`}>
                     <button
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
-                      className={`w-12 h-12 flex items-center justify-center rounded-2xl transition-all border ${currentPage === 1
-                        ? 'opacity-30 cursor-not-allowed border-slate-200'
-                        : (isDarkMode ? 'bg-slate-800 border-white/5 text-white hover:bg-slate-700' : 'bg-white border-slate-100 text-slate-800 shadow-sm hover:border-blue-200')
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      className={`p-3 rounded-2xl transition-all duration-300 border ${currentPage === 1
+                        ? 'opacity-20 cursor-not-allowed border-transparent'
+                        : `hover:bg-blue-600 hover:text-white active:scale-95 shadow-lg ${isDarkMode
+                          ? 'bg-slate-900 border-slate-800 text-slate-400 hover:shadow-blue-500/20'
+                          : 'bg-slate-50 border-slate-200 text-slate-500 hover:shadow-blue-500/20 shadow-[0_4px_10px_rgba(0,0,0,0.05)]'
+                        }`
                         }`}
                     >
-                      <ChevronLeft size={20} />
+                      <ChevronLeft size={20} className="stroke-[2.5px] rotate-90" />
                     </button>
 
-                    <div className="flex items-center gap-2 px-4">
-                      {/* Show current, first, last and dots if necessary */}
-                      {[...Array(totalPages)].map((_, i) => {
-                        const pg = i + 1;
-                        const isCurrent = pg === currentPage;
-                        // Show first, last, current, and pages around current
-                        if (pg === 1 || pg === totalPages || (pg >= currentPage - 1 && pg <= currentPage + 1)) {
-                          return (
-                            <button
-                              key={pg}
-                              onClick={() => setCurrentPage(pg)}
-                              className={`w-12 h-12 rounded-2xl text-xs font-black transition-all border ${isCurrent
-                                ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/30'
-                                : (isDarkMode ? 'bg-slate-800/50 border-white/5 text-slate-400 hover:text-white' : 'bg-slate-50 border-slate-100 text-slate-500 hover:border-blue-200')
-                                }`}
-                            >
-                              {pg}
-                            </button>
-                          );
-                        } else if (pg === currentPage - 2 || pg === currentPage + 2) {
-                          return <span key={pg} className="text-slate-400">...</span>;
-                        }
-                        return null;
-                      })}
+                    <div className="flex flex-col items-center gap-1.5 py-1">
+                      <div className={`relative w-10 h-14 overflow-hidden rounded-[20px] border transition-all duration-500 ${isDarkMode
+                        ? 'bg-slate-800 border-slate-700 shadow-[inset_0_3px_8px_rgba(0,0,0,0.5),_0_1px_1px_rgba(255,255,255,0.05)]'
+                        : 'bg-white border-slate-200 shadow-[inset_0_3px_8px_rgba(0,0,0,0.1),_0_1px_2px_rgba(0,0,0,0.05)]'
+                        }`}>
+                        <div
+                          className="absolute inset-0 flex flex-col transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+                          style={{ transform: `translateY(-${(currentPage - 1) * 100}%)` }}
+                        >
+                          {[...Array(totalPages)].map((_, i) => (
+                            <div key={i} className={`min-h-full w-full flex items-center justify-center text-[13px] font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-blue-600'}`}>
+                              {i + 1}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="h-px w-5 bg-slate-300/50 dark:bg-slate-700/50 my-1" />
+                      <span className={`text-[11px] font-black tracking-tighter ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{totalPages}</span>
                     </div>
 
                     <button
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages}
-                      className={`w-12 h-12 flex items-center justify-center rounded-2xl transition-all border ${currentPage === totalPages
-                        ? 'opacity-30 cursor-not-allowed border-slate-200'
-                        : (isDarkMode ? 'bg-slate-800 border-white/5 text-white hover:bg-slate-700' : 'bg-white border-slate-100 text-slate-800 shadow-sm hover:border-blue-200')
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      className={`p-3 rounded-2xl transition-all duration-300 border ${currentPage === totalPages
+                        ? 'opacity-20 cursor-not-allowed border-transparent'
+                        : `hover:bg-blue-600 hover:text-white active:scale-95 shadow-lg ${isDarkMode
+                          ? 'bg-slate-900 border-slate-800 text-slate-400 hover:shadow-blue-500/20'
+                          : 'bg-slate-50 border-slate-200 text-slate-500 hover:shadow-blue-500/20 shadow-[0_4px_10px_rgba(0,0,0,0.05)]'
+                        }`
                         }`}
                     >
-                      <ChevronRight size={20} />
+                      <ChevronRight size={20} className="stroke-[2.5px] rotate-90" />
                     </button>
                   </div>
+                )}
+              </div>
+
+              <div className="mt-10 flex justify-center">
+                <div className={`px-8 py-3.5 rounded-[20px] text-[11px] font-black uppercase tracking-[0.2em] border transition-all ${isDarkMode
+                  ? 'bg-slate-800/40 border-slate-800/60 text-slate-500 shadow-[0_4px_20px_rgba(0,0,0,0.2)]'
+                  : 'bg-slate-50/80 border-slate-100 text-slate-400 shadow-[0_4px_15px_rgba(0,0,0,0.02)]'}`}
+                >
+                  TOPLAM {filteredTransactions.length} KAYIT BULUNUYOR
                 </div>
-              )}
+              </div>
             </>
           ) : (
             <div className="py-32 text-center">

@@ -29,36 +29,46 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
       ? transactions
       : transactions.filter(t => t.cardId === selectedCardId);
 
-    // Group by month
-    const monthlyMap: Record<string, { month: string, spending: number, payment: number }> = {};
+    // Group by month using a more robust Map-based approach
+    const monthlyMap = new Map<string, { month: string, spending: number, payment: number, timestamp: number }>();
 
-    // Last 12 months for full year view
+    // Prepare exactly 12 months in chronological order
     for (let i = 11; i >= 0; i--) {
       const d = new Date();
+      d.setDate(1); // Crucial: avoid month jumping
       d.setMonth(d.getMonth() - i);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
       const label = d.toLocaleString('tr-TR', { month: 'short', year: '2-digit' });
-      monthlyMap[key] = { month: label, spending: 0, payment: 0 };
+      monthlyMap.set(key, {
+        month: label,
+        spending: 0,
+        payment: 0,
+        timestamp: d.getTime()
+      });
     }
 
+    // Assign transactions to their respective months
     filteredTxs.forEach(t => {
       const date = new Date(t.date);
-      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      if (monthlyMap[key]) {
-        if (t.type === 'spending') monthlyMap[key].spending += t.amount;
-        else monthlyMap[key].payment += t.amount;
+      const key = `${date.getFullYear()}-${date.getMonth()}`;
+      if (monthlyMap.has(key)) {
+        const entry = monthlyMap.get(key)!;
+        if (t.type === 'spending') entry.spending += t.amount;
+        else entry.payment += t.amount;
       }
     });
 
-    const monthlyChart = Object.values(monthlyMap);
+    // Convert to sorted array for the chart
+    const monthlyChart = Array.from(monthlyMap.values())
+      .sort((a, b) => a.timestamp - b.timestamp);
 
     // Category breakdown for current month - Include all dynamic categories + potentially unique ones
     const currentMonthTxs = filteredTxs.filter(t => {
       const tDate = new Date(t.date);
-      const tKey = `${tDate.getFullYear()}-${String(tDate.getMonth() + 1).padStart(2, '0')}`;
       const now = new Date();
-      const nowKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-      return tKey === nowKey && t.type === 'spending';
+      return tDate.getMonth() === now.getMonth() &&
+        tDate.getFullYear() === now.getFullYear() &&
+        t.type === 'spending';
     });
 
     // Category breakdown with Turkish normalization
@@ -97,24 +107,13 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
           <p className="text-sm text-slate-500 font-medium mt-1">Geçmiş dönem finansal performansınız</p>
         </div>
 
-        <select
-          value={selectedCardId}
-          onChange={(e) => setSelectedCardId(e.target.value)}
-          className={`px-6 py-3 rounded-2xl border font-bold text-sm outline-none transition-all ${isDarkMode
-            ? 'bg-slate-800 border-slate-700 text-white focus:ring-blue-500/50'
-            : 'bg-slate-50 border-slate-200 text-slate-700 focus:ring-blue-500/20'
-            }`}
-        >
-          <option value="all">Tüm Kartlar</option>
-          {cards.map(c => <option key={c.id} value={c.id}>{c.bankName} - {c.cardName}</option>)}
-        </select>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         <div className="lg:col-span-2">
           <div className="h-[250px] sm:h-[350px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analysisData.monthlyChart} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
+              <BarChart data={analysisData.monthlyChart} margin={{ top: 10, right: 10, left: 40, bottom: 0 }}>
                 <defs>
                   <linearGradient id="spendingGradientMonthly" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
@@ -138,8 +137,12 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
                 <YAxis
                   axisLine={false}
                   tickLine={false}
+                  width={100}
+                  domain={[0, 'auto']}
+                  nice={true}
+                  padding={{ top: 20 }}
                   tick={{ fill: isDarkMode ? '#94a3b8' : '#64748b', fontSize: 11, fontWeight: 700 }}
-                  tickFormatter={(val) => `${val.toLocaleString()} ₺`}
+                  tickFormatter={(val) => `${val.toLocaleString('tr-TR')} ₺`}
                 />
                 <Tooltip
                   cursor={{ fill: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)', radius: 10 }}
@@ -182,17 +185,6 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
           </div>
 
           <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className={`p-5 rounded-[32px] border flex items-center gap-5 transition-all hover:translate-x-1 ${isDarkMode ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100 shadow-sm'}`}>
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
-                <TrendingDown size={24} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-black text-slate-500/80 dark:text-slate-400 uppercase tracking-[0.15em] mb-1 text-nowrap">BU AYKİ TOPLAM ÖDEME</p>
-                <p className={`text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tighter`}>
-                  {analysisData.monthlyChart[analysisData.monthlyChart.length - 1].payment.toLocaleString('tr-TR')} <span className="text-[0.7em] opacity-70">₺</span>
-                </p>
-              </div>
-            </div>
             <div className={`p-5 rounded-[32px] border flex items-center gap-5 transition-all hover:translate-x-1 ${isDarkMode ? 'bg-rose-500/5 border-rose-500/20' : 'bg-rose-50 border-rose-100 shadow-sm'}`}>
               <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-500 shrink-0">
                 <TrendingUp size={24} />
@@ -201,6 +193,17 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
                 <p className="text-[10px] font-black text-slate-500/80 dark:text-slate-400 uppercase tracking-[0.15em] mb-1 text-nowrap">BU AYKİ TOPLAM HARCAMA</p>
                 <p className={`text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tighter`}>
                   {analysisData.monthlyChart[analysisData.monthlyChart.length - 1].spending.toLocaleString('tr-TR')} <span className="text-[0.7em] opacity-70">₺</span>
+                </p>
+              </div>
+            </div>
+            <div className={`p-5 rounded-[32px] border flex items-center gap-5 transition-all hover:translate-x-1 ${isDarkMode ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100 shadow-sm'}`}>
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
+                <TrendingDown size={24} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-black text-slate-500/80 dark:text-slate-400 uppercase tracking-[0.15em] mb-1 text-nowrap">BU AYKİ TOPLAM ÖDEME</p>
+                <p className={`text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tighter`}>
+                  {analysisData.monthlyChart[analysisData.monthlyChart.length - 1].payment.toLocaleString('tr-TR')} <span className="text-[0.7em] opacity-70">₺</span>
                 </p>
               </div>
             </div>
@@ -241,7 +244,7 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
 
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 

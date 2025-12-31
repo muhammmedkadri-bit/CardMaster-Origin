@@ -73,7 +73,7 @@ const CardVisual: React.FC<CardVisualProps> = ({ card, onAddToCalendar, onEdit, 
 
         {/* Bank & Type Header */}
         <div className="relative z-10 mb-0 sm:mb-1">
-          <p className="text-[7px] sm:text-[10px] font-black text-white/60 uppercase tracking-[0.3em] mb-0.5 leading-none">{card.bankName}</p>
+          <p className="text-[7px] sm:text-[10px] font-black text-white/60 tracking-[0.3em] mb-0.5 leading-none">{card.bankName.toLocaleUpperCase('tr-TR')}</p>
           <h3 className="text-xs sm:text-base md:text-lg font-black tracking-tight leading-none text-white">{card.cardName}</h3>
         </div>
 

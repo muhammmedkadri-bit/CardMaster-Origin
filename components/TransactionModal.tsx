@@ -30,7 +30,10 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
     description: initialData?.description || '',
     date: initialData?.date ? initialData.date.split('T')[0] : new Date().toISOString().split('T')[0],
     confirmationUrl: initialData?.confirmationUrl || '',
-    extraAmount: 0
+    extraAmount: 0,
+    expenseType: (initialData?.expenseType || 'regular') as 'regular' | 'installment' | 'cash_advance',
+    installments: initialData?.installments || 1,
+    installmentAmount: initialData?.installmentAmount || 0,
   });
 
   const [newCategory, setNewCategory] = useState('');
@@ -57,15 +60,19 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
   useEffect(() => {
     if (initialData) {
       setFormData({
-        cardId: initialData.cardId,
-        amount: initialData.amount,
-        category: initialData.category,
-        description: initialData.description,
-        date: initialData.date.split('T')[0], // Extract YYYY-MM-DD
-        confirmationUrl: initialData.confirmationUrl || ''
+        cardId: initialData.cardId || (cards[0]?.id || ''),
+        amount: initialData.amount ?? 0,
+        category: initialData.category || '',
+        description: initialData.description || '',
+        date: initialData.date ? initialData.date.split('T')[0] : new Date().toISOString().split('T')[0],
+        confirmationUrl: initialData.confirmationUrl || '',
+        extraAmount: 0,
+        expenseType: (initialData.expenseType || 'regular') as any,
+        installments: initialData.installments || 1,
+        installmentAmount: initialData.installmentAmount || 0
       });
     }
-  }, [initialData]);
+  }, [initialData, cards]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,15 +87,16 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
     let finalDate = formData.date;
     const now = new Date();
     const timePart = now.toTimeString().split(' ')[0]; // HH:mm:ss
+    const ms = now.getMilliseconds().toString().padStart(3, '0');
 
     if (!initialData) {
       // New transaction: current time
-      finalDate = `${formData.date}T${timePart}`;
+      finalDate = `${formData.date}T${timePart}.${ms}`;
     } else if (initialData.date.includes('T')) {
       // Edit: keep existing time or use current if not present
       finalDate = `${formData.date}T${initialData.date.split('T')[1]}`;
     } else {
-      finalDate = `${formData.date}T${timePart}`;
+      finalDate = `${formData.date}T${timePart}.${ms}`;
     }
 
     onSave({
@@ -100,7 +108,11 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
       category: type === 'payment' ? 'Ödeme' : finalCategory,
       date: finalDate,
       description: formData.description,
-      confirmationUrl: formData.confirmationUrl || undefined
+      confirmationUrl: formData.confirmationUrl || undefined,
+      expenseType: formData.expenseType,
+      installments: formData.expenseType !== 'regular' ? formData.installments : undefined,
+      installmentAmount: formData.expenseType !== 'regular' ? formData.installmentAmount : undefined,
+      totalAmount: Number(formData.amount)
     });
 
     if (type === 'payment' && Number(formData.extraAmount) > 0) {
@@ -120,11 +132,29 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
   };
 
   const handleAmountChange = (value: string) => {
-    if (value === '') {
-      setFormData(prev => ({ ...prev, amount: '' as any }));
-      return;
-    }
-    setFormData(prev => ({ ...prev, amount: Number(value) }));
+    const num = value === '' ? 0 : Number(value);
+    setFormData(prev => ({
+      ...prev,
+      amount: value === '' ? '' as any : num,
+      installmentAmount: prev.expenseType !== 'regular' && prev.installments > 0 ? num / prev.installments : prev.installmentAmount
+    }));
+  };
+
+  const handleInstallmentAmountChange = (value: string) => {
+    const num = value === '' ? 0 : Number(value);
+    setFormData(prev => ({
+      ...prev,
+      installmentAmount: value === '' ? '' as any : num,
+      amount: prev.expenseType !== 'regular' ? num * prev.installments : prev.amount
+    }));
+  };
+
+  const handleInstallmentChange = (count: number) => {
+    setFormData(prev => ({
+      ...prev,
+      installments: count,
+      amount: prev.expenseType !== 'regular' ? Number(prev.installmentAmount) * count : prev.amount
+    }));
   };
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -159,20 +189,95 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
             </select>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
-            <div className="min-w-0">
-              <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-widest text-left">Tutar (TL)</label>
-              <input
-                required
-                type="number"
-                step="0.01"
-                className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-white text-xl font-black h-[54px] sm:h-auto appearance-none"
-                value={formData.amount}
-                onChange={e => handleAmountChange(e.target.value)}
-                onFocus={handleFocus}
-                placeholder="0.00"
-              />
+          {type === 'spending' && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-widest leading-none">Harcama Türü</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'regular', label: 'DÜZENLİ', icon: <ArrowUpRight size={14} /> },
+                    { id: 'installment', label: 'TAKSİTLİ ALIŞVERİŞ', icon: <TrendingUp size={14} /> },
+                    { id: 'cash_advance', label: 'TAKSİTLİ NAKİT AVANS', icon: <Plus size={14} /> }
+                  ].map((mode) => (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      onClick={() => {
+                        const newType = mode.id as any;
+                        setFormData(prev => ({
+                          ...prev,
+                          expenseType: newType,
+                          // Ensure valid installment count when switching
+                          installments: newType === 'regular' ? 1 : (prev.installments < 2 ? 2 : prev.installments),
+                          // Recalculate amount if switching to installment
+                          amount: newType !== 'regular' ? (Number(prev.installmentAmount) || 0) * (prev.installments < 2 ? 2 : prev.installments) : prev.amount
+                        }));
+                      }}
+                      className={`flex flex-col items-center justify-center p-2.5 rounded-2xl border transition-all gap-1 h-full text-center ${formData.expenseType === mode.id
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-lg'
+                        : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'
+                        }`}
+                    >
+                      {mode.icon}
+                      <span className="text-[7px] leading-tight font-black uppercase tracking-tight">{mode.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {formData.expenseType !== 'regular' && (
+                <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-4 duration-500">
+                  <div className="min-w-0">
+                    <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-widest leading-none">Taksit Sayısı</label>
+                    <select
+                      className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-white font-bold text-sm appearance-none cursor-pointer h-[54px]"
+                      value={formData.installments}
+                      onChange={e => handleInstallmentChange(Number(e.target.value))}
+                    >
+                      {[2, 3, 4, 5, 6, 8, 9, 10, 12, 18, 24, 36].map(n => <option key={n} value={n}>{n} Taksit</option>)}
+                    </select>
+                  </div>
+                  <div className="min-w-0">
+                    <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-widest leading-none">Aylık Taksit</label>
+                    <input
+                      required
+                      type="number"
+                      step="0.01"
+                      className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-white text-base font-black h-[54px] appearance-none"
+                      value={formData.installmentAmount}
+                      onChange={e => handleInstallmentAmountChange(e.target.value)}
+                      onFocus={handleFocus}
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+            {formData.expenseType === 'regular' ? (
+              <div className="min-w-0">
+                <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-widest text-left">Tutar (TL)</label>
+                <input
+                  required
+                  type="number"
+                  step="0.01"
+                  className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-white text-xl font-black h-[54px] sm:h-auto appearance-none"
+                  value={formData.amount}
+                  onChange={e => handleAmountChange(e.target.value)}
+                  onFocus={handleFocus}
+                  placeholder="0.00"
+                />
+              </div>
+            ) : (
+              <div className="min-w-0">
+                <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-widest text-left">Toplam Tutar</label>
+                <div className="w-full px-4 py-3 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl font-black text-lg text-slate-400 dark:text-slate-500 h-[54px] flex items-center">
+                  {(Number(formData.amount) || 0).toLocaleString('tr-TR', { maximumFractionDigits: 2 })} ₺
+                </div>
+              </div>
+            )}
             <div className="min-w-0">
               <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-widest flex items-center gap-2">
                 <Calendar size={12} /> İşlem Tarihi
@@ -194,12 +299,23 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
                 <div className="grid grid-cols-2 xs:grid-cols-3 gap-1.5">
                   {(() => {
                     const seen = new Set<string>();
-                    const uniqueCats = categories.filter(c => {
+                    let uniqueCats = categories.filter(c => {
                       const key = c.name.toLocaleLowerCase('tr-TR').trim();
                       if (seen.has(key)) return false;
                       seen.add(key);
                       return true;
                     });
+
+                    // Ensure "Diğer" is always there and at the end
+                    const hasOther = uniqueCats.some(c => c.name.toLocaleLowerCase('tr-TR') === 'diğer');
+                    if (!hasOther) {
+                      uniqueCats.push({ id: 'default-other', name: 'Diğer', color: '#64748B' });
+                    } else {
+                      // Move it to the end if it exists
+                      const otherIndex = uniqueCats.findIndex(c => c.name.toLocaleLowerCase('tr-TR') === 'diğer');
+                      const otherCat = uniqueCats.splice(otherIndex, 1)[0];
+                      uniqueCats.push(otherCat);
+                    }
                     return uniqueCats.length > 0 ? uniqueCats.map(cat => {
                       const isSelected = formData.category.toLocaleLowerCase('tr-TR') === cat.name.toLocaleLowerCase('tr-TR');
                       return (
@@ -208,7 +324,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
                           type="button"
                           onClick={() => {
                             setFormData({ ...formData, category: cat.name });
-                            if (cat.name !== 'Diğer') {
+                            if (cat.name.toLocaleLowerCase('tr-TR') !== 'diğer') {
                               setIsAddingCategory(false);
                               setNewCategory('');
                             }
@@ -233,7 +349,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
                 </div>
               </div>
 
-              {formData.category === 'Diğer' && (
+              {formData.category.toLocaleLowerCase('tr-TR') === 'diğer' && (
                 <div className="mt-4 animate-in fade-in slide-in-from-top-2">
                   {!isAddingCategory ? (
                     <button
