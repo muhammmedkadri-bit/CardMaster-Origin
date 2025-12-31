@@ -945,7 +945,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                 </div>
               )}
 
-              <div className="mt-4 flex justify-center">
+              <div className="mt-3 flex justify-center">
                 <div className={`px-8 py-3.5 rounded-[20px] text-[11px] font-black uppercase tracking-[0.2em] border transition-all ${isDarkMode
                   ? 'bg-slate-800/40 border-slate-800/60 text-slate-500 shadow-[0_4px_20px_rgba(0,0,0,0.2)]'
                   : 'bg-slate-50/80 border-slate-100 text-slate-400 shadow-[0_4px_15px_rgba(0,0,0,0.02)]'}`}
