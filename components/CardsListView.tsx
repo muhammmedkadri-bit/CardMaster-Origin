@@ -454,10 +454,20 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                 {/* Expanded Transaction List Area */}
                 <div
                   className={`grid transition-all duration-300 ease-out ${isExpanded ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0 mt-0'}`}
-                  style={{ willChange: 'grid-template-rows, opacity, margin' }}
+                  style={{
+                    willChange: isExpanded ? 'grid-template-rows, opacity, margin' : 'auto',
+                    contain: 'layout style paint',
+                    transform: 'translateZ(0)', // Force GPU acceleration
+                  }}
                 >
                   <div className="overflow-hidden min-h-0">
-                    <div className={`relative p-6 sm:p-8 rounded-[32px] border ${isDarkMode ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50/80 border-slate-200'}`}>
+                    <div
+                      className={`relative p-6 sm:p-8 rounded-[32px] border ${isDarkMode ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50/80 border-slate-200'}`}
+                      style={{
+                        transform: 'translateZ(0)', // Force GPU layer
+                        backfaceVisibility: 'hidden', // Prevent subpixel rendering issues
+                      }}
+                    >
 
                       {/* Content Wrapper - Always visible for instant feedback */}
                       <div className="opacity-100">
