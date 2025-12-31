@@ -456,7 +456,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
   }
 
   return (
-    <div className="pt-0 pb-4">
+    <div className="pt-0 pb-8">
       {/* Header Section */}
       <div className="flex flex-col gap-8 mb-12">
         {/* Top Row: Title and Back Button */}
