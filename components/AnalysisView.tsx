@@ -804,7 +804,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
       </div>
 
       {/* Transactions Section */}
-      <div id="analysis-transactions" className="grid grid-cols-1 gap-8 mb-0 scroll-mt-[1px]">
+      <div id="analysis-transactions" className="grid grid-cols-1 gap-8 mb-0 scroll-mt-32 sm:scroll-mt-40">
         <div className={`p-8 sm:p-12 rounded-[40px] border transition-all ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-sm'}`}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-8 mb-12">
             <div className="flex items-center gap-4">
