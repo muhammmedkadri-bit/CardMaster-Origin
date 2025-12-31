@@ -1536,10 +1536,9 @@ const App: React.FC = () => {
                           <div className="p-3 bg-blue-500/10 text-blue-600 rounded-xl"><Clock size={20} /></div>
                           <div className="flex flex-col gap-0.5 overflow-hidden">
                             <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-0.5">SIRADAKİ ÖDEME</p>
-                            <AutoFitText
-                              text={`${widgetsData.closestDue?.cardName} (${widgetsData.closestDue?.dueDay}. Gün)`}
-                              color={widgetsData.closestDue?.color || (isDarkMode ? '#ffffff' : '#1e293b')}
-                            />
+                            <p className="text-xl font-black truncate" style={{ color: widgetsData.closestDue?.color || (isDarkMode ? '#ffffff' : '#1e293b') }}>
+                              {`${widgetsData.closestDue?.cardName} (${widgetsData.closestDue?.dueDay}. Gün)`}
+                            </p>
                             <p className={`text-lg font-black mt-1 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
                               {Math.max(0, widgetsData.closestDue?.balance || 0).toLocaleString('tr-TR')} ₺
                             </p>
@@ -1569,10 +1568,9 @@ const App: React.FC = () => {
                           <div className="p-3 bg-amber-500/10 text-amber-600 rounded-xl"><TrendingUp size={20} /></div>
                           <div className="flex flex-col gap-0.5 overflow-hidden">
                             <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-0.5">EN YÜKSEK BORÇ</p>
-                            <AutoFitText
-                              text={widgetsData.highestDebt?.cardName || ""}
-                              color={widgetsData.highestDebt?.color || (isDarkMode ? '#ffffff' : '#1e293b')}
-                            />
+                            <p className="text-xl font-black truncate" style={{ color: widgetsData.highestDebt?.color || (isDarkMode ? '#ffffff' : '#1e293b') }}>
+                              {widgetsData.highestDebt?.cardName || ""}
+                            </p>
                             <p className={`text-lg font-black mt-1 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
                               {Math.max(0, widgetsData.highestDebt?.balance || 0).toLocaleString('tr-TR')} ₺
                             </p>

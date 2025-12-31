@@ -407,12 +407,9 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                       />
                     </div>
                     <div className={`p-3 sm:p-5 rounded-[28px] flex flex-col justify-center ${isDarkMode ? 'bg-slate-800/30' : 'bg-slate-50'}`}>
-                      <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1 leading-tight">KALAN LİMİT</p>
-                      <AutoFitText
-                        text={`${remainingLimit.toLocaleString('tr-TR')} ₺`}
-                        color={isDarkMode ? '#34d399' : '#059669'}
-                        baseClass="text-xs sm:text-base font-black"
-                      />
+                      <p className={`text-xs sm:text-base font-black truncate ${isDarkMode ? 'text-[#34d399]' : 'text-[#059669]'}`}>
+                        {`${remainingLimit.toLocaleString('tr-TR')} ₺`}
+                      </p>
                     </div>
                     <div className={`p-3 sm:p-5 rounded-[28px] flex flex-col justify-center ${isDarkMode ? 'bg-slate-800/30' : 'bg-slate-50'}`}>
                       <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1 leading-tight">HESAP KESİM</p>
@@ -513,7 +510,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                         <div className="flex gap-4 sm:gap-6 items-stretch">
                           <div
                             id="cards-transactions-list"
-                            className={`flex-1 space-y-2.5 min-w-0 transition-all duration-200 ease-out min-h-[457px] scroll-mt-24 ${slideDirection !== null ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'
+                            className={`flex-1 space-y-2.5 min-w-0 transition-opacity transition-transform duration-200 ease-out min-h-[457px] scroll-mt-24 ${slideDirection !== null ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'
                               }`}
                           >
                             {paginatedTransactions.length > 0 ? paginatedTransactions.map(tx => {
