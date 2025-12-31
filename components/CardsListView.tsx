@@ -230,7 +230,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
 
   const handleCardExpand = (cardId: string) => {
     setAnimatingCardId(cardId);
-    setTimeout(() => setAnimatingCardId(null), 500);
+    setTimeout(() => setAnimatingCardId(null), 300);
 
     if (expandedCardId === cardId) {
       setExpandedCardId(null);
@@ -325,7 +325,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
               id={`card-main-${card.id}`}
               key={card.id}
               className={`group relative p-6 sm:p-10 pl-9 sm:pl-14 rounded-[40px] border overflow-hidden transition-all hover:z-10 scroll-mt-28 ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800 hover:bg-[#0b0f1a]/60' : 'bg-white border-slate-100'
-                } ${isAnimatingThisCard ? 'shadow-none scale-100 disable-child-shadows duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-transform' : 'shadow-sm hover:shadow-2xl group-hover:scale-[1.01] sm:group-hover:scale-[1.02] duration-300'}`}
+                } ${isAnimatingThisCard ? 'shadow-none disable-child-shadows duration-300 ease-out will-change-contents' : 'shadow-sm hover:shadow-2xl duration-300'}`}
             >
               {/* Card Color Side Accent - Perfectly Integrated */}
               <div
@@ -489,7 +489,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
 
                 {/* Expanded Transaction List Area */}
                 <div
-                  className={`grid transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${isExpanded ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0 mt-0'}`}
+                  className={`grid transition-all duration-300 ease-out ${isExpanded ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0 mt-0'}`}
                   style={{ willChange: 'grid-template-rows, opacity, margin' }}
                 >
                   <div className="overflow-hidden min-h-0">
