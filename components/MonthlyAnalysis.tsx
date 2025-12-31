@@ -113,7 +113,7 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
         <div className="lg:col-span-2">
           <div className="h-[250px] sm:h-[350px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analysisData.monthlyChart} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <BarChart data={analysisData.monthlyChart} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="spendingGradientMonthly" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
@@ -137,7 +137,7 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  width={60}
+                  width={85}
                   domain={[0, 'auto']}
                   nice={true}
                   padding={{ top: 20 }}
