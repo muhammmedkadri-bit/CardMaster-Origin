@@ -790,9 +790,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
               <div className="flex gap-4 sm:gap-6 items-stretch">
                 {/* Left: Transaction List - Fixed min-height for 5 items */}
                 <div
-                  className={`flex-1 space-y-2.5 min-w-0 transition-all duration-200 ease-out ${slideDirection !== null ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'
+                  className={`flex-1 space-y-2.5 min-w-0 transition-all duration-200 ease-out min-h-[560px] sm:min-h-0 ${slideDirection !== null ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'
                     }`}
-                  style={{ minHeight: '560px' }}
                 >
                   {paginatedTransactions.map(tx => {
                     const card = cards.find(c => c.id === tx.cardId);
