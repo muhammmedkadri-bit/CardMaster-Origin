@@ -1515,7 +1515,7 @@ const App: React.FC = () => {
       </div>
 
       <main className="max-w-7xl mx-auto pt-24 px-4 sm:px-6 space-y-8 sm:space-y-12 relative z-0">
-        <div key={view} className="animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both">
+        <div key={view} className="animate-in fade-in duration-200">
           {view === 'dashboard' ? (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 pt-4 sm:pt-8">
