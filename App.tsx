@@ -800,7 +800,8 @@ const App: React.FC = () => {
           setTimeout(() => {
             const element = document.getElementById(scrollId);
             if (element) {
-              element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              const y = element.getBoundingClientRect().top + window.scrollY - 20; // 20px offset adjustment
+              window.scrollTo({ top: y, behavior: 'smooth' });
             }
           }, 100);
         }
