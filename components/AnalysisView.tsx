@@ -254,12 +254,19 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
       end.setHours(23, 59, 59, 999);
     }
 
+    // Calculate duration in days to decide aggregation strategy
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    // Use monthly aggregation for 'thisyear' OR large custom ranges (> 90 days) to prevent chart lag
+    const useMonthly = timeRange === 'thisyear' || (timeRange === 'custom' && diffDays > 90);
+
     const monthNames = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
 
     // Initialize data with all dates in range to ensure a continuous line
     const tempDate = new Date(start);
     while (tempDate <= end) {
-      const label = timeRange === 'thisyear'
+      const label = useMonthly
         ? `${monthNames[tempDate.getMonth()]} ${tempDate.getFullYear()}`
         : `${tempDate.getDate()} ${monthNames[tempDate.getMonth()]}`;
 
@@ -267,7 +274,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
         data[label] = { label, spending: 0, payment: 0, net: 0, timestamp: tempDate.getTime() };
       }
 
-      if (timeRange === 'thisyear') {
+      if (useMonthly) {
         tempDate.setMonth(tempDate.getMonth() + 1);
       } else {
         tempDate.setDate(tempDate.getDate() + 1);
@@ -276,7 +283,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
 
     filteredTransactions.forEach(t => {
       const d = new Date(t.date);
-      const label = timeRange === 'thisyear'
+      const label = useMonthly
         ? `${monthNames[d.getMonth()]} ${d.getFullYear()}`
         : `${d.getDate()} ${monthNames[d.getMonth()]}`;
 
