@@ -473,253 +473,255 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                 </div>
 
                 {/* Expanded Transaction List Area */}
-                {isExpanded && (
-                  <div className={`mt-2 p-6 sm:p-8 rounded-[32px] border animate-in fade-in duration-300 ${isDarkMode ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50/80 border-slate-200'}`}>
-                    {/* Transaction Header & Pagination Controls */}
-                    <div className="flex flex-col gap-6 mb-10">
-                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2.5 bg-blue-600/10 text-blue-600 rounded-2xl shrink-0"><History size={20} /></div>
-                          <h4 className={`text-sm sm:text-base font-black uppercase tracking-widest leading-none ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>KART HAREKETLERİ</h4>
+                <div className={`grid transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${isExpanded ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0 mt-0'}`}>
+                  <div className="overflow-hidden min-h-0">
+                    <div className={`p-6 sm:p-8 rounded-[32px] border ${isDarkMode ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50/80 border-slate-200'}`}>
+                      {/* Transaction Header & Pagination Controls */}
+                      <div className="flex flex-col gap-6 mb-10">
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2.5 bg-blue-600/10 text-blue-600 rounded-2xl shrink-0"><History size={20} /></div>
+                            <h4 className={`text-sm sm:text-base font-black uppercase tracking-widest leading-none ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>KART HAREKETLERİ</h4>
+                          </div>
+
+                          {/* Time Range Filters - Moved to top-right */}
+                          <div className="grid grid-cols-3 sm:flex sm:items-center gap-2">
+                            {(['today', 'thisweek', 'thismonth', 'thisyear', 'custom'] as LocalTimeRange[]).map(r => (
+                              <button
+                                key={r}
+                                onClick={() => handleRangeChange(r)}
+                                className={`flex-1 sm:flex-none px-4 py-3 rounded-[20px] text-[9px] font-black uppercase tracking-widest transition-all duration-300 border ${localRange === r
+                                  ? (isDarkMode
+                                    ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-600/20'
+                                    : 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-600/20')
+                                  : isDarkMode
+                                    ? 'bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800 hover:border-slate-700'
+                                    : 'bg-white text-slate-500 border-slate-100 hover:bg-slate-50 hover:border-slate-200 shadow-sm'
+                                  } active:scale-95`}
+                              >
+                                {r === 'today' ? 'Bugün' : r === 'thisweek' ? 'Hafta' : r === 'thismonth' ? 'Ay' : r === 'thisyear' ? 'Yıl' : 'Özel'}
+                              </button>
+                            ))}
+                          </div>
                         </div>
 
-                        {/* Time Range Filters - Moved to top-right */}
-                        <div className="grid grid-cols-3 sm:flex sm:items-center gap-2">
-                          {(['today', 'thisweek', 'thismonth', 'thisyear', 'custom'] as LocalTimeRange[]).map(r => (
-                            <button
-                              key={r}
-                              onClick={() => handleRangeChange(r)}
-                              className={`flex-1 sm:flex-none px-4 py-3 rounded-[20px] text-[9px] font-black uppercase tracking-widest transition-all duration-300 border ${localRange === r
-                                ? (isDarkMode
-                                  ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-600/20'
-                                  : 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-600/20')
-                                : isDarkMode
-                                  ? 'bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800 hover:border-slate-700'
-                                  : 'bg-white text-slate-500 border-slate-100 hover:bg-slate-50 hover:border-slate-200 shadow-sm'
-                                } active:scale-95`}
-                            >
-                              {r === 'today' ? 'Bugün' : r === 'thisweek' ? 'Hafta' : r === 'thismonth' ? 'Ay' : r === 'thisyear' ? 'Yıl' : 'Özel'}
-                            </button>
-                          ))}
+
+                      </div>
+
+                      {localRange === 'custom' && (
+                        <div className="mb-8 animate-in slide-in-from-top-4 duration-500 max-w-2xl">
+                          <DateRangePicker
+                            startDate={customStart}
+                            endDate={customEnd}
+                            onChange={(start, end) => {
+                              setCustomStart(start);
+                              setCustomEnd(end);
+                            }}
+                            isDarkMode={isDarkMode}
+                          />
                         </div>
-                      </div>
+                      )}
 
+                      {/* Main Content Area with Vertical Pagination on the Right */}
+                      <div className="flex gap-4 sm:gap-6 items-stretch">
+                        <div
+                          id="cards-transactions-list"
+                          className={`flex-1 space-y-2.5 min-w-0 transition-all duration-200 ease-out min-h-[457px] scroll-mt-24 ${slideDirection !== null ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'
+                            }`}
+                        >
+                          {paginatedTransactions.length > 0 ? paginatedTransactions.map(tx => {
+                            const categoryName = tx.category || 'Diğer';
+                            const categoryInfo = categories.find(c => c.name.toLocaleLowerCase('tr-TR') === categoryName.toLocaleLowerCase('tr-TR'));
+                            const categoryColor = categoryInfo?.color || card.color;
+                            const cardColor = card.color;
+                            const isSpending = tx.type === 'spending';
 
-                    </div>
-
-                    {localRange === 'custom' && (
-                      <div className="mb-8 animate-in slide-in-from-top-4 duration-500 max-w-2xl">
-                        <DateRangePicker
-                          startDate={customStart}
-                          endDate={customEnd}
-                          onChange={(start, end) => {
-                            setCustomStart(start);
-                            setCustomEnd(end);
-                          }}
-                          isDarkMode={isDarkMode}
-                        />
-                      </div>
-                    )}
-
-                    {/* Main Content Area with Vertical Pagination on the Right */}
-                    <div className="flex gap-4 sm:gap-6 items-stretch">
-                      <div
-                        id="cards-transactions-list"
-                        className={`flex-1 space-y-2.5 min-w-0 transition-all duration-200 ease-out min-h-[457px] scroll-mt-24 ${slideDirection !== null ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'
-                          }`}
-                      >
-                        {paginatedTransactions.length > 0 ? paginatedTransactions.map(tx => {
-                          const categoryName = tx.category || 'Diğer';
-                          const categoryInfo = categories.find(c => c.name.toLocaleLowerCase('tr-TR') === categoryName.toLocaleLowerCase('tr-TR'));
-                          const categoryColor = categoryInfo?.color || card.color;
-                          const cardColor = card.color;
-                          const isSpending = tx.type === 'spending';
-
-                          return (
-                            <div key={tx.id} className={`relative p-3.5 sm:px-5 sm:py-3.5 rounded-[24px] border transition-all ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
-                              {/* Mobile Layout */}
-                              <div className="flex flex-col gap-3 sm:hidden">
-                                {/* Top Row: Type & Buttons */}
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <div className={`w-1 h-4 rounded-full shrink-0 ${isSpending ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]'}`} />
-                                    <span className={`text-[9px] font-black uppercase tracking-[0.15em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                                      {isSpending ? 'HARCAMA' : 'ÖDEME'}
-                                    </span>
+                            return (
+                              <div key={tx.id} className={`relative p-3.5 sm:px-5 sm:py-3.5 rounded-[24px] border transition-all ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                                {/* Mobile Layout */}
+                                <div className="flex flex-col gap-3 sm:hidden">
+                                  {/* Top Row: Type & Buttons */}
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <div className={`w-1 h-4 rounded-full shrink-0 ${isSpending ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]'}`} />
+                                      <span className={`text-[9px] font-black uppercase tracking-[0.15em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                                        {isSpending ? 'HARCAMA' : 'ÖDEME'}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      <button onClick={() => onEditTransaction(tx)} className={`p-2 rounded-lg transition-all ${isDarkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}><Edit2 size={12} /></button>
+                                      <button onClick={() => onDeleteTransaction(tx)} className={`p-2 rounded-lg transition-all ${isDarkMode ? 'bg-rose-500/10 text-rose-400' : 'bg-rose-50 text-rose-600'}`}><Trash2 size={12} /></button>
+                                    </div>
                                   </div>
-                                  <div className="flex items-center gap-1.5">
-                                    <button onClick={() => onEditTransaction(tx)} className={`p-2 rounded-lg transition-all ${isDarkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}><Edit2 size={12} /></button>
-                                    <button onClick={() => onDeleteTransaction(tx)} className={`p-2 rounded-lg transition-all ${isDarkMode ? 'bg-rose-500/10 text-rose-400' : 'bg-rose-50 text-rose-600'}`}><Trash2 size={12} /></button>
-                                  </div>
-                                </div>
 
-                                {/* Middle Row: Description & Amount */}
-                                <div className="flex items-center justify-between gap-3">
-                                  <div className="flex flex-col flex-1 min-w-0">
-                                    <p className={`text-[13px] font-black tracking-tight truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-                                      {tx.description || (isSpending ? 'Harcama' : 'Ödeme')}
+                                  {/* Middle Row: Description & Amount */}
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div className="flex flex-col flex-1 min-w-0">
+                                      <p className={`text-[13px] font-black tracking-tight truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                                        {tx.description || (isSpending ? 'Harcama' : 'Ödeme')}
+                                      </p>
+                                      {isSpending && tx.expenseType === 'installment' && (
+                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                          <TrendingUp size={10} className="text-blue-500" />
+                                          <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">
+                                            {tx.installments} TAKSİT ({tx.installmentAmount?.toLocaleString('tr-TR')} ₺ / Ay)
+                                          </span>
+                                        </div>
+                                      )}
+                                      {isSpending && tx.expenseType === 'cash_advance' && (
+                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                          <Zap size={10} className="text-rose-500" />
+                                          <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest">
+                                            TAKSİTLİ NAKİT AVANS
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <p className={`text-sm font-black tracking-tighter shrink-0 ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                      {isSpending ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
                                     </p>
-                                    {isSpending && tx.expenseType === 'installment' && (
-                                      <div className="flex items-center gap-1.5 mt-0.5">
-                                        <TrendingUp size={10} className="text-blue-500" />
-                                        <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">
-                                          {tx.installments} TAKSİT ({tx.installmentAmount?.toLocaleString('tr-TR')} ₺ / Ay)
-                                        </span>
-                                      </div>
-                                    )}
-                                    {isSpending && tx.expenseType === 'cash_advance' && (
-                                      <div className="flex items-center gap-1.5 mt-0.5">
-                                        <Zap size={10} className="text-rose-500" />
-                                        <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest">
-                                          TAKSİTLİ NAKİT AVANS
-                                        </span>
-                                      </div>
-                                    )}
                                   </div>
-                                  <p className={`text-sm font-black tracking-tighter shrink-0 ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                    {isSpending ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
-                                  </p>
+
+                                  {/* Bottom Row: Category Pill & Date */}
+                                  <div className="flex items-center justify-between">
+                                    <div className="px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest text-white shadow-sm" style={{ backgroundColor: categoryColor }}>
+                                      {tx.category}
+                                    </div>
+                                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest opacity-60">{formatDateDisplay(tx.date)}</p>
+                                  </div>
                                 </div>
 
-                                {/* Bottom Row: Category Pill & Date */}
-                                <div className="flex items-center justify-between">
-                                  <div className="px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest text-white shadow-sm" style={{ backgroundColor: categoryColor }}>
-                                    {tx.category}
+                                {/* Desktop Layout (Slimmed Down) */}
+                                <div className="hidden sm:flex items-center justify-between gap-4">
+                                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                                    <div className={`p-2.5 rounded-xl shrink-0 ${isSpending ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                                      {isSpending ? <ShoppingBag size={16} /> : <PaymentIcon size={16} />}
+                                    </div>
+                                    <div className="flex flex-col min-w-0">
+                                      <p className={`font-black text-sm tracking-tight truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+                                        {tx.description || (isSpending ? 'HARCAMA' : 'ÖDEME')}
+                                      </p>
+                                      {isSpending && tx.expenseType === 'installment' && (
+                                        <div className="flex items-center gap-1.5 mb-1">
+                                          <TrendingUp size={10} className="text-blue-600" />
+                                          <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest">
+                                            {tx.installments} TAKSİT ({tx.installmentAmount?.toLocaleString('tr-TR')} ₺ / AY)
+                                          </span>
+                                        </div>
+                                      )}
+                                      {isSpending && tx.expenseType === 'cash_advance' && (
+                                        <div className="flex items-center gap-1.5 mb-1">
+                                          <Zap size={10} className="text-rose-600" />
+                                          <span className="text-[9px] font-black text-rose-600 uppercase tracking-widest">
+                                            TAKSİTLİ NAKİT AVANS
+                                          </span>
+                                        </div>
+                                      )}
+                                      <div className="flex items-center gap-2 mt-0.5">
+                                        <div className="px-2 py-0.5 rounded-md border text-[8px] font-black tracking-widest" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
+                                          {card.cardName.toLocaleUpperCase('tr-TR')}
+                                        </div>
+                                        <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">{formatDateDisplay(tx.date)}</span>
+                                      </div>
+                                    </div>
                                   </div>
-                                  <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest opacity-60">{formatDateDisplay(tx.date)}</p>
-                                </div>
-                              </div>
-
-                              {/* Desktop Layout (Slimmed Down) */}
-                              <div className="hidden sm:flex items-center justify-between gap-4">
-                                <div className="flex items-center gap-4 flex-1 min-w-0">
-                                  <div className={`p-2.5 rounded-xl shrink-0 ${isSpending ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                                    {isSpending ? <ShoppingBag size={16} /> : <PaymentIcon size={16} />}
-                                  </div>
-                                  <div className="flex flex-col min-w-0">
-                                    <p className={`font-black text-sm tracking-tight truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-                                      {tx.description || (isSpending ? 'HARCAMA' : 'ÖDEME')}
+                                  <div className="flex items-center gap-5">
+                                    <p className={`text-base font-black tracking-tighter ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                      {isSpending ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
                                     </p>
-                                    {isSpending && tx.expenseType === 'installment' && (
-                                      <div className="flex items-center gap-1.5 mb-1">
-                                        <TrendingUp size={10} className="text-blue-600" />
-                                        <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest">
-                                          {tx.installments} TAKSİT ({tx.installmentAmount?.toLocaleString('tr-TR')} ₺ / AY)
-                                        </span>
-                                      </div>
-                                    )}
-                                    {isSpending && tx.expenseType === 'cash_advance' && (
-                                      <div className="flex items-center gap-1.5 mb-1">
-                                        <Zap size={10} className="text-rose-600" />
-                                        <span className="text-[9px] font-black text-rose-600 uppercase tracking-widest">
-                                          TAKSİTLİ NAKİT AVANS
-                                        </span>
-                                      </div>
-                                    )}
-                                    <div className="flex items-center gap-2 mt-0.5">
-                                      <div className="px-2 py-0.5 rounded-md border text-[8px] font-black tracking-widest" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
-                                        {card.cardName.toLocaleUpperCase('tr-TR')}
-                                      </div>
-                                      <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">{formatDateDisplay(tx.date)}</span>
+                                    <div className="flex items-center gap-1.5 opacity-100 transition-all">
+                                      <button onClick={() => onEditTransaction(tx)} className={`p-2 rounded-xl transition-all border ${isDarkMode ? 'bg-blue-500/5 text-blue-400 border-blue-500/10 hover:bg-blue-500/20' : 'bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100'}`} title="Düzenle"><Edit2 size={14} /></button>
+                                      <button onClick={() => onDeleteTransaction(tx)} className={`p-2 rounded-xl transition-all border ${isDarkMode ? 'bg-rose-500/5 text-rose-400 border-rose-500/10 hover:bg-rose-500/20' : 'bg-rose-50 text-rose-600 border-rose-100 hover:bg-rose-100'}`} title="Sil"><Trash2 size={14} /></button>
                                     </div>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-5">
-                                  <p className={`text-base font-black tracking-tighter ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                    {isSpending ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
-                                  </p>
-                                  <div className="flex items-center gap-1.5 opacity-100 transition-all">
-                                    <button onClick={() => onEditTransaction(tx)} className={`p-2 rounded-xl transition-all border ${isDarkMode ? 'bg-blue-500/5 text-blue-400 border-blue-500/10 hover:bg-blue-500/20' : 'bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100'}`} title="Düzenle"><Edit2 size={14} /></button>
-                                    <button onClick={() => onDeleteTransaction(tx)} className={`p-2 rounded-xl transition-all border ${isDarkMode ? 'bg-rose-500/5 text-rose-400 border-rose-500/10 hover:bg-rose-500/20' : 'bg-rose-50 text-rose-600 border-rose-100 hover:bg-rose-100'}`} title="Sil"><Trash2 size={14} /></button>
-                                  </div>
+                              </div>
+                            );
+                          }) : (
+                            <div className="py-12 text-center">
+                              <Inbox size={32} className="text-slate-300 dark:text-slate-700 mx-auto mb-4" />
+                              <p className="text-xs font-bold text-slate-500 italic uppercase tracking-widest">İşlem kaydı bulunmuyor</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Right: Vertical Pagination Control Tower - Centered Vertically (Hidden on Mobile) */}
+                        {totalPages > 1 && (
+                          <div className={`hidden sm:flex flex-col items-center gap-4 p-2.5 sm:p-3.5 rounded-[32px] border transition-all duration-500 self-center ${isDarkMode
+                            ? 'bg-[#0f172a]/90 border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.5),_inset_0_1px_1px_rgba(255,255,255,0.05)] backdrop-blur-xl'
+                            : 'bg-white/90 border-slate-200/60 shadow-[0_20px_50px_rgba(37,99,235,0.1),_inset_0_1px_1px_rgba(255,255,255,0.8)] backdrop-blur-xl'
+                            }`}>
+                            <button
+                              disabled={currentPage === 1 || isAnimating}
+                              onClick={() => handlePageChange(currentPage - 1)}
+                              className={`p-3 rounded-2xl transition-all duration-300 border ${currentPage === 1
+                                ? 'opacity-20 cursor-not-allowed border-transparent'
+                                : `hover:bg-blue-600 hover:text-white active:scale-95 shadow-lg ${isDarkMode
+                                  ? 'bg-slate-900 border-slate-800 text-slate-400 hover:shadow-blue-500/20'
+                                  : 'bg-slate-50 border-slate-200 text-slate-500 hover:shadow-blue-500/20 shadow-[0_4px_10px_rgba(0,0,0,0.05)]'
+                                }`
+                                }`}
+                              title="Önceki Sayfa"
+                            >
+                              <ChevronUp size={20} className="stroke-[2.5px]" />
+                            </button>
+
+                            <div className="flex flex-col items-center gap-1.5 py-1">
+                              {/* Animated Vertical Counter Window - Menu Bar Style Depth */}
+                              <div className={`relative w-10 h-14 overflow-hidden rounded-[20px] border transition-all duration-500 ${isDarkMode
+                                ? 'bg-slate-800 border-slate-700 shadow-[inset_0_3px_8px_rgba(0,0,0,0.5),_0_1px_1px_rgba(255,255,255,0.05)]'
+                                : 'bg-white border-slate-200 shadow-[inset_0_3px_8px_rgba(0,0,0,0.1),_0_1px_2px_rgba(0,0,0,0.05)]'
+                                }`}>
+                                <div
+                                  className="absolute inset-0 flex flex-col transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+                                  style={{ transform: `translateY(-${(currentPage - 1) * 100}%)` }}
+                                >
+                                  {[...Array(totalPages)].map((_, i) => (
+                                    <div
+                                      key={i}
+                                      className={`min-h-full w-full flex items-center justify-center text-[13px] font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-blue-600'}`}
+                                    >
+                                      {i + 1}
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
+                              <div className="h-px w-5 bg-slate-300/50 dark:bg-slate-700/50 my-1" />
+                              <span className={`text-[11px] font-black tracking-tighter ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{totalPages}</span>
                             </div>
-                          );
-                        }) : (
-                          <div className="py-12 text-center">
-                            <Inbox size={32} className="text-slate-300 dark:text-slate-700 mx-auto mb-4" />
-                            <p className="text-xs font-bold text-slate-500 italic uppercase tracking-widest">İşlem kaydı bulunmuyor</p>
+
+                            <button
+                              disabled={currentPage === totalPages || isAnimating}
+                              onClick={() => handlePageChange(currentPage + 1)}
+                              className={`p-3 rounded-2xl transition-all duration-300 border ${currentPage === totalPages
+                                ? 'opacity-20 cursor-not-allowed border-transparent'
+                                : `hover:bg-blue-600 hover:text-white active:scale-95 shadow-lg ${isDarkMode
+                                  ? 'bg-slate-900 border-slate-800 text-slate-400 hover:shadow-blue-500/20'
+                                  : 'bg-slate-50 border-slate-200 text-slate-500 hover:shadow-blue-500/20 shadow-[0_4px_10px_rgba(0,0,0,0.05)]'
+                                }`
+                                }`}
+                              title="Sonraki Sayfa"
+                            >
+                              <ChevronDown size={20} className="stroke-[2.5px]" />
+                            </button>
                           </div>
                         )}
                       </div>
 
-                      {/* Right: Vertical Pagination Control Tower - Centered Vertically (Hidden on Mobile) */}
+                      {/* Mobile Optimized PagePicker - At the Very Bottom of Container */}
                       {totalPages > 1 && (
-                        <div className={`hidden sm:flex flex-col items-center gap-4 p-2.5 sm:p-3.5 rounded-[32px] border transition-all duration-500 self-center ${isDarkMode
-                          ? 'bg-[#0f172a]/90 border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.5),_inset_0_1px_1px_rgba(255,255,255,0.05)] backdrop-blur-xl'
-                          : 'bg-white/90 border-slate-200/60 shadow-[0_20px_50px_rgba(37,99,235,0.1),_inset_0_1px_1px_rgba(255,255,255,0.8)] backdrop-blur-xl'
-                          }`}>
-                          <button
-                            disabled={currentPage === 1 || isAnimating}
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            className={`p-3 rounded-2xl transition-all duration-300 border ${currentPage === 1
-                              ? 'opacity-20 cursor-not-allowed border-transparent'
-                              : `hover:bg-blue-600 hover:text-white active:scale-95 shadow-lg ${isDarkMode
-                                ? 'bg-slate-900 border-slate-800 text-slate-400 hover:shadow-blue-500/20'
-                                : 'bg-slate-50 border-slate-200 text-slate-500 hover:shadow-blue-500/20 shadow-[0_4px_10px_rgba(0,0,0,0.05)]'
-                              }`
-                              }`}
-                            title="Önceki Sayfa"
-                          >
-                            <ChevronUp size={20} className="stroke-[2.5px]" />
-                          </button>
-
-                          <div className="flex flex-col items-center gap-1.5 py-1">
-                            {/* Animated Vertical Counter Window - Menu Bar Style Depth */}
-                            <div className={`relative w-10 h-14 overflow-hidden rounded-[20px] border transition-all duration-500 ${isDarkMode
-                              ? 'bg-slate-800 border-slate-700 shadow-[inset_0_3px_8px_rgba(0,0,0,0.5),_0_1px_1px_rgba(255,255,255,0.05)]'
-                              : 'bg-white border-slate-200 shadow-[inset_0_3px_8px_rgba(0,0,0,0.1),_0_1px_2px_rgba(0,0,0,0.05)]'
-                              }`}>
-                              <div
-                                className="absolute inset-0 flex flex-col transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
-                                style={{ transform: `translateY(-${(currentPage - 1) * 100}%)` }}
-                              >
-                                {[...Array(totalPages)].map((_, i) => (
-                                  <div
-                                    key={i}
-                                    className={`min-h-full w-full flex items-center justify-center text-[13px] font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-blue-600'}`}
-                                  >
-                                    {i + 1}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                            <div className="h-px w-5 bg-slate-300/50 dark:bg-slate-700/50 my-1" />
-                            <span className={`text-[11px] font-black tracking-tighter ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{totalPages}</span>
-                          </div>
-
-                          <button
-                            disabled={currentPage === totalPages || isAnimating}
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            className={`p-3 rounded-2xl transition-all duration-300 border ${currentPage === totalPages
-                              ? 'opacity-20 cursor-not-allowed border-transparent'
-                              : `hover:bg-blue-600 hover:text-white active:scale-95 shadow-lg ${isDarkMode
-                                ? 'bg-slate-900 border-slate-800 text-slate-400 hover:shadow-blue-500/20'
-                                : 'bg-slate-50 border-slate-200 text-slate-500 hover:shadow-blue-500/20 shadow-[0_4px_10px_rgba(0,0,0,0.05)]'
-                              }`
-                              }`}
-                            title="Sonraki Sayfa"
-                          >
-                            <ChevronDown size={20} className="stroke-[2.5px]" />
-                          </button>
+                        <div className="flex sm:hidden justify-center mt-8 pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
+                          <PagePicker
+                            totalPages={totalPages}
+                            currentPage={currentPage}
+                            onPageChange={handlePageChange}
+                            isDarkMode={isDarkMode}
+                          />
                         </div>
                       )}
                     </div>
-
-                    {/* Mobile Optimized PagePicker - At the Very Bottom of Container */}
-                    {totalPages > 1 && (
-                      <div className="flex sm:hidden justify-center mt-8 pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
-                        <PagePicker
-                          totalPages={totalPages}
-                          currentPage={currentPage}
-                          onPageChange={handlePageChange}
-                          isDarkMode={isDarkMode}
-                        />
-                      </div>
-                    )}
                   </div>
-                )}
+                </div>
               </div>
             </div>
           );
