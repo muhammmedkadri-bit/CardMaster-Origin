@@ -827,7 +827,7 @@ const App: React.FC = () => {
           if (element) {
             element.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }
-        }, 150);
+        }, 50);
       }
     } else if (scrollId) {
       // If already on the same view, lead the eye with a smooth scroll
