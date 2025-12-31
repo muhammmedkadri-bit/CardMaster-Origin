@@ -72,8 +72,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
   React.useEffect(() => {
     // Ensure page starts at top
     window.scrollTo(0, 0);
-    // Delay expensive charts to allow smooth wait for scroll animation (1000ms) to finish
-    const timer = setTimeout(() => setIsContentReady(true), 1100);
+    // Immediate render to prevent 'loading' flash, relying on scroll delay in App.tsx
+    const timer = setTimeout(() => setIsContentReady(true), 10);
     return () => clearTimeout(timer);
   }, []);
   const [selectedCardId, setSelectedCardId] = React.useState<string>('all');

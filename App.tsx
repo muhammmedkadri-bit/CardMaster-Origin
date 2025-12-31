@@ -853,10 +853,10 @@ const App: React.FC = () => {
       setView(newView);
 
       if (scrollId) {
-        // Wait slightly for render, then animate
+        // Wait for heavy initial render (charts) to complete, then animate scroll
         setTimeout(() => {
           smoothScrollTo(scrollId);
-        }, 50);
+        }, 500);
       }
     } else if (scrollId) {
       // Create cleaner scroll even on same page
