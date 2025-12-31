@@ -226,7 +226,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
         if (el) {
           el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-      }, 100);
+      }, 5);
     } else {
       setExpandedCardId(cardId);
       setCurrentPage(1);
