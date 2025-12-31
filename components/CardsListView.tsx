@@ -446,17 +446,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                         </div>
                       </div>
 
-                      {/* Mobile Optimized Horizontal Scroll Page Picker */}
-                      {totalPages > 1 && (
-                        <div className="flex sm:hidden mt-6 mb-4">
-                          <PagePicker
-                            totalPages={totalPages}
-                            currentPage={currentPage}
-                            onPageChange={(p) => setCurrentPage(p)}
-                            isDarkMode={isDarkMode}
-                          />
-                        </div>
-                      )}
+
                     </div>
 
                     {localRange === 'custom' && (
@@ -592,6 +582,30 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                           </div>
                         )}
                       </div>
+
+                      {/* Mobile Optimized PagePicker - At the Bottom */}
+                      {totalPages > 1 && (
+                        <div className="flex sm:hidden justify-center mt-10">
+                          <PagePicker
+                            totalPages={totalPages}
+                            currentPage={currentPage}
+                            onPageChange={(p) => setCurrentPage(p)}
+                            isDarkMode={isDarkMode}
+                          />
+                        </div>
+                      )}
+
+                      {/* Mobile Optimized PagePicker - At the Bottom */}
+                      {totalPages > 1 && (
+                        <div className="flex sm:hidden justify-center mt-10">
+                          <PagePicker
+                            totalPages={totalPages}
+                            currentPage={currentPage}
+                            onPageChange={(p) => setCurrentPage(p)}
+                            isDarkMode={isDarkMode}
+                          />
+                        </div>
+                      )}
 
                       {/* Right: Vertical Pagination Control Tower - Centered Vertically (Hidden on Mobile) */}
                       {totalPages > 1 && (
