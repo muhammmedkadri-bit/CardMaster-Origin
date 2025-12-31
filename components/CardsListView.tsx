@@ -107,8 +107,15 @@ const CardsListView: React.FC<CardsListViewProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedBank, setSelectedBank] = useState<string>('all');
 
+  const isFirstRender = useRef(true);
+
   // Scroll to top of transaction list when page changes on mobile
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
     if (window.innerWidth < 640) {
       const element = document.getElementById('cards-transactions-list');
       if (element) {

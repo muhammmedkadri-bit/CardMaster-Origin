@@ -79,9 +79,15 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const ITEMS_PER_PAGE = 5;
+  const isFirstRender = useRef(true);
 
   // Scroll to top of transaction list when page changes on mobile
   React.useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
     if (window.innerWidth < 640) {
       const element = document.getElementById('analysis-transactions');
       if (element) {
