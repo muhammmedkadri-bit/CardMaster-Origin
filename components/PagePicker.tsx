@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 
 interface PagePickerProps {
     totalPages: number;
@@ -9,125 +9,158 @@ interface PagePickerProps {
 
 const PagePicker: React.FC<PagePickerProps> = ({ totalPages, currentPage, onPageChange, isDarkMode }) => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const [isScrolling, setIsScrolling] = useState(false);
-    const [internalPage, setInternalPage] = useState(currentPage);
+    const [isUserScrolling, setIsUserScrolling] = useState(false);
+    const [scrollX, setScrollX] = useState(0);
+    const [activeIndex, setActiveIndex] = useState(currentPage - 1);
 
-    const ITEM_WIDTH = 60; // Each number's width in pixels
+    const ITEM_WIDTH = 64; // Slightly wider for better spacing
+    const VISIBLE_WIDTH = 260; // Total width of the picker window
 
-    // Sync internal page with prop
-    useEffect(() => {
-        if (!isScrolling) {
-            setInternalPage(currentPage);
-            // Scroll to the active page
-            scrollToPage(currentPage);
-        }
-    }, [currentPage, isScrolling]);
-
-    const scrollToPage = (page: number) => {
-        if (containerRef.current) {
-            const container = containerRef.current;
-            const centerOffset = container.offsetWidth / 2;
-            const targetScroll = (page - 1) * ITEM_WIDTH + (ITEM_WIDTH / 2) - centerOffset;
-
-            container.scrollTo({
-                left: targetScroll,
-                behavior: 'smooth'
-            });
-        }
-    };
-
-    const handleScroll = () => {
+    // Native scroll handler
+    const onScroll = useCallback(() => {
         if (!containerRef.current) return;
-        setIsScrolling(true);
+        const sl = containerRef.current.scrollLeft;
+        setScrollX(sl);
 
-        const container = containerRef.current;
-        const centerOffset = container.offsetWidth / 2;
-        const currentScroll = container.scrollLeft + centerOffset;
-        const calculatedPage = Math.round((currentScroll - (ITEM_WIDTH / 2)) / ITEM_WIDTH) + 1;
-
-        const validPage = Math.max(1, Math.min(totalPages, calculatedPage));
-        if (validPage !== internalPage) {
-            setInternalPage(validPage);
+        // Calculate which page is in the center
+        const newIndex = Math.round(sl / ITEM_WIDTH);
+        if (newIndex !== activeIndex && newIndex >= 0 && newIndex < totalPages) {
+            setActiveIndex(newIndex);
         }
-    };
+    }, [activeIndex, totalPages]);
 
-    const handleScrollEnd = () => {
-        setIsScrolling(false);
-        if (internalPage !== currentPage) {
-            onPageChange(internalPage);
-        }
-    };
-
+    // Handle scroll end to sync parent state
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
 
-        let timeout: NodeJS.Timeout;
-        const onScroll = () => {
-            handleScroll();
-            clearTimeout(timeout);
-            timeout = setTimeout(handleScrollEnd, 150);
+        let scrollTimeout: NodeJS.Timeout;
+        const handleScrollStop = () => {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                const finalIndex = Math.round(container.scrollLeft / ITEM_WIDTH) + 1;
+                if (finalIndex !== currentPage) {
+                    onPageChange(finalIndex);
+                }
+                setIsUserScrolling(false);
+            }, 100);
+        };
+
+        const handleScrollStart = () => {
+            setIsUserScrolling(true);
+            handleScrollStop();
         };
 
         container.addEventListener('scroll', onScroll);
-        return () => container.removeEventListener('scroll', onScroll);
-    }, [internalPage, currentPage, totalPages]);
+        container.addEventListener('touchstart', handleScrollStart);
+        container.addEventListener('mousedown', handleScrollStart);
+
+        return () => {
+            container.removeEventListener('scroll', onScroll);
+            container.removeEventListener('touchstart', handleScrollStart);
+            container.removeEventListener('mousedown', handleScrollStart);
+        };
+    }, [onScroll, currentPage, onPageChange]);
+
+    // Externally controlled sync (when currentPage changes from outside)
+    useEffect(() => {
+        if (!isUserScrolling && containerRef.current) {
+            const targetX = (currentPage - 1) * ITEM_WIDTH;
+            if (Math.abs(containerRef.current.scrollLeft - targetX) > 5) {
+                containerRef.current.scrollTo({
+                    left: targetX,
+                    behavior: 'smooth'
+                });
+            }
+        }
+    }, [currentPage, isUserScrolling]);
 
     const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
 
+    // Padding for the scroll area to allow first and last items to center
+    const sidePadding = (VISIBLE_WIDTH - ITEM_WIDTH) / 2;
+
     return (
-        <div className="relative w-full max-w-[280px] mx-auto overflow-hidden">
-            {/* Container with mask for fade effect */}
+        <div className="flex flex-col items-center w-full max-w-[300px] mx-auto select-none">
+            {/* The "Physical" Dial Container */}
             <div
-                className={`relative h-16 rounded-full border transition-all duration-500 overflow-hidden ${isDarkMode
-                        ? 'bg-black border-slate-800 shadow-[inset_0_2px_10px_rgba(0,0,0,0.8)]'
-                        : 'bg-slate-900 border-slate-700 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]'
-                    }`}
+                className={`relative h-20 w-full rounded-[28px] border transition-all duration-500 overflow-hidden group ${isDarkMode
+                    ? 'bg-slate-900/40 border-slate-800 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)]'
+                    : 'bg-white/40 border-slate-200 shadow-[0_10px_30px_-10px_rgba(37,99,235,0.1),inset_0_1px_1px_rgba(255,255,255,1)]'
+                    } backdrop-blur-xl`}
             >
                 {/* Horizontal Scroll Area */}
                 <div
                     ref={containerRef}
-                    className="h-full flex items-center overflow-x-auto no-scrollbar snap-x snap-mandatory px-[50%]"
+                    className="h-full flex items-center overflow-x-auto no-scrollbar snap-x snap-mandatory relative z-20"
                     style={{
-                        paddingLeft: 'calc(50% - 30px)',
-                        paddingRight: 'calc(50% - 30px)',
-                        scrollbarWidth: 'none'
+                        paddingLeft: `${sidePadding}px`,
+                        paddingRight: `${sidePadding}px`,
+                        scrollbarWidth: 'none',
+                        scrollSnapType: 'x mandatory'
                     }}
                 >
-                    {pages.map((page) => {
-                        const isActive = internalPage === page;
+                    {pages.map((page, index) => {
+                        // Calculate distance from center for "Lens Effect"
+                        const distance = Math.abs(scrollX - (index * ITEM_WIDTH));
+                        const scale = Math.max(0.7, 1.4 - (distance / (ITEM_WIDTH * 1.5)));
+                        const opacity = Math.max(0.2, 1 - (distance / (ITEM_WIDTH * 2)));
+
                         return (
-                            <button
+                            <div
                                 key={page}
-                                onClick={() => {
-                                    onPageChange(page);
-                                    scrollToPage(page);
-                                }}
-                                className={`grow-0 shrink-0 w-[60px] h-full flex flex-col items-center justify-center transition-all duration-300 snap-center outline-none`}
+                                className="shrink-0 w-[64px] h-full flex flex-col items-center justify-center snap-center pointer-events-none"
                             >
-                                <span className={`text-xl font-black transition-all duration-300 ${isActive
-                                        ? 'text-white scale-125'
-                                        : 'text-slate-600 scale-90'
-                                    }`}>
+                                <span
+                                    className={`text-2xl font-black transition-colors duration-300 ${activeIndex === index
+                                        ? (isDarkMode ? 'text-white' : 'text-blue-600')
+                                        : (isDarkMode ? 'text-slate-600' : 'text-slate-400')
+                                        }`}
+                                    style={{
+                                        transform: `scale(${scale})`,
+                                        opacity: opacity
+                                    }}
+                                >
                                     {page}
                                 </span>
-                                {/* Underline for active page */}
-                                <div className={`mt-1 h-0.5 rounded-full bg-white transition-all duration-500 ${isActive ? 'w-4 opacity-100' : 'w-0 opacity-0'
-                                    }`} />
-                            </button>
+                            </div>
                         );
                     })}
                 </div>
 
-                {/* Ambient Glows */}
-                <div className="absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-black to-transparent pointer-events-none z-10" />
-                <div className="absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-black to-transparent pointer-events-none z-10" />
+                {/* Center Highlighter (Targeting Box) */}
+                <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-center pointer-events-none z-10">
+                    <div
+                        className={`w-14 h-14 rounded-2xl border-2 transition-all duration-500 ${isUserScrolling ? 'scale-110 opacity-30' : 'scale-100 opacity-100'
+                            } ${isDarkMode ? 'border-blue-500/30' : 'border-blue-500/20'
+                            }`}
+                    />
+                </div>
+
+                {/* Active Underline Indicator */}
+                <div className="absolute bottom-3 inset-x-0 flex justify-center pointer-events-none z-30">
+                    <div className={`h-1 rounded-full transition-all duration-500 ${isDarkMode ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.3)]'
+                        }`}
+                        style={{ width: isUserScrolling ? '4px' : '20px' }}
+                    />
+                </div>
+
+                {/* Left & Right Shadow Mask for Smooth Fading */}
+                <div className={`absolute inset-y-0 left-0 w-20 z-30 pointer-events-none ${isDarkMode ? 'bg-gradient-to-r from-slate-900/60 to-transparent' : 'bg-gradient-to-r from-white/60 to-transparent'
+                    }`} />
+                <div className={`absolute inset-y-0 right-0 w-20 z-30 pointer-events-none ${isDarkMode ? 'bg-gradient-to-l from-slate-900/60 to-transparent' : 'bg-gradient-to-l from-white/60 to-transparent'
+                    }`} />
             </div>
 
-            {/* Helper text */}
-            <div className="mt-2 text-center">
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] opacity-50">
-                    SAYFA SEÇMEK İÇİN KAYDIRIN
+            {/* Pagination Context Bar */}
+            <div className="mt-4 flex flex-col items-center gap-1">
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+                    <span className="text-[10px] font-black text-blue-500">{activeIndex + 1}</span>
+                    <div className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600" />
+                    <span className="text-[10px] font-black text-slate-400">{totalPages}</span>
+                </div>
+                <span className="text-[8px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.3em] opacity-40">
+                    KAYDIRARAK SAYFA SEÇİN
                 </span>
             </div>
         </div>
