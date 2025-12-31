@@ -70,6 +70,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
 
   // Trigger content visibility after mount
   React.useEffect(() => {
+    // Ensure page starts at top
+    window.scrollTo(0, 0);
     // Delay expensive charts to allow smooth page transition
     const timer = setTimeout(() => setIsContentReady(true), 200);
     return () => clearTimeout(timer);
