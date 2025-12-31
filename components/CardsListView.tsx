@@ -105,6 +105,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
   const [customStart, setCustomStart] = useState<string>(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
   const [customEnd, setCustomEnd] = useState<string>(new Date().toISOString().split('T')[0]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedBank, setSelectedBank] = useState<string>('all');
 
   // Scroll to top of transaction list when page changes on mobile
   useEffect(() => {
@@ -117,7 +118,12 @@ const CardsListView: React.FC<CardsListViewProps> = ({
       }
     }
   }, [currentPage]);
-  const [selectedBank, setSelectedBank] = useState<string>('all');
+
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [localRange, selectedBank, customStart, customEnd]);
+
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const ITEMS_PER_PAGE = 5;

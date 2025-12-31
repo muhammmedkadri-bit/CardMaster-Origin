@@ -92,6 +92,11 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
     }
   }, [currentPage]);
 
+  // Reset page to 1 when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [timeRange, selectedBank, selectedCardId, customStart, customEnd]);
+
   // Custom page change handler with animation
   const handlePageChange = (newPage: number) => {
     if (newPage === currentPage || isAnimating) return;
