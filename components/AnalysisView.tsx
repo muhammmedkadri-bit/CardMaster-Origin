@@ -762,6 +762,40 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
             </div>
           </div>
 
+          {/* Mobile Optimized Pagination - Placed right below header */}
+          {totalPages > 1 && (
+            <div className="flex sm:hidden items-center justify-between gap-4 p-2 bg-white/50 dark:bg-slate-900/50 rounded-[24px] border border-slate-200/50 dark:border-slate-800/50 mb-8 backdrop-blur-sm">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                className={`p-2.5 rounded-xl transition-all border ${currentPage === 1
+                  ? 'opacity-20 cursor-not-allowed border-transparent'
+                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-blue-600 dark:text-blue-400 shadow-sm active:scale-90'
+                  }`}
+              >
+                <ChevronLeft size={18} />
+              </button>
+
+              <div className="flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs border ${isDarkMode ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
+                  {currentPage}
+                </div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">/ {totalPages} SAYFA</span>
+              </div>
+
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                className={`p-2.5 rounded-xl transition-all border ${currentPage === totalPages
+                  ? 'opacity-20 cursor-not-allowed border-transparent'
+                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-blue-600 dark:text-blue-400 shadow-sm active:scale-90'
+                  }`}
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          )}
+
           {filteredTransactions.length > 0 ? (
             <>
               <div className="flex gap-4 sm:gap-6 items-center">
@@ -850,9 +884,9 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                   })}
                 </div>
 
-                {/* Right: Vertical Pagination tower */}
+                {/* Right: Vertical Pagination tower (Hidden on Mobile) */}
                 {totalPages > 1 && (
-                  <div className={`flex flex-col items-center gap-4 p-2.5 sm:p-3.5 rounded-[32px] border transition-all duration-500 self-center ${isDarkMode
+                  <div className={`hidden sm:flex flex-col items-center gap-4 p-2.5 sm:p-3.5 rounded-[32px] border transition-all duration-500 self-center ${isDarkMode
                     ? 'bg-[#0f172a]/90 border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.5),_inset_0_1px_1px_rgba(255,255,255,0.05)] backdrop-blur-xl'
                     : 'bg-white/90 border-slate-200/60 shadow-[0_20px_50px_rgba(37,99,235,0.1),_inset_0_1px_1px_rgba(255,255,255,0.8)] backdrop-blur-xl'
                     }`}>

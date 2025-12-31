@@ -347,38 +347,44 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
       className="flex flex-col h-full w-full select-none"
       onClick={() => setActiveIndex(null)}
     >
-      {/* Header Tabs */}
-      <div className="relative z-10 flex items-center justify-center gap-3 sm:gap-4 mb-2 sm:mb-4 px-1 pt-2">
+      {/* Header Tabs - Optimized for Mobile */}
+      <div className="relative z-10 mb-6 sm:mb-8 px-2 sm:px-4">
         <div
-          className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-inner relative z-20 overflow-x-auto no-scrollbar"
+          className="grid grid-cols-3 sm:flex sm:items-center sm:justify-center p-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-[24px] border border-slate-200/60 dark:border-slate-700/60 shadow-inner"
           onClick={(e) => e.stopPropagation()}
         >
           <button
             onClick={(e) => { e.stopPropagation(); scrollToMode('cards'); }}
-            className={`flex items-center gap-2 px-4 sm:px-5 py-3.5 min-h-[48px] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap ${mode === 'cards'
-              ? 'bg-white dark:bg-slate-700 shadow-md text-blue-600 dark:text-white scale-[1.02]'
+            className={`flex items-center justify-center gap-2 px-2 sm:px-6 py-3 rounded-[18px] text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-500 ${mode === 'cards'
+              ? 'bg-white dark:bg-slate-700 shadow-lg text-blue-600 dark:text-white scale-[1.02]'
               : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
               }`}
           >
-            <CardIcon size={14} /> KARTLAR
+            <CardIcon size={14} className="sm:w-4 sm:h-4" />
+            <span className="hidden xs:inline">KARTLAR</span>
+            <span className="xs:hidden">KART</span>
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); scrollToMode('banks'); }}
-            className={`flex items-center gap-2 px-4 sm:px-5 py-3.5 min-h-[48px] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap ${mode === 'banks'
-              ? 'bg-white dark:bg-slate-700 shadow-md text-blue-600 dark:text-white scale-[1.02]'
+            className={`flex items-center justify-center gap-2 px-2 sm:px-6 py-3 rounded-[18px] text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-500 ${mode === 'banks'
+              ? 'bg-white dark:bg-slate-700 shadow-lg text-blue-600 dark:text-white scale-[1.02]'
               : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
               }`}
           >
-            <PieIcon size={14} /> BANKALAR
+            <PieIcon size={14} className="sm:w-4 sm:h-4" />
+            <span className="hidden xs:inline">BANKALAR</span>
+            <span className="xs:hidden">BANKA</span>
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); scrollToMode('categories'); }}
-            className={`flex items-center gap-2 px-4 sm:px-5 py-3.5 min-h-[48px] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap ${mode === 'categories'
-              ? 'bg-white dark:bg-slate-700 shadow-md text-blue-600 dark:text-white scale-[1.02]'
+            className={`flex items-center justify-center gap-2 px-2 sm:px-6 py-3 rounded-[18px] text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-500 ${mode === 'categories'
+              ? 'bg-white dark:bg-slate-700 shadow-lg text-blue-600 dark:text-white scale-[1.02]'
               : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
               }`}
           >
-            <LayoutGrid size={14} /> KATEGORİ
+            <LayoutGrid size={14} className="sm:w-4 sm:h-4" />
+            <span className="hidden xs:inline">KATEGORİ</span>
+            <span className="xs:hidden">KAT.</span>
           </button>
         </div>
       </div>
