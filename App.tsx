@@ -268,6 +268,7 @@ const App: React.FC = () => {
   const [view, setView] = useState<'dashboard' | 'cards' | 'analysis' | 'settings'>('dashboard');
   const [statusIndex, setStatusIndex] = useState(0);
   const [modalMode, setModalMode] = useState<'add' | 'edit' | 'spending' | 'payment' | 'edit_transaction' | 'calendar' | 'statement' | 'archive_statement' | 'reset_confirm' | 'auto_payment' | null>(null);
+  const [isPageTransitioning, setIsPageTransitioning] = useState(false);
   const [editingCard, setEditingCard] = useState<CreditCard | undefined>(undefined);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | undefined>(undefined);
   const [selectedCardForAction, setSelectedCardForAction] = useState<CreditCard | null>(null);
@@ -780,29 +781,31 @@ const App: React.FC = () => {
   };
 
   const handleViewChange = (newView: 'dashboard' | 'cards' | 'analysis' | 'settings', scrollId?: string) => {
-    if (newView !== view) {
-      if (!scrollId) {
-        window.scrollTo({ top: 0, behavior: 'auto' });
-      }
-      setView(newView);
+    if (view === newView && !scrollId) return;
 
-      if (scrollId) {
-        setTimeout(() => {
-          const element = document.getElementById(scrollId);
-          if (element) {
-            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-        }, 150);
-      }
-    } else if (scrollId) {
-      // If already on the same view, lead the eye with a smooth scroll
-      const element = document.getElementById(scrollId);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    } else {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
+    // Start transition animation
+    setIsPageTransitioning(true);
+
+    // Wait for fade-in of the overlay
+    setTimeout(() => {
+      setView(newView);
+      window.scrollTo({ top: 0, behavior: "auto" }); // Instant scroll under cover
+
+      // Wait a bit for the new view to render behind the curtain
+      setTimeout(() => {
+        setIsPageTransitioning(false);
+
+        // Handle scroll target if present
+        if (scrollId) {
+          setTimeout(() => {
+            const element = document.getElementById(scrollId);
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 100);
+        }
+      }, 500); // 500ms visible loading state
+    }, 300); // 300ms fade-in time
   };
 
   const handleSaveAutoPayment = async (ap: AutoPayment) => {
@@ -1452,6 +1455,19 @@ const App: React.FC = () => {
 
   return (
     <div className={`min-h-screen transition-colors duration-500 pb-[142px] sm:pb-[162px] overflow-x-hidden ${isDarkMode ? 'bg-[#0b0f1a] text-slate-100' : 'bg-[#f8fafc] text-slate-900'}`}>
+
+
+      {/* Full Screen Page Transition Overlay */}
+      <div
+        className={`fixed inset-0 z-[99999] bg-[#f8fafc] dark:bg-[#0b0f1a] flex items-center justify-center transition-opacity duration-300 pointer-events-none ${isPageTransitioning ? 'opacity-100 pointer-events-auto' : 'opacity-0'}`}
+      >
+        <div className={`flex flex-col items-center gap-4 transition-transform duration-500 ${isPageTransitioning ? 'scale-100 translate-y-0' : 'scale-90 translate-y-4'}`}>
+          <div className="scale-150 animate-pulse">
+            <Logo isDarkMode={isDarkMode} />
+          </div>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] animate-pulse">Yükleniyor...</p>
+        </div>
+      </div>
 
       {/* Header with Revised Logo */}
       <header className="fixed top-0 left-0 right-0 z-40 pointer-events-none p-6">
