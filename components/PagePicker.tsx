@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 
 interface PagePickerProps {
     totalPages: number;
@@ -10,67 +10,27 @@ interface PagePickerProps {
 const PagePicker: React.FC<PagePickerProps> = ({ totalPages, currentPage, onPageChange, isDarkMode }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [activeIndex, setActiveIndex] = useState(currentPage - 1);
-    const [sidePadding, setSidePadding] = useState(100);
+    const isScrollingRef = useRef(false);
+    const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Each item is 60px wide
-    const ITEM_WIDTH = 60;
+    const ITEM_WIDTH = 56;
 
-    // Calculate dynamic padding to ensure perfect centering based on actual container width
+    // Sync activeIndex with currentPage from parent
     useEffect(() => {
-        const updatePadding = () => {
-            if (containerRef.current) {
-                const width = containerRef.current.clientWidth;
-                setSidePadding((width - ITEM_WIDTH) / 2);
-            }
-        };
-
-        updatePadding();
-        window.addEventListener('resize', updatePadding);
-        return () => window.removeEventListener('resize', updatePadding);
-    }, []);
-
-    // Handle scroll to detect active page
-    const handleScroll = useCallback(() => {
-        if (!containerRef.current) return;
-        const sl = containerRef.current.scrollLeft;
-        const newIndex = Math.round(sl / ITEM_WIDTH);
-
-        if (newIndex !== activeIndex && newIndex >= 0 && newIndex < totalPages) {
-            setActiveIndex(newIndex);
+        if (!isScrollingRef.current) {
+            setActiveIndex(currentPage - 1);
         }
-    }, [activeIndex, totalPages]);
+    }, [currentPage]);
 
-    // Handle scroll end to notify parent
+    // Scroll to correct position when parent changes currentPage
     useEffect(() => {
         const container = containerRef.current;
-        if (!container) return;
-
-        let timeout: NodeJS.Timeout;
-        const onScrollStop = () => {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => {
-                const finalIndex = Math.round(container.scrollLeft / ITEM_WIDTH) + 1;
-                if (finalIndex !== currentPage && finalIndex >= 1 && finalIndex <= totalPages) {
-                    onPageChange(finalIndex);
-                }
-            }, 100);
-        };
-
-        container.addEventListener('scroll', handleScroll);
-        container.addEventListener('scroll', onScrollStop);
-        return () => {
-            container.removeEventListener('scroll', handleScroll);
-            container.removeEventListener('scroll', onScrollStop);
-        };
-    }, [handleScroll, currentPage, onPageChange, totalPages]);
-
-    // Sync from outside (parent control)
-    useEffect(() => {
-        const container = containerRef.current;
-        if (!container) return;
+        if (!container || isScrollingRef.current) return;
 
         const targetX = (currentPage - 1) * ITEM_WIDTH;
-        if (Math.abs(container.scrollLeft - targetX) > 1) {
+        const diff = Math.abs(container.scrollLeft - targetX);
+
+        if (diff > 2) {
             container.scrollTo({
                 left: targetX,
                 behavior: 'smooth'
@@ -78,27 +38,70 @@ const PagePicker: React.FC<PagePickerProps> = ({ totalPages, currentPage, onPage
         }
     }, [currentPage]);
 
+    // Handle native scroll
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const handleScroll = () => {
+            isScrollingRef.current = true;
+
+            const sl = container.scrollLeft;
+            const newIndex = Math.round(sl / ITEM_WIDTH);
+            const clampedIndex = Math.max(0, Math.min(totalPages - 1, newIndex));
+
+            if (clampedIndex !== activeIndex) {
+                setActiveIndex(clampedIndex);
+            }
+
+            // Clear existing timeout
+            if (scrollTimeoutRef.current) {
+                clearTimeout(scrollTimeoutRef.current);
+            }
+
+            // Set new timeout for scroll end
+            scrollTimeoutRef.current = setTimeout(() => {
+                isScrollingRef.current = false;
+                const finalIndex = Math.round(container.scrollLeft / ITEM_WIDTH);
+                const finalPage = Math.max(1, Math.min(totalPages, finalIndex + 1));
+
+                if (finalPage !== currentPage) {
+                    onPageChange(finalPage);
+                }
+            }, 120);
+        };
+
+        container.addEventListener('scroll', handleScroll, { passive: true });
+        return () => {
+            container.removeEventListener('scroll', handleScroll);
+            if (scrollTimeoutRef.current) {
+                clearTimeout(scrollTimeoutRef.current);
+            }
+        };
+    }, [activeIndex, currentPage, totalPages, onPageChange]);
+
     const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
 
     return (
         <div className="flex flex-col items-center w-full max-w-[280px] mx-auto select-none">
-            {/* The Outer Frame with deep shadows and border */}
+            {/* Main Container */}
             <div
-                className={`relative h-20 w-full rounded-[24px] border border-white/10 transition-all duration-500 overflow-hidden ${isDarkMode
-                        ? 'bg-slate-900 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.05)]'
-                        : 'bg-white shadow-[0_20px_40px_-15px_rgba(37,99,235,0.15),inset_0_1px_4px_rgba(0,0,0,0.05)]'
+                className={`relative h-[72px] w-full rounded-[20px] border transition-all duration-300 overflow-hidden ${isDarkMode
+                        ? 'bg-slate-900 border-slate-800 shadow-[0_15px_40px_-10px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.03)]'
+                        : 'bg-white border-slate-200 shadow-[0_15px_40px_-10px_rgba(37,99,235,0.12),inset_0_1px_2px_rgba(0,0,0,0.03)]'
                     }`}
             >
-                {/* Horizontal Scrolling Dial */}
+                {/* Scroll Container */}
                 <div
                     ref={containerRef}
-                    className="h-full flex items-center overflow-x-auto no-scrollbar relative z-10"
+                    className="h-full flex items-center overflow-x-auto no-scrollbar"
                     style={{
-                        paddingLeft: `${sidePadding}px`,
-                        paddingRight: `${sidePadding}px`,
+                        paddingLeft: 'calc(50% - 28px)',
+                        paddingRight: 'calc(50% - 28px)',
                         scrollSnapType: 'x mandatory',
                         WebkitOverflowScrolling: 'touch',
-                        scrollbarWidth: 'none'
+                        scrollbarWidth: 'none',
+                        scrollBehavior: 'auto'
                     }}
                 >
                     {pages.map((page, index) => {
@@ -106,15 +109,22 @@ const PagePicker: React.FC<PagePickerProps> = ({ totalPages, currentPage, onPage
                         return (
                             <div
                                 key={page}
-                                className="shrink-0 w-[60px] h-full flex items-center justify-center snap-center"
+                                className="shrink-0 w-[56px] h-full flex items-center justify-center snap-center"
                             >
-                                {/* Fixed width container for digit to ensure perfect center alignment */}
-                                <div className="w-[40px] flex items-center justify-center">
+                                <div
+                                    className={`w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all duration-200 ${isActive
+                                            ? (isDarkMode
+                                                ? 'bg-blue-500/15 ring-2 ring-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.3),inset_0_0_10px_rgba(59,130,246,0.1)]'
+                                                : 'bg-blue-500/10 ring-2 ring-blue-500/40 shadow-[0_0_20px_rgba(37,99,235,0.2),inset_0_0_10px_rgba(37,99,235,0.05)]')
+                                            : 'bg-transparent ring-0'
+                                        }`}
+                                >
                                     <span
-                                        className={`text-2xl font-black transition-all duration-300 transform ${isActive
-                                                ? (isDarkMode ? 'text-white scale-125' : 'text-blue-600 scale-125')
-                                                : (isDarkMode ? 'text-slate-700 scale-75' : 'text-slate-300 scale-75')
+                                        className={`text-lg font-black tabular-nums transition-all duration-200 ${isActive
+                                                ? (isDarkMode ? 'text-white scale-110' : 'text-blue-600 scale-110')
+                                                : (isDarkMode ? 'text-slate-600 scale-90' : 'text-slate-400 scale-90')
                                             }`}
+                                        style={{ fontVariantNumeric: 'tabular-nums' }}
                                     >
                                         {page}
                                     </span>
@@ -124,35 +134,44 @@ const PagePicker: React.FC<PagePickerProps> = ({ totalPages, currentPage, onPage
                     })}
                 </div>
 
-                {/* Vertical Center Indicators (Top & Bottom Markers) */}
-                <div className="absolute inset-x-0 inset-y-0 flex justify-center pointer-events-none z-20">
-                    <div className="flex flex-col justify-between h-full py-2">
-                        <div className={`w-1 h-1 rounded-full ${isDarkMode ? 'bg-blue-500' : 'bg-blue-600'}`}></div>
-                        <div className={`w-1.5 h-3.5 rounded-full ${isDarkMode ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]' : 'bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.5)]'}`}></div>
-                    </div>
+                {/* Center Focus Ring - Static Indicator */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                    <div
+                        className={`w-[48px] h-[48px] rounded-full border-2 transition-colors duration-300 ${isDarkMode
+                                ? 'border-blue-500/20'
+                                : 'border-blue-500/15'
+                            }`}
+                        style={{
+                            boxShadow: isDarkMode
+                                ? 'inset 0 0 15px rgba(59,130,246,0.1), 0 0 20px rgba(59,130,246,0.05)'
+                                : 'inset 0 0 15px rgba(37,99,235,0.05), 0 0 20px rgba(37,99,235,0.03)'
+                        }}
+                    />
                 </div>
 
-                {/* Left/Right Fade Overlays */}
-                <div className={`absolute top-0 bottom-0 left-0 w-20 bg-gradient-to-r pointer-events-none z-20 ${isDarkMode ? 'from-slate-900 via-slate-900/60' : 'from-white via-white/60'
+                {/* Edge Fades */}
+                <div className={`absolute top-0 bottom-0 left-0 w-16 bg-gradient-to-r pointer-events-none z-20 ${isDarkMode ? 'from-slate-900 via-slate-900/80' : 'from-white via-white/80'
                     } to-transparent`} />
-                <div className={`absolute top-0 bottom-0 right-0 w-20 bg-gradient-to-l pointer-events-none z-20 ${isDarkMode ? 'from-slate-900 via-slate-900/60' : 'from-white via-white/60'
+                <div className={`absolute top-0 bottom-0 right-0 w-16 bg-gradient-to-l pointer-events-none z-20 ${isDarkMode ? 'from-slate-900 via-slate-900/80' : 'from-white via-white/80'
                     } to-transparent`} />
             </div>
 
-            {/* Pagination Breadcrumbs Context */}
-            <div className="mt-3 flex items-center gap-1.5 opacity-60">
-                {pages.length <= 10 ? pages.map((_, i) => (
+            {/* Page Context - Ring Indicators */}
+            <div className="mt-4 flex items-center justify-center gap-2">
+                {pages.length <= 8 ? pages.map((_, i) => (
                     <div
                         key={i}
                         className={`transition-all duration-300 rounded-full ${activeIndex === i
-                                ? `w-4 h-1 ${isDarkMode ? 'bg-blue-500' : 'bg-blue-600'}`
-                                : `w-1 h-1 ${isDarkMode ? 'bg-slate-700' : 'bg-slate-300'}`
+                                ? `w-2.5 h-2.5 ${isDarkMode ? 'bg-blue-500 ring-2 ring-blue-500/30 shadow-[0_0_8px_rgba(59,130,246,0.5)]' : 'bg-blue-600 ring-2 ring-blue-600/25 shadow-[0_0_8px_rgba(37,99,235,0.4)]'}`
+                                : `w-1.5 h-1.5 ${isDarkMode ? 'bg-slate-700' : 'bg-slate-300'}`
                             }`}
                     />
                 )) : (
-                    <span className="text-[10px] font-black tracking-widest text-slate-500">
-                        {activeIndex + 1} / {totalPages} SAYFA
-                    </span>
+                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${isDarkMode ? 'bg-slate-800/50' : 'bg-slate-100'}`}>
+                        <span className={`text-xs font-black ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>{activeIndex + 1}</span>
+                        <span className={`text-[10px] font-bold ${isDarkMode ? 'text-slate-600' : 'text-slate-400'}`}>/</span>
+                        <span className={`text-xs font-black ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>{totalPages}</span>
+                    </div>
                 )}
             </div>
         </div>
