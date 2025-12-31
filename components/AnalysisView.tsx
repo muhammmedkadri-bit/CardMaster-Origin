@@ -80,6 +80,18 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
   const [isAnimating, setIsAnimating] = useState(false);
   const ITEMS_PER_PAGE = 5;
 
+  // Scroll to top of transaction list when page changes on mobile
+  React.useEffect(() => {
+    if (window.innerWidth < 640) {
+      const element = document.getElementById('analysis-transactions');
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
+    }
+  }, [currentPage]);
+
   // Custom page change handler with animation
   const handlePageChange = (newPage: number) => {
     if (newPage === currentPage || isAnimating) return;

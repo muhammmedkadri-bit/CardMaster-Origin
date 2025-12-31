@@ -105,6 +105,18 @@ const CardsListView: React.FC<CardsListViewProps> = ({
   const [customStart, setCustomStart] = useState<string>(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
   const [customEnd, setCustomEnd] = useState<string>(new Date().toISOString().split('T')[0]);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Scroll to top of transaction list when page changes on mobile
+  useEffect(() => {
+    if (window.innerWidth < 640) {
+      const element = document.getElementById('cards-transactions-list');
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
+    }
+  }, [currentPage]);
   const [selectedBank, setSelectedBank] = useState<string>('all');
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -486,7 +498,8 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                     {/* Main Content Area with Vertical Pagination on the Right */}
                     <div className="flex gap-4 sm:gap-6 items-stretch">
                       <div
-                        className={`flex-1 space-y-2.5 min-w-0 transition-all duration-200 ease-out min-h-[460px] ${slideDirection !== null ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'
+                        id="cards-transactions-list"
+                        className={`flex-1 space-y-2.5 min-w-0 transition-all duration-200 ease-out min-h-[460px] scroll-mt-24 ${slideDirection !== null ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'
                           }`}
                       >
                         {paginatedTransactions.length > 0 ? paginatedTransactions.map(tx => {
