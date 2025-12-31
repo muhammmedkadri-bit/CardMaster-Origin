@@ -767,9 +767,9 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
 
           {filteredTransactions.length > 0 ? (
             <>
-              <div className="flex gap-4 sm:gap-6 items-center">
-                {/* Left: Transaction List */}
-                <div className="flex-1 space-y-2.5 min-w-0 min-h-[400px]">
+              <div className="flex gap-4 sm:gap-6 items-stretch">
+                {/* Left: Transaction List - Fixed min-height for 5 items */}
+                <div className="flex-1 space-y-2.5 min-w-0" style={{ minHeight: '520px' }}>
                   {paginatedTransactions.map(tx => {
                     const card = cards.find(c => c.id === tx.cardId);
                     const cardColor = card?.color || '#3b82f6';
@@ -851,18 +851,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                       </div>
                     );
                   })}
-
-                  {/* Mobile Optimized PagePicker - At the Bottom of the List */}
-                  {totalPages > 1 && (
-                    <div className="flex sm:hidden justify-center mt-8 mb-4">
-                      <PagePicker
-                        totalPages={totalPages}
-                        currentPage={currentPage}
-                        onPageChange={(p) => setCurrentPage(p)}
-                        isDarkMode={isDarkMode}
-                      />
-                    </div>
-                  )}
                 </div>
 
                 {/* Right: Vertical Pagination tower (Hidden on Mobile) */}
@@ -921,6 +909,18 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                   </div>
                 )}
               </div>
+
+              {/* Mobile Optimized PagePicker - At the Very Bottom of Container */}
+              {totalPages > 1 && (
+                <div className="flex sm:hidden justify-center mt-8 pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
+                  <PagePicker
+                    totalPages={totalPages}
+                    currentPage={currentPage}
+                    onPageChange={(p) => setCurrentPage(p)}
+                    isDarkMode={isDarkMode}
+                  />
+                </div>
+              )}
 
               <div className="mt-10 flex justify-center">
                 <div className={`px-8 py-3.5 rounded-[20px] text-[11px] font-black uppercase tracking-[0.2em] border transition-all ${isDarkMode

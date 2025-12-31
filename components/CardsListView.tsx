@@ -464,9 +464,9 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                     )}
 
                     {/* Main Content Area with Vertical Pagination on the Right */}
-                    <div className="flex gap-4 sm:gap-6 items-center">
-                      {/* Left: Transaction List (Full Width) */}
-                      <div className="flex-1 space-y-2.5 min-w-0 min-h-[400px]">
+                    <div className="flex gap-4 sm:gap-6 items-stretch">
+                      {/* Left: Transaction List (Full Width) - Fixed min-height for 5 items */}
+                      <div className="flex-1 space-y-2.5 min-w-0" style={{ minHeight: '520px' }}>
                         {paginatedTransactions.length > 0 ? paginatedTransactions.map(tx => {
                           const categoryName = tx.category || 'Diğer';
                           const categoryInfo = categories.find(c => c.name.toLocaleLowerCase('tr-TR') === categoryName.toLocaleLowerCase('tr-TR'));
@@ -580,20 +580,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                             <Inbox size={32} className="text-slate-300 dark:text-slate-700 mx-auto mb-4" />
                             <p className="text-xs font-bold text-slate-500 italic uppercase tracking-widest">İşlem kaydı bulunmuyor</p>
                           </div>
-                        )}
                       </div>
-
-                      {/* Mobile Optimized PagePicker - At the Bottom */}
-                      {totalPages > 1 && (
-                        <div className="flex sm:hidden justify-center mt-8 mb-4">
-                          <PagePicker
-                            totalPages={totalPages}
-                            currentPage={currentPage}
-                            onPageChange={(p) => setCurrentPage(p)}
-                            isDarkMode={isDarkMode}
-                          />
-                        </div>
-                      )}
 
                       {/* Right: Vertical Pagination Control Tower - Centered Vertically (Hidden on Mobile) */}
                       {totalPages > 1 && (
@@ -657,6 +644,18 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                         </div>
                       )}
                     </div>
+
+                    {/* Mobile Optimized PagePicker - At the Very Bottom of Container */}
+                    {totalPages > 1 && (
+                      <div className="flex sm:hidden justify-center mt-8 pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
+                        <PagePicker
+                          totalPages={totalPages}
+                          currentPage={currentPage}
+                          onPageChange={(p) => setCurrentPage(p)}
+                          isDarkMode={isDarkMode}
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
