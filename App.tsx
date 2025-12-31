@@ -781,9 +781,23 @@ const App: React.FC = () => {
   };
 
   const handleViewChange = (newView: 'dashboard' | 'cards' | 'analysis' | 'settings', scrollId?: string) => {
+    // If already on the same view and have a scroll target, just scroll without transition
+    if (view === newView && scrollId) {
+      setTimeout(() => {
+        const element = document.getElementById(scrollId);
+        if (element) {
+          const offset = 20;
+          const y = element.getBoundingClientRect().top + window.scrollY - offset;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+      }, 50); // Small delay for any pending renders
+      return;
+    }
+
+    // If same view without scroll target, do nothing
     if (view === newView && !scrollId) return;
 
-    // Start transition animation
+    // Start transition animation for view change
     setIsPageTransitioning(true);
 
     // Wait for fade-in of the overlay
@@ -805,7 +819,7 @@ const App: React.FC = () => {
               const y = element.getBoundingClientRect().top + window.scrollY - offset;
               window.scrollTo({ top: y, behavior: 'smooth' });
             }
-          }, 100);
+          }, 200); // Increased delay to ensure AnalysisView is fully rendered
         }
       }, 500); // 500ms visible loading state
     }, 300); // 300ms fade-in time
