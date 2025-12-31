@@ -355,36 +355,36 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
         >
           <button
             onClick={(e) => { e.stopPropagation(); scrollToMode('cards'); }}
-            className={`flex items-center justify-center gap-2 px-2 sm:px-6 py-3 rounded-[18px] text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-500 ${mode === 'cards'
+            className={`flex items-center justify-center gap-1.5 sm:gap-2 px-1 sm:px-6 py-3 rounded-[18px] text-[9px] sm:text-[10px] font-black uppercase tracking-tight sm:tracking-widest transition-all duration-500 ${mode === 'cards'
               ? 'bg-white dark:bg-slate-700 shadow-lg text-blue-600 dark:text-white scale-[1.02]'
               : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
               }`}
           >
             <CardIcon size={14} className="sm:w-4 sm:h-4" />
             <span className="hidden xs:inline">KARTLAR</span>
-            <span className="xs:hidden">KART</span>
+            <span className="xs:hidden">KARTLAR</span>
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); scrollToMode('banks'); }}
-            className={`flex items-center justify-center gap-2 px-2 sm:px-6 py-3 rounded-[18px] text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-500 ${mode === 'banks'
+            className={`flex items-center justify-center gap-1.5 sm:gap-2 px-1 sm:px-6 py-3 rounded-[18px] text-[9px] sm:text-[10px] font-black uppercase tracking-tight sm:tracking-widest transition-all duration-500 ${mode === 'banks'
               ? 'bg-white dark:bg-slate-700 shadow-lg text-blue-600 dark:text-white scale-[1.02]'
               : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
               }`}
           >
             <PieIcon size={14} className="sm:w-4 sm:h-4" />
             <span className="hidden xs:inline">BANKALAR</span>
-            <span className="xs:hidden">BANKA</span>
+            <span className="xs:hidden">BANKALAR</span>
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); scrollToMode('categories'); }}
-            className={`flex items-center justify-center gap-2 px-2 sm:px-6 py-3 rounded-[18px] text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-500 ${mode === 'categories'
+            className={`flex items-center justify-center gap-1.5 sm:gap-2 px-1 sm:px-6 py-3 rounded-[18px] text-[9px] sm:text-[10px] font-black uppercase tracking-tight sm:tracking-widest transition-all duration-500 ${mode === 'categories'
               ? 'bg-white dark:bg-slate-700 shadow-lg text-blue-600 dark:text-white scale-[1.02]'
               : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
               }`}
           >
             <LayoutGrid size={14} className="sm:w-4 sm:h-4" />
             <span className="hidden xs:inline">KATEGORİ</span>
-            <span className="xs:hidden">KAT.</span>
+            <span className="xs:hidden">KATEGORİ</span>
           </button>
         </div>
       </div>
