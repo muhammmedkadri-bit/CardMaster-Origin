@@ -774,7 +774,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
       </div>
 
       {/* Transactions Section */}
-      <div id="analysis-transactions" className="grid grid-cols-1 gap-8 mb-16">
+      <div id="analysis-transactions" className="grid grid-cols-1 gap-8 mb-4">
         <div className={`p-8 sm:p-12 rounded-[40px] border transition-all ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-sm'}`}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-8 mb-12">
             <div className="flex items-center gap-4">
@@ -792,7 +792,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                 <div
                   className={`flex-1 space-y-2.5 min-w-0 transition-all duration-200 ease-out ${slideDirection !== null ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'
                     }`}
-                  style={{ minHeight: '520px' }}
+                  style={{ minHeight: '480px' }}
                 >
                   {paginatedTransactions.map(tx => {
                     const card = cards.find(c => c.id === tx.cardId);
@@ -946,7 +946,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                 </div>
               )}
 
-              <div className="mt-10 flex justify-center">
+              <div className="mt-4 flex justify-center">
                 <div className={`px-8 py-3.5 rounded-[20px] text-[11px] font-black uppercase tracking-[0.2em] border transition-all ${isDarkMode
                   ? 'bg-slate-800/40 border-slate-800/60 text-slate-500 shadow-[0_4px_20px_rgba(0,0,0,0.2)]'
                   : 'bg-slate-50/80 border-slate-100 text-slate-400 shadow-[0_4px_15px_rgba(0,0,0,0.02)]'}`}

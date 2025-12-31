@@ -485,11 +485,10 @@ const CardsListView: React.FC<CardsListViewProps> = ({
 
                     {/* Main Content Area with Vertical Pagination on the Right */}
                     <div className="flex gap-4 sm:gap-6 items-stretch">
-                      {/* Left: Transaction List (Full Width) - Fixed min-height for 5 items */}
                       <div
                         className={`flex-1 space-y-2.5 min-w-0 transition-all duration-200 ease-out ${slideDirection !== null ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'
                           }`}
-                        style={{ minHeight: '520px' }}
+                        style={{ minHeight: '480px' }}
                       >
                         {paginatedTransactions.length > 0 ? paginatedTransactions.map(tx => {
                           const categoryName = tx.category || 'Diğer';
@@ -705,7 +704,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
 
       {/* Quick Summary Footer */}
       {cards.length > 0 && (
-        <div className={`mt-12 p-8 sm:p-10 rounded-[40px] border grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+        <div className={`mt-4 p-8 sm:p-10 rounded-[40px] border grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
           <div className="flex items-center gap-5">
             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-500'}`}>
               <Filter size={20} />
