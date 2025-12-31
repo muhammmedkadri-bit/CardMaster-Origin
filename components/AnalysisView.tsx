@@ -76,7 +76,27 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
   const scrollPosRef = useRef(0);
   const dragRef = useRef({ isDragging: false, startX: 0, currentTranslation: 0 });
   const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
+  const [isAnimating, setIsAnimating] = useState(false);
   const ITEMS_PER_PAGE = 5;
+
+  // Custom page change handler with animation
+  const handlePageChange = (newPage: number) => {
+    if (newPage === currentPage || isAnimating) return;
+
+    setSlideDirection(newPage > currentPage ? 'left' : 'right');
+    setIsAnimating(true);
+
+    setTimeout(() => {
+      setCurrentPage(newPage);
+      setSlideDirection(newPage > currentPage ? 'right' : 'left');
+
+      setTimeout(() => {
+        setSlideDirection(null);
+        setIsAnimating(false);
+      }, 50);
+    }, 200);
+  };
 
   const banks = useMemo(() => {
     const uniqueBanks = Array.from(new Set(cards.map(c => c.bankName))).filter(Boolean).sort();
@@ -769,7 +789,13 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
             <>
               <div className="flex gap-4 sm:gap-6 items-stretch">
                 {/* Left: Transaction List - Fixed min-height for 5 items */}
-                <div className="flex-1 space-y-2.5 min-w-0" style={{ minHeight: '520px' }}>
+                <div
+                  className={`flex-1 space-y-2.5 min-w-0 overflow-hidden transition-all duration-300 ease-out ${slideDirection === 'left' ? 'translate-x-[-100%] opacity-0' :
+                    slideDirection === 'right' ? 'translate-x-[100%] opacity-0' :
+                      'translate-x-0 opacity-100'
+                    }`}
+                  style={{ minHeight: '520px' }}
+                >
                   {paginatedTransactions.map(tx => {
                     const card = cards.find(c => c.id === tx.cardId);
                     const cardColor = card?.color || '#3b82f6';
@@ -860,8 +886,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                     : 'bg-white/90 border-slate-200/60 shadow-[0_20px_50px_rgba(37,99,235,0.1),_inset_0_1px_1px_rgba(255,255,255,0.8)] backdrop-blur-xl'
                     }`}>
                     <button
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1 || isAnimating}
+                      onClick={() => handlePageChange(currentPage - 1)}
                       className={`p-3 rounded-2xl transition-all duration-300 border ${currentPage === 1
                         ? 'opacity-20 cursor-not-allowed border-transparent'
                         : `hover:bg-blue-600 hover:text-white active:scale-95 shadow-lg ${isDarkMode
@@ -894,8 +920,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                     </div>
 
                     <button
-                      disabled={currentPage === totalPages}
-                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages || isAnimating}
+                      onClick={() => handlePageChange(currentPage + 1)}
                       className={`p-3 rounded-2xl transition-all duration-300 border ${currentPage === totalPages
                         ? 'opacity-20 cursor-not-allowed border-transparent'
                         : `hover:bg-blue-600 hover:text-white active:scale-95 shadow-lg ${isDarkMode
@@ -916,7 +942,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                   <PagePicker
                     totalPages={totalPages}
                     currentPage={currentPage}
-                    onPageChange={(p) => setCurrentPage(p)}
+                    onPageChange={handlePageChange}
                     isDarkMode={isDarkMode}
                   />
                 </div>
