@@ -409,6 +409,13 @@
     .animate-pulse-red {
       animation: pulse-red 2s infinite ease-in-out;
     }
+
+    /* Performance Optimization for Card Animation */
+    .disable-child-shadows,
+    .disable-child-shadows * {
+      box-shadow: none !important;
+      filter: none !important;
+    }
   </style>
   <script type="importmap">
 {
