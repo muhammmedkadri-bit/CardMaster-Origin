@@ -825,13 +825,7 @@ const App: React.FC = () => {
         setTimeout(() => {
           const element = document.getElementById(scrollId);
           if (element) {
-            const offset = 80;
-            const elementPosition = element.getBoundingClientRect().top;
-            const offsetPosition = elementPosition + window.pageYOffset - offset;
-            window.scrollTo({
-              top: offsetPosition,
-              behavior: "smooth"
-            });
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
         }, 150);
       }
@@ -839,13 +833,7 @@ const App: React.FC = () => {
       // If already on the same view, lead the eye with a smooth scroll
       const element = document.getElementById(scrollId);
       if (element) {
-        const offset = 40;
-        const elementPosition = element.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.pageYOffset - offset;
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: "smooth"
-        });
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     } else {
       window.scrollTo({ top: 0, behavior: "smooth" });
