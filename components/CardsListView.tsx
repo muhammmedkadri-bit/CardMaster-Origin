@@ -580,6 +580,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                             <Inbox size={32} className="text-slate-300 dark:text-slate-700 mx-auto mb-4" />
                             <p className="text-xs font-bold text-slate-500 italic uppercase tracking-widest">İşlem kaydı bulunmuyor</p>
                           </div>
+                        )}
                       </div>
 
                       {/* Right: Vertical Pagination Control Tower - Centered Vertically (Hidden on Mobile) */}
