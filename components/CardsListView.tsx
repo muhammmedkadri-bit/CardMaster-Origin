@@ -235,7 +235,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
         if (el) {
           el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-      }, 300);
+      }, 100);
     }
   };
 
@@ -474,7 +474,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
 
                 {/* Expanded Transaction List Area */}
                 {isExpanded && (
-                  <div className={`mt-2 p-6 sm:p-8 rounded-[32px] border animate-in slide-in-from-top-4 duration-500 ${isDarkMode ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50/80 border-slate-200'}`}>
+                  <div className={`mt-2 p-6 sm:p-8 rounded-[32px] border animate-in fade-in duration-300 ${isDarkMode ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50/80 border-slate-200'}`}>
                     {/* Transaction Header & Pagination Controls */}
                     <div className="flex flex-col gap-6 mb-10">
                       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
