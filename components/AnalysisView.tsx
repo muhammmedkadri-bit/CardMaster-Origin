@@ -2,6 +2,7 @@
 import React, { useMemo, useState, useRef } from 'react';
 import RollingNumber from './RollingNumber';
 import DateRangePicker from './DateRangePicker';
+import PagePicker from './PagePicker';
 import {
   BarChart,
   Bar,
@@ -762,37 +763,15 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
             </div>
           </div>
 
-          {/* Mobile Optimized Pagination - Placed right below header */}
+          {/* Mobile Optimized Horizontal Scroll Page Picker */}
           {totalPages > 1 && (
-            <div className="flex sm:hidden items-center justify-between gap-4 p-2 bg-white/50 dark:bg-slate-900/50 rounded-[24px] border border-slate-200/50 dark:border-slate-800/50 mb-8 backdrop-blur-sm">
-              <button
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                className={`p-2.5 rounded-xl transition-all border ${currentPage === 1
-                  ? 'opacity-20 cursor-not-allowed border-transparent'
-                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-blue-600 dark:text-blue-400 shadow-sm active:scale-90'
-                  }`}
-              >
-                <ChevronLeft size={18} />
-              </button>
-
-              <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs border ${isDarkMode ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
-                  {currentPage}
-                </div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">/ {totalPages} SAYFA</span>
-              </div>
-
-              <button
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                className={`p-2.5 rounded-xl transition-all border ${currentPage === totalPages
-                  ? 'opacity-20 cursor-not-allowed border-transparent'
-                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-blue-600 dark:text-blue-400 shadow-sm active:scale-90'
-                  }`}
-              >
-                <ChevronRight size={18} />
-              </button>
+            <div className="flex sm:hidden mt-6 mb-8">
+              <PagePicker
+                totalPages={totalPages}
+                currentPage={currentPage}
+                onPageChange={(p) => setCurrentPage(p)}
+                isDarkMode={isDarkMode}
+              />
             </div>
           )}
 
