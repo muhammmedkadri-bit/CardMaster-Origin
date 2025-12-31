@@ -213,6 +213,15 @@ const CardsListView: React.FC<CardsListViewProps> = ({
     return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   };
 
+  // Optimize: Memoize transactions for all cards to prevent recalculation on every render
+  const transactionsByCard = useMemo(() => {
+    const grouped: Record<string, Transaction[]> = {};
+    cards.forEach(card => {
+      grouped[card.id] = getFilteredTransactions(card.id);
+    });
+    return grouped;
+  }, [cards, transactions, localRange, customStart, customEnd]);
+
   const handleRangeChange = (r: LocalTimeRange) => {
     setLocalRange(r);
     setCurrentPage(1);
@@ -301,7 +310,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
           const isHighUsage = utilization >= 80;
           const estimatedMinPayment = card.balance > 0 ? (card.balance * (card.minPaymentRatio / 100)) : 0;
           const isExpanded = expandedCardId === card.id;
-          const cardTransactions = getFilteredTransactions(card.id);
+          const cardTransactions = transactionsByCard[card.id] || [];
           const totalPages = Math.ceil(cardTransactions.length / ITEMS_PER_PAGE);
           const paginatedTransactions = cardTransactions.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
@@ -473,7 +482,10 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                 </div>
 
                 {/* Expanded Transaction List Area */}
-                <div className={`grid transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${isExpanded ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0 mt-0'}`}>
+                <div
+                  className={`grid transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${isExpanded ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0 mt-0'}`}
+                  style={{ willChange: 'grid-template-rows, opacity, margin' }}
+                >
                   <div className="overflow-hidden min-h-0">
                     <div className={`p-6 sm:p-8 rounded-[32px] border ${isDarkMode ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50/80 border-slate-200'}`}>
                       {/* Transaction Header & Pagination Controls */}
