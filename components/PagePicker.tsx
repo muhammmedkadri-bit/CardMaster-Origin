@@ -10,11 +10,24 @@ interface PagePickerProps {
 const PagePicker: React.FC<PagePickerProps> = ({ totalPages, currentPage, onPageChange, isDarkMode }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [activeIndex, setActiveIndex] = useState(currentPage - 1);
+    const [sidePadding, setSidePadding] = useState(100);
 
     // Each item is 60px wide
     const ITEM_WIDTH = 60;
-    // Window width is 260px
-    const VISIBLE_WIDTH = 260;
+
+    // Calculate dynamic padding to ensure perfect centering based on actual container width
+    useEffect(() => {
+        const updatePadding = () => {
+            if (containerRef.current) {
+                const width = containerRef.current.clientWidth;
+                setSidePadding((width - ITEM_WIDTH) / 2);
+            }
+        };
+
+        updatePadding();
+        window.addEventListener('resize', updatePadding);
+        return () => window.removeEventListener('resize', updatePadding);
+    }, []);
 
     // Handle scroll to detect active page
     const handleScroll = useCallback(() => {
@@ -40,7 +53,7 @@ const PagePicker: React.FC<PagePickerProps> = ({ totalPages, currentPage, onPage
                 if (finalIndex !== currentPage && finalIndex >= 1 && finalIndex <= totalPages) {
                     onPageChange(finalIndex);
                 }
-            }, 150);
+            }, 100);
         };
 
         container.addEventListener('scroll', handleScroll);
@@ -57,7 +70,7 @@ const PagePicker: React.FC<PagePickerProps> = ({ totalPages, currentPage, onPage
         if (!container) return;
 
         const targetX = (currentPage - 1) * ITEM_WIDTH;
-        if (Math.abs(container.scrollLeft - targetX) > 2) {
+        if (Math.abs(container.scrollLeft - targetX) > 1) {
             container.scrollTo({
                 left: targetX,
                 behavior: 'smooth'
@@ -66,7 +79,6 @@ const PagePicker: React.FC<PagePickerProps> = ({ totalPages, currentPage, onPage
     }, [currentPage]);
 
     const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
-    const sidePadding = (VISIBLE_WIDTH - ITEM_WIDTH) / 2;
 
     return (
         <div className="flex flex-col items-center w-full max-w-[280px] mx-auto select-none">
@@ -96,14 +108,17 @@ const PagePicker: React.FC<PagePickerProps> = ({ totalPages, currentPage, onPage
                                 key={page}
                                 className="shrink-0 w-[60px] h-full flex items-center justify-center snap-center"
                             >
-                                <span
-                                    className={`text-2xl font-black transition-all duration-300 transform ${isActive
-                                            ? (isDarkMode ? 'text-white scale-125' : 'text-blue-600 scale-125')
-                                            : (isDarkMode ? 'text-slate-700 scale-75' : 'text-slate-300 scale-75')
-                                        }`}
-                                >
-                                    {page}
-                                </span>
+                                {/* Fixed width container for digit to ensure perfect center alignment */}
+                                <div className="w-[40px] flex items-center justify-center">
+                                    <span
+                                        className={`text-2xl font-black transition-all duration-300 transform ${isActive
+                                                ? (isDarkMode ? 'text-white scale-125' : 'text-blue-600 scale-125')
+                                                : (isDarkMode ? 'text-slate-700 scale-75' : 'text-slate-300 scale-75')
+                                            }`}
+                                    >
+                                        {page}
+                                    </span>
+                                </div>
                             </div>
                         );
                     })}
@@ -113,14 +128,14 @@ const PagePicker: React.FC<PagePickerProps> = ({ totalPages, currentPage, onPage
                 <div className="absolute inset-x-0 inset-y-0 flex justify-center pointer-events-none z-20">
                     <div className="flex flex-col justify-between h-full py-2">
                         <div className={`w-1 h-1 rounded-full ${isDarkMode ? 'bg-blue-500' : 'bg-blue-600'}`}></div>
-                        <div className={`w-1 h-3 rounded-full ${isDarkMode ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]' : 'bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.5)]'}`}></div>
+                        <div className={`w-1.5 h-3.5 rounded-full ${isDarkMode ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]' : 'bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.5)]'}`}></div>
                     </div>
                 </div>
 
                 {/* Left/Right Fade Overlays */}
-                <div className={`absolute top-0 bottom-0 left-0 w-16 bg-gradient-to-r pointer-events-none z-20 ${isDarkMode ? 'from-slate-900 via-slate-900/60' : 'from-white via-white/60'
+                <div className={`absolute top-0 bottom-0 left-0 w-20 bg-gradient-to-r pointer-events-none z-20 ${isDarkMode ? 'from-slate-900 via-slate-900/60' : 'from-white via-white/60'
                     } to-transparent`} />
-                <div className={`absolute top-0 bottom-0 right-0 w-16 bg-gradient-to-l pointer-events-none z-20 ${isDarkMode ? 'from-slate-900 via-slate-900/60' : 'from-white via-white/60'
+                <div className={`absolute top-0 bottom-0 right-0 w-20 bg-gradient-to-l pointer-events-none z-20 ${isDarkMode ? 'from-slate-900 via-slate-900/60' : 'from-white via-white/60'
                     } to-transparent`} />
             </div>
 

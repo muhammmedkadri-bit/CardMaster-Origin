@@ -585,19 +585,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
 
                       {/* Mobile Optimized PagePicker - At the Bottom */}
                       {totalPages > 1 && (
-                        <div className="flex sm:hidden justify-center mt-10">
-                          <PagePicker
-                            totalPages={totalPages}
-                            currentPage={currentPage}
-                            onPageChange={(p) => setCurrentPage(p)}
-                            isDarkMode={isDarkMode}
-                          />
-                        </div>
-                      )}
-
-                      {/* Mobile Optimized PagePicker - At the Bottom */}
-                      {totalPages > 1 && (
-                        <div className="flex sm:hidden justify-center mt-10">
+                        <div className="flex sm:hidden justify-center mt-8 mb-4">
                           <PagePicker
                             totalPages={totalPages}
                             currentPage={currentPage}
