@@ -101,6 +101,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
   categories
 }) => {
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
+  const [animatingCardId, setAnimatingCardId] = useState<string | null>(null);
   const [localRange, setLocalRange] = useState<LocalTimeRange>('thismonth');
   const [customStart, setCustomStart] = useState<string>(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
   const [customEnd, setCustomEnd] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -228,6 +229,9 @@ const CardsListView: React.FC<CardsListViewProps> = ({
   };
 
   const handleCardExpand = (cardId: string) => {
+    setAnimatingCardId(cardId);
+    setTimeout(() => setAnimatingCardId(null), 500);
+
     if (expandedCardId === cardId) {
       setExpandedCardId(null);
       setTimeout(() => {
@@ -314,12 +318,14 @@ const CardsListView: React.FC<CardsListViewProps> = ({
           const totalPages = Math.ceil(cardTransactions.length / ITEMS_PER_PAGE);
           const paginatedTransactions = cardTransactions.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
+          const isAnimatingThisCard = animatingCardId === card.id;
+
           return (
             <div
               id={`card-main-${card.id}`}
               key={card.id}
-              className={`group relative p-6 sm:p-10 pl-9 sm:pl-14 rounded-[40px] border overflow-hidden transition-all hover:shadow-2xl hover:z-10 scroll-mt-28 ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800 hover:bg-[#0b0f1a]/60' : 'bg-white border-slate-100 shadow-sm hover:shadow-md'
-                } group-hover:scale-[1.01] sm:group-hover:scale-[1.02]`}
+              className={`group relative p-6 sm:p-10 pl-9 sm:pl-14 rounded-[40px] border overflow-hidden transition-all hover:z-10 scroll-mt-28 ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800 hover:bg-[#0b0f1a]/60' : 'bg-white border-slate-100'
+                } ${isAnimatingThisCard ? 'shadow-none scale-100' : 'shadow-sm hover:shadow-2xl group-hover:scale-[1.01] sm:group-hover:scale-[1.02]'}`}
             >
               {/* Card Color Side Accent - Perfectly Integrated */}
               <div
