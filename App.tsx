@@ -814,37 +814,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Custom smooth scroll function for stutter-free animation
-  const smoothScrollTo = (elementId: string) => {
-    const element = document.getElementById(elementId);
-    if (!element) return;
-
-    const start = window.pageYOffset;
-    const elementPosition = element.getBoundingClientRect().top;
-    const offsetPosition = elementPosition + start - 100; // 100px offset for header/breathing room
-    const distance = offsetPosition - start;
-    const duration = 1000; // 1 second duration
-    let startTimestamp: number | null = null;
-
-    const easeOutCubic = (t: number): number => {
-      return 1 - Math.pow(1 - t, 3);
-    };
-
-    const step = (timestamp: number) => {
-      if (!startTimestamp) startTimestamp = timestamp;
-      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-      const ease = easeOutCubic(progress);
-
-      window.scrollTo(0, start + distance * ease);
-
-      if (progress < 1) {
-        window.requestAnimationFrame(step);
-      }
-    };
-
-    window.requestAnimationFrame(step);
-  };
-
   const handleViewChange = (newView: 'dashboard' | 'cards' | 'analysis' | 'settings', scrollId?: string) => {
     if (newView !== view) {
       if (!scrollId) {
@@ -853,14 +822,19 @@ const App: React.FC = () => {
       setView(newView);
 
       if (scrollId) {
-        // Wait for heavy initial render (charts) to complete, then animate scroll
         setTimeout(() => {
-          smoothScrollTo(scrollId);
-        }, 500);
+          const element = document.getElementById(scrollId);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 150);
       }
     } else if (scrollId) {
-      // Create cleaner scroll even on same page
-      smoothScrollTo(scrollId);
+      // If already on the same view, lead the eye with a smooth scroll
+      const element = document.getElementById(scrollId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     } else {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }

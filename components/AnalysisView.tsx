@@ -63,19 +63,7 @@ interface AnalysisViewProps {
 type TimeRange = 'today' | 'thisweek' | 'thismonth' | 'thisyear' | 'custom';
 
 const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDarkMode, onBack, onEditTransaction, onDeleteTransaction, categories, lastUpdate }) => {
-  const [isContentReady, setIsContentReady] = useState(false);
   const [selectedBank, setSelectedBank] = React.useState<string>('all');
-
-  // ... (existing states)
-
-  // Trigger content visibility after mount
-  React.useEffect(() => {
-    // Ensure page starts at top
-    window.scrollTo(0, 0);
-    // Immediate render to prevent 'loading' flash, relying on scroll delay in App.tsx
-    const timer = setTimeout(() => setIsContentReady(true), 10);
-    return () => clearTimeout(timer);
-  }, []);
   const [selectedCardId, setSelectedCardId] = React.useState<string>('all');
   const [timeRange, setTimeRange] = React.useState<TimeRange>('thismonth');
   const [customStart, setCustomStart] = React.useState<string>(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
@@ -663,159 +651,149 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
             <div className="w-1.5 h-6 bg-rose-500 rounded-full"></div>
             <h3 className={`text-xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>HARCAMA TRENDİ</h3>
           </div>
-          <div className="h-[320px] sm:h-[400px] -ml-4 sm:-ml-2 relative">
-            {!isContentReady ? <div className="absolute inset-0 flex items-center justify-center"><p className="text-xs font-bold text-slate-400 uppercase tracking-widest animate-pulse">Grafik Yükleniyor...</p></div> : (
-              <ResponsiveContainer width="100%" height="100%">
-                {/* ... chart content remains the same ... */}
-                <BarChart
-                  data={trendData}
-                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                  barGap={8}
-                >
-                  <defs>
-                    <linearGradient id="3dSpending" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="#e11d48" />
-                      <stop offset="50%" stopColor="#fb7185" />
-                      <stop offset="100%" stopColor="#e11d48" />
-                    </linearGradient>
-                    <linearGradient id="3dPayment" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="#059669" />
-                      <stop offset="50%" stopColor="#34d399" />
-                      <stop offset="100%" stopColor="#059669" />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={false}
-                    stroke={isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
-                  />
-                  <XAxis
-                    dataKey="label"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: isDarkMode ? '#64748b' : '#94a3b8', fontSize: 10, fontWeight: 700 }}
-                    minTickGap={40}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: isDarkMode ? '#64748b' : '#94a3b8', fontSize: 10, fontWeight: 700 }}
-                    tickFormatter={(val) => `${val >= 1000 ? (val / 1000).toFixed(1) + 'k' : val} ₺`}
-                  />
-                  <Tooltip
-                    cursor={{ fill: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)' }}
-                    content={({ active, payload, label }) => {
-                      if (active && payload && payload.length) {
-                        return (
-                          <div className={`p-5 rounded-[24px] border-none shadow-2xl backdrop-blur-md transition-all duration-300 ${isDarkMode ? 'bg-[#1e293b]/90 border border-white/5' : 'bg-white/90 border border-slate-100'}`}>
-                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">{label}</p>
-                            <div className="space-y-2">
-                              {payload.map((entry: any, index: number) => (
-                                <div key={index} className="flex items-center justify-between gap-6">
-                                  <span className={`text-[13px] font-bold ${entry.name === 'Harcamalar' ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                    {entry.name}:
-                                  </span>
-                                  <span className={`text-[13px] font-black ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                                    {entry.value.toLocaleString('tr-TR')} ₺
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
+          <div className="h-[320px] sm:h-[400px] -ml-4 sm:-ml-2">
+            <ResponsiveContainer width="100%" height="100%">
+              {/* ... chart content remains the same ... */}
+              <BarChart
+                data={trendData}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                barGap={8}
+              >
+                <defs>
+                  <linearGradient id="3dSpending" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#e11d48" />
+                    <stop offset="50%" stopColor="#fb7185" />
+                    <stop offset="100%" stopColor="#e11d48" />
+                  </linearGradient>
+                  <linearGradient id="3dPayment" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#059669" />
+                    <stop offset="50%" stopColor="#34d399" />
+                    <stop offset="100%" stopColor="#059669" />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke={isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
+                />
+                <XAxis
+                  dataKey="label"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: isDarkMode ? '#64748b' : '#94a3b8', fontSize: 10, fontWeight: 700 }}
+                  minTickGap={40}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: isDarkMode ? '#64748b' : '#94a3b8', fontSize: 10, fontWeight: 700 }}
+                  tickFormatter={(val) => `${val >= 1000 ? (val / 1000).toFixed(1) + 'k' : val} ₺`}
+                />
+                <Tooltip
+                  cursor={{ fill: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)' }}
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className={`p-5 rounded-[24px] border-none shadow-2xl backdrop-blur-md transition-all duration-300 ${isDarkMode ? 'bg-[#1e293b]/90 border border-white/5' : 'bg-white/90 border border-slate-100'}`}>
+                          <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">{label}</p>
+                          <div className="space-y-2">
+                            {payload.map((entry: any, index: number) => (
+                              <div key={index} className="flex items-center justify-between gap-6">
+                                <span className={`text-[13px] font-bold ${entry.name === 'Harcamalar' ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                  {entry.name}:
+                                </span>
+                                <span className={`text-[13px] font-black ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                                  {entry.value.toLocaleString('tr-TR')} ₺
+                                </span>
+                              </div>
+                            ))}
                           </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />
-                  <Bar
-                    dataKey="spending"
-                    name="Harcamalar"
-                    fill="url(#3dSpending)"
-                    radius={[6, 6, 0, 0]}
-                    maxBarSize={timeRange === 'thisyear' ? 20 : 12}
-                    animationDuration={800}
-                  />
-                  <Bar
-                    dataKey="payment"
-                    name="Ödemeler"
-                    fill="url(#3dPayment)"
-                    radius={[6, 6, 0, 0]}
-                    maxBarSize={timeRange === 'thisyear' ? 20 : 12}
-                    animationDuration={800}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Bar
+                  dataKey="spending"
+                  name="Harcamalar"
+                  fill="url(#3dSpending)"
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={timeRange === 'thisyear' ? 20 : 12}
+                  animationDuration={800}
+                />
+                <Bar
+                  dataKey="payment"
+                  name="Ödemeler"
+                  fill="url(#3dPayment)"
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={timeRange === 'thisyear' ? 20 : 12}
+                  animationDuration={800}
+                />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
 
       {/* Category Distribution Sliding Banner */}
       <div className="mb-12 overflow-hidden relative group">
-        {!isContentReady ? (
-          <div className="h-[120px] flex items-center justify-center border rounded-[32px] mx-6">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest animate-pulse">KATEGORİLER YÜKLENİYOR...</p>
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center gap-4 mb-6 px-2">
-              <div className="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
-              <h3 className={`text-xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>KATEGORİ DAĞILIMI</h3>
-            </div>
+        <div className="flex items-center gap-4 mb-6 px-2">
+          <div className="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
+          <h3 className={`text-xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>KATEGORİ DAĞILIMI</h3>
+        </div>
 
-            <div
-              ref={marqueeRef}
-              onMouseDown={handleDragStart}
-              onMouseMove={handleDragMove}
-              onMouseUp={handleDragEnd}
-              onMouseLeaveCapture={handleDragEnd}
-              onTouchStart={handleDragStart}
-              onTouchMove={handleDragMove}
-              onTouchEnd={handleDragEnd}
-              className="relative overflow-hidden no-scrollbar py-6 cursor-grab active:cursor-grabbing select-none"
-              style={{ touchAction: 'pan-y' }}
-            >
-              <div
-                className="flex w-fit gap-6 px-6"
-                style={{ willChange: 'transform', backfaceVisibility: 'hidden' }}
-              >
-                {/* Triple the list for robust infinite multi-directional effect */}
-                {[...categoryData, null, ...categoryData, null, ...categoryData, null].map((cat, idx) => (
-                  cat ? (
-                    <div
-                      key={idx}
-                      className={`flex-shrink-0 min-w-[320px] p-5 rounded-[32px] border flex items-center gap-4 transition-all hover:scale-105 active:scale-95 ${isDarkMode ? 'bg-white/5 border-white/5 shadow-xl shadow-black/20' : 'bg-white border-slate-100 shadow-xl shadow-slate-200/50'
-                        }`}
-                    >
-                      <div className="flex items-center gap-4 flex-1 min-w-0">
-                        <div className="w-1.5 h-10 rounded-full shrink-0 shadow-lg" style={{ backgroundColor: (cat as any).color, boxShadow: `0 0 15px ${(cat as any).color}40` }} />
-                        <div className="min-w-0 flex-1">
-                          <p className={`text-[13px] font-black tracking-tight truncate leading-tight uppercase ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-                            {(cat as any).name}
-                          </p>
-                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1 opacity-60">
-                            %{(((cat as any).value / (cardStats.spending || 1)) * 100).toFixed(0)} PAY
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <RollingNumber
-                          value={(cat as any).value}
-                          className={`text-lg font-black tracking-tighter ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}
-                        />
-                        <span className="text-[11px] font-bold text-slate-500 ml-1">₺</span>
-                      </div>
+        <div
+          ref={marqueeRef}
+          onMouseDown={handleDragStart}
+          onMouseMove={handleDragMove}
+          onMouseUp={handleDragEnd}
+          onMouseLeaveCapture={handleDragEnd}
+          onTouchStart={handleDragStart}
+          onTouchMove={handleDragMove}
+          onTouchEnd={handleDragEnd}
+          className="relative overflow-hidden no-scrollbar py-6 cursor-grab active:cursor-grabbing select-none"
+          style={{ touchAction: 'pan-y' }}
+        >
+          <div
+            className="flex w-fit gap-6 px-6"
+            style={{ willChange: 'transform', backfaceVisibility: 'hidden' }}
+          >
+            {/* Triple the list for robust infinite multi-directional effect */}
+            {[...categoryData, null, ...categoryData, null, ...categoryData, null].map((cat, idx) => (
+              cat ? (
+                <div
+                  key={idx}
+                  className={`flex-shrink-0 min-w-[320px] p-5 rounded-[32px] border flex items-center gap-4 transition-all hover:scale-105 active:scale-95 ${isDarkMode ? 'bg-white/5 border-white/5 shadow-xl shadow-black/20' : 'bg-white border-slate-100 shadow-xl shadow-slate-200/50'
+                    }`}
+                >
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className="w-1.5 h-10 rounded-full shrink-0 shadow-lg" style={{ backgroundColor: (cat as any).color, boxShadow: `0 0 15px ${(cat as any).color}40` }} />
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-[13px] font-black tracking-tight truncate leading-tight uppercase ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                        {(cat as any).name}
+                      </p>
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1 opacity-60">
+                        %{(((cat as any).value / (cardStats.spending || 1)) * 100).toFixed(0)} PAY
+                      </p>
                     </div>
-                  ) : (
-                    <div key={idx} className="flex-shrink-0 w-[320px] flex items-center justify-center">
-                      <div className={`w-1 h-8 rounded-full opacity-10 ${isDarkMode ? 'bg-white' : 'bg-slate-900'}`} />
-                    </div>
-                  )
-                ))}
-              </div>
-            </div>
-          </>
-        )}
+                  </div>
+                  <div className="text-right shrink-0">
+                    <RollingNumber
+                      value={(cat as any).value}
+                      className={`text-lg font-black tracking-tighter ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}
+                    />
+                    <span className="text-[11px] font-bold text-slate-500 ml-1">₺</span>
+                  </div>
+                </div>
+              ) : (
+                <div key={idx} className="flex-shrink-0 w-[320px] flex items-center justify-center">
+                  <div className={`w-1 h-8 rounded-full opacity-10 ${isDarkMode ? 'bg-white' : 'bg-slate-900'}`} />
+                </div>
+              )
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Transactions Section */}
