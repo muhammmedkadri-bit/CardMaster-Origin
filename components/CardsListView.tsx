@@ -221,6 +221,12 @@ const CardsListView: React.FC<CardsListViewProps> = ({
   const handleCardExpand = (cardId: string) => {
     if (expandedCardId === cardId) {
       setExpandedCardId(null);
+      setTimeout(() => {
+        const el = document.getElementById(`card-main-${cardId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
     } else {
       setExpandedCardId(cardId);
       setCurrentPage(1);
@@ -301,8 +307,9 @@ const CardsListView: React.FC<CardsListViewProps> = ({
 
           return (
             <div
+              id={`card-main-${card.id}`}
               key={card.id}
-              className={`group relative p-6 sm:p-10 pl-9 sm:pl-14 rounded-[40px] border overflow-hidden transition-all hover:shadow-2xl hover:z-10 ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800 hover:bg-[#0b0f1a]/60' : 'bg-white border-slate-100 shadow-sm hover:shadow-md'
+              className={`group relative p-6 sm:p-10 pl-9 sm:pl-14 rounded-[40px] border overflow-hidden transition-all hover:shadow-2xl hover:z-10 scroll-mt-28 ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800 hover:bg-[#0b0f1a]/60' : 'bg-white border-slate-100 shadow-sm hover:shadow-md'
                 } group-hover:scale-[1.01] sm:group-hover:scale-[1.02]`}
             >
               {/* Card Color Side Accent - Perfectly Integrated */}
