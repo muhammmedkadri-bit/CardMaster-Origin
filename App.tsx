@@ -1486,7 +1486,7 @@ const App: React.FC = () => {
   const logoBlur = Math.min(10, (scrollY / logoScrollThreshold) * 10);
 
   return (
-    <div className={`min-h-screen transition-colors duration-500 pb-[142px] sm:pb-48 overflow-x-hidden ${isDarkMode ? 'bg-[#0b0f1a] text-slate-100' : 'bg-[#f8fafc] text-slate-900'}`}>
+    <div className={`min-h-screen transition-colors duration-500 pb-[142px] sm:pb-[182px] overflow-x-hidden ${isDarkMode ? 'bg-[#0b0f1a] text-slate-100' : 'bg-[#f8fafc] text-slate-900'}`}>
 
       {/* Header with Revised Logo */}
       <header className="fixed top-0 left-0 right-0 z-40 pointer-events-none p-6">
