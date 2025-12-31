@@ -494,13 +494,9 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                 >
                   <div className="overflow-hidden min-h-0">
                     <div className={`relative p-6 sm:p-8 rounded-[32px] border ${isDarkMode ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50/80 border-slate-200'}`}>
-                      {/* Loading Overlay - Shown during animation */}
-                      <div className={`absolute inset-0 z-20 flex items-center justify-center rounded-[32px] transition-opacity duration-300 ${isAnimatingThisCard ? 'opacity-100' : 'opacity-0 pointer-events-none'} ${isDarkMode ? 'bg-slate-950/90' : 'bg-slate-50/90'}`}>
-                        <div className={`w-8 h-8 rounded-full border-4 border-t-transparent animate-spin ${isDarkMode ? 'border-blue-500/30 border-t-blue-500' : 'border-blue-200 border-t-blue-600'}`} />
-                      </div>
 
-                      {/* Content Wrapper - Hidden/Low-cost during animation */}
-                      <div className={`transition-opacity duration-300 ${isAnimatingThisCard ? 'opacity-0' : 'opacity-100'}`}>
+                      {/* Content Wrapper - Always visible for instant feedback */}
+                      <div className="opacity-100">
                         {/* Transaction Header & Pagination Controls */}
                         <div className="flex flex-col gap-6 mb-10">
                           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
