@@ -61,15 +61,11 @@ const AutoFitText = React.memo(({ text, color, baseClass = "text-sm font-black t
     let size = baseClass.includes('sm:text-base') ? 16 : 14;
     textEl.style.fontSize = `${size}px`;
 
-    const checkAndShrink = () => {
-      if (textEl.scrollWidth > container.offsetWidth && size > 7) {
-        size -= 0.5;
-        textEl.style.fontSize = `${size}px`;
-        requestAnimationFrame(checkAndShrink);
-      }
-    };
-
-    checkAndShrink();
+    // Instant calculation
+    while (textEl.scrollWidth > container.offsetWidth && size > 7) {
+      size -= 0.5;
+      textEl.style.fontSize = `${size}px`;
+    }
   }, [text, baseClass]);
 
   return (
@@ -77,7 +73,7 @@ const AutoFitText = React.memo(({ text, color, baseClass = "text-sm font-black t
       <p
         ref={textRef}
         className={baseClass}
-        style={{ color, whiteSpace: 'nowrap', transition: 'font-size 0.2s ease' }}
+        style={{ color, whiteSpace: 'nowrap' }}
       >
         {text}
       </p>

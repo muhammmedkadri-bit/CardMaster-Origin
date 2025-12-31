@@ -174,16 +174,11 @@ const AutoFitText: React.FC<{ text: string; color?: string; baseClass?: string }
     let size = 14; // base text-sm
     textEl.style.fontSize = `${size}px`;
 
-    // Continuously shrink until it fits or reach minimum size
-    const checkAndShrink = () => {
-      if (textEl.scrollWidth > container.offsetWidth && size > 7) {
-        size -= 0.5;
-        textEl.style.fontSize = `${size}px`;
-        requestAnimationFrame(checkAndShrink);
-      }
-    };
-
-    checkAndShrink();
+    // Instant calculation to prevent resizing animation
+    while (textEl.scrollWidth > container.offsetWidth && size > 7) {
+      size -= 0.5;
+      textEl.style.fontSize = `${size}px`;
+    }
   }, [text]);
 
   return (
@@ -191,7 +186,7 @@ const AutoFitText: React.FC<{ text: string; color?: string; baseClass?: string }
       <p
         ref={textRef}
         className={baseClass}
-        style={{ color, whiteSpace: 'nowrap', transition: 'font-size 0.2s ease' }}
+        style={{ color, whiteSpace: 'nowrap' }}
       >
         {text}
       </p>
