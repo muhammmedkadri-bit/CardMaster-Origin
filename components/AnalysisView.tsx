@@ -334,20 +334,38 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
   // Ultra-Smooth GPU-Accelerated Infinite Scroll Logic
   React.useEffect(() => {
     const list = marqueeRef.current?.firstElementChild as HTMLDivElement;
-    if (!list || isMarqueePaused || dragRef.current.isDragging) return;
+    if (!list || isMarqueePaused || dragRef.current.isDragging || categoryData.length === 0) return;
 
     let animationId: number;
-    const animate = () => {
+    let lastTime = performance.now();
+
+    // Initial sync: if we haven't moved yet, start at the middle set for seamlessness
+    const initialWidth = list.scrollWidth / 3;
+    if (scrollPosRef.current === 0) {
+      scrollPosRef.current = -initialWidth;
+    }
+
+    const animate = (time: number) => {
       if (list) {
-        scrollPosRef.current -= 1.0; // Moving items to the left (negative translation)
+        const deltaTime = time - lastTime;
+        lastTime = time;
 
-        const singleSetWidth = list.scrollWidth / 3; // We use triple-duplication
+        // Slow, premium speed (45 pixels per second)
+        // This makes it independent of monitor refresh rate (60Hz vs 144Hz)
+        const speed = 45;
+        scrollPosRef.current -= (speed * deltaTime) / 1000;
 
-        // Loop back seamlessly
-        if (Math.abs(scrollPosRef.current) >= singleSetWidth * 2) {
-          scrollPosRef.current = -singleSetWidth;
-        } else if (scrollPosRef.current >= 0) {
-          scrollPosRef.current = -singleSetWidth;
+        const singleWidth = list.scrollWidth / 3;
+
+        // Infinite Loop Logic: When reaching the end of the second set, 
+        // jump back to the start of the second set while preserving the overflow
+        if (Math.abs(scrollPosRef.current) >= singleWidth * 2) {
+          scrollPosRef.current += singleWidth;
+        } else if (scrollPosRef.current > -singleWidth / 2) {
+          // If moving right (drag) or at the start, wrap to middle set
+          if (scrollPosRef.current >= 0) {
+            scrollPosRef.current -= singleWidth;
+          }
         }
 
         list.style.transform = `translate3d(${scrollPosRef.current}px, 0, 0)`;
@@ -382,9 +400,9 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
       scrollPosRef.current += walk;
 
       const singleSetWidth = list.scrollWidth / 3;
-      // Infinite Logic during drag
-      if (Math.abs(scrollPosRef.current) >= singleSetWidth * 2) scrollPosRef.current = -singleSetWidth;
-      if (scrollPosRef.current > 0) scrollPosRef.current = -singleSetWidth;
+      // Infinite Logic during drag - seamless transitions
+      if (Math.abs(scrollPosRef.current) >= singleSetWidth * 2.5) scrollPosRef.current += singleSetWidth;
+      if (scrollPosRef.current >= -singleSetWidth / 2) scrollPosRef.current -= singleSetWidth;
 
       list.style.transform = `translate3d(${scrollPosRef.current}px, 0, 0)`;
       dragRef.current.currentTranslation = scrollPosRef.current;
