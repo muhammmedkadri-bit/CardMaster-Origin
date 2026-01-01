@@ -218,7 +218,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
       // Start sequential loading phases
       setLoadingPhase('fetching');
 
-      // Phase 1: Fetching (1ms)
+      // Phase 1: Fetching (1000ms)
       setTimeout(() => {
         setLoadingPhase('success');
 
@@ -226,7 +226,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
         setTimeout(() => {
           setLoadingPhase('ready');
         }, 500);
-      }, 1);
+      }, 1000);
 
       setTimeout(() => {
         const el = document.getElementById(`expanded-ctrl-${cardId}`);
