@@ -1468,7 +1468,7 @@ const App: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const logoScrollThreshold = 100;
+  const logoScrollThreshold = 1; // Hide logo immediately on any scroll
   const logoOpacity = Math.max(0, 1 - scrollY / logoScrollThreshold);
   const logoBlur = Math.min(10, (scrollY / logoScrollThreshold) * 10);
 
