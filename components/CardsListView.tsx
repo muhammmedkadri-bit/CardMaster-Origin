@@ -15,6 +15,7 @@ import {
   ChevronRight,
   ChevronLeft,
   ShieldCheck,
+  CheckCircle,
   AlertCircle,
   TrendingDown,
   FileText,
@@ -67,7 +68,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
   categories
 }) => {
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
-  const [lazyContentCardId, setLazyContentCardId] = useState<string | null>(null);
+  const [loadingPhase, setLoadingPhase] = useState<'none' | 'fetching' | 'success' | 'ready'>('none');
   const [animatingCardId, setAnimatingCardId] = useState<string | null>(null);
   const [localRange, setLocalRange] = useState<LocalTimeRange>('thismonth');
   const [customStart, setCustomStart] = useState<string>(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
@@ -196,11 +197,13 @@ const CardsListView: React.FC<CardsListViewProps> = ({
   };
 
   const handleCardExpand = (cardId: string) => {
+    // Slower animation period for a more premium feel
+    const expansionDuration = 400;
     setAnimatingCardId(cardId);
-    setTimeout(() => setAnimatingCardId(null), 300);
+    setTimeout(() => setAnimatingCardId(null), expansionDuration);
 
     if (expandedCardId === cardId) {
-      setLazyContentCardId(null);
+      setLoadingPhase('none');
       setExpandedCardId(null);
       setTimeout(() => {
         const el = document.getElementById(`card-main-${cardId}`);
@@ -212,10 +215,18 @@ const CardsListView: React.FC<CardsListViewProps> = ({
       setExpandedCardId(cardId);
       setCurrentPage(1);
 
-      // Delay heavy content rendering to allow smooth animation
+      // Start sequential loading phases
+      setLoadingPhase('fetching');
+
+      // Phase 1: Fetching (500ms)
       setTimeout(() => {
-        setLazyContentCardId(cardId);
-      }, 200);
+        setLoadingPhase('success');
+
+        // Phase 2: Success (500ms)
+        setTimeout(() => {
+          setLoadingPhase('ready');
+        }, 500);
+      }, 500);
 
       setTimeout(() => {
         const el = document.getElementById(`expanded-ctrl-${cardId}`);
@@ -479,7 +490,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
 
                 {/* Expanded Transaction List Area */}
                 <div
-                  className={`grid transition-all duration-250 ease-in-out ${isExpanded ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0 mt-0'}`}
+                  className={`grid transition-all duration-400 ease-in-out ${isExpanded ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0 mt-0'}`}
                   style={{
                     willChange: isExpanded || isAnimatingThisCard ? 'grid-template-rows, opacity, margin' : 'auto',
                     contain: 'layout style paint',
@@ -496,9 +507,23 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                       }}
                     >
 
-                      {/* Content Wrapper - Delayed for smooth expansion animation */}
-                      {lazyContentCardId === card.id ? (
-                        <div className="opacity-100 animate-in fade-in duration-300">
+                      {/* Content Wrapper - Sequential Loading Logic */}
+                      {loadingPhase === 'fetching' ? (
+                        <div className="py-20 flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300">
+                          <div className={`w-16 h-16 rounded-3xl flex items-center justify-center mb-6 animate-pulse ${isDarkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
+                            <CardIcon size={32} />
+                          </div>
+                          <p className={`text-xs font-black uppercase tracking-[0.3em] animate-pulse ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Kart Hareketleri Getiriliyor...</p>
+                        </div>
+                      ) : loadingPhase === 'success' ? (
+                        <div className="py-20 flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300">
+                          <div className={`w-16 h-16 rounded-3xl flex items-center justify-center mb-6 ${isDarkMode ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-600'}`}>
+                            <CheckCircle size={32} className="animate-in zoom-in duration-500" />
+                          </div>
+                          <p className={`text-xs font-black uppercase tracking-[0.3em] ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>Kart Hareketleri Güncellendi</p>
+                        </div>
+                      ) : loadingPhase === 'ready' ? (
+                        <div className="opacity-100 animate-in fade-in zoom-in-[0.98] duration-500 ease-out">
                           {/* Transaction Header & Pagination Controls */}
                           <div className="flex flex-col gap-6 mb-10">
                             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -744,10 +769,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                           )}
                         </div>
                       ) : (
-                        <div className="h-64 flex flex-col items-center justify-center opacity-40">
-                          <div className="w-8 h-8 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-4" />
-                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Hazırlanıyor...</p>
-                        </div>
+                        <div className="h-20" /> /* Reserved space to prevent jump */
                       )}
                     </div>
                   </div>
