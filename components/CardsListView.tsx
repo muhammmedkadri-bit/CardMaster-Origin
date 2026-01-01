@@ -300,7 +300,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
               id={`card-main-${card.id}`}
               key={card.id}
               className={`group relative p-6 sm:p-10 pl-9 sm:pl-14 rounded-[40px] border overflow-hidden transition-all hover:z-10 scroll-mt-28 ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800 hover:bg-[#0b0f1a]/60' : 'bg-white border-slate-100'
-                } ${isAnimatingThisCard ? 'shadow-none disable-child-shadows' : 'shadow-sm hover:shadow-2xl'}`}
+                } ${isAnimatingThisCard ? 'shadow-none disable-child-shadows' : 'shadow-sm'}`}
               style={{
                 willChange: isAnimatingThisCard ? 'box-shadow' : 'auto',
                 contentVisibility: 'auto',
