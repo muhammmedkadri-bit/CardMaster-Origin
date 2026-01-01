@@ -547,11 +547,20 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                     }}
                     className={`w-full h-16 px-6 pt-1 rounded-3xl border appearance-none outline-none font-black text-base cursor-pointer transition-all ${isDarkMode ? 'bg-slate-900/50 border-white/5 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-100 text-slate-800 focus:border-blue-500 shadow-sm'}`}
                   >
-                    {banks.map(b => (
-                      <option key={b} value={b}>
-                        {b === 'all' ? 'TÜM BANKALAR' : b.toLocaleUpperCase('tr-TR')}
-                      </option>
-                    ))}
+                    {banks.map(b => {
+                      // Helper function to convert to Title Case (Turkish locale aware)
+                      const toTitleCase = (str: string) => {
+                        return str.toLocaleLowerCase('tr-TR').split(' ').map(word =>
+                          word.charAt(0).toLocaleUpperCase('tr-TR') + word.slice(1)
+                        ).join(' ');
+                      };
+
+                      return (
+                        <option key={b} value={b}>
+                          {b === 'all' ? 'Tüm Bankalar' : toTitleCase(b)}
+                        </option>
+                      );
+                    })}
                   </select>
                   <Filter className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-blue-500 transition-colors" size={20} />
                 </div>
@@ -570,10 +579,21 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                     }}
                     className={`w-full h-16 px-6 pt-1 rounded-3xl border appearance-none outline-none font-black text-base cursor-pointer transition-all ${isDarkMode ? 'bg-slate-900/50 border-white/5 text-white focus:border-blue-500' : 'bg-slate-50 border-slate-100 text-slate-800 focus:border-blue-500 shadow-sm'}`}
                   >
-                    <option value="all">TÜM KARTLAR</option>
-                    {bankFilteredCards.map(card => (
-                      <option key={card.id} value={card.id}>{card.bankName.toLocaleUpperCase('tr-TR')} - {card.cardName.toLocaleUpperCase('tr-TR')}</option>
-                    ))}
+                    <option value="all">Tüm Kartlar</option>
+                    {bankFilteredCards.map(card => {
+                      // Helper function to convert to Title Case (Turkish locale aware)
+                      const toTitleCase = (str: string) => {
+                        return str.toLocaleLowerCase('tr-TR').split(' ').map(word =>
+                          word.charAt(0).toLocaleUpperCase('tr-TR') + word.slice(1)
+                        ).join(' ');
+                      };
+
+                      return (
+                        <option key={card.id} value={card.id}>
+                          {toTitleCase(card.bankName)} - {toTitleCase(card.cardName)}
+                        </option>
+                      );
+                    })}
                   </select>
                   <CardIcon className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-blue-500 transition-colors" size={20} />
                 </div>
