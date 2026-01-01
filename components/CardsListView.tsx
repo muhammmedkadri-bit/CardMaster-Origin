@@ -244,11 +244,20 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                 : 'bg-white border-slate-200 text-slate-800 focus:ring-blue-500/20 shadow-sm'
                 }`}
             >
-              {banks.map(b => (
-                <option key={b} value={b}>
-                  {b === 'all' ? 'TÜM BANKALAR' : b.toLocaleUpperCase('tr-TR')}
-                </option>
-              ))}
+              {banks.map(b => {
+                // Helper function to convert to Title Case (Turkish locale aware)
+                const toTitleCase = (str: string) => {
+                  return str.toLocaleLowerCase('tr-TR').split(' ').map(word =>
+                    word.charAt(0).toLocaleUpperCase('tr-TR') + word.slice(1)
+                  ).join(' ');
+                };
+
+                return (
+                  <option key={b} value={b}>
+                    {b === 'all' ? 'Tüm Bankalar' : toTitleCase(b)}
+                  </option>
+                );
+              })}
             </select>
             <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-blue-500">
               <Filter size={16} strokeWidth={3} />
