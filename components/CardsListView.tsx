@@ -299,8 +299,11 @@ const CardsListView: React.FC<CardsListViewProps> = ({
             <div
               id={`card-main-${card.id}`}
               key={card.id}
-              className={`group relative p-6 sm:p-10 pl-9 sm:pl-14 rounded-[40px] border overflow-hidden transition-all hover:z-10 scroll-mt-28 ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800 hover:bg-[#0b0f1a]/60' : 'bg-white border-slate-100'
-                } ${isAnimatingThisCard ? 'shadow-none disable-child-shadows' : 'shadow-sm hover:shadow-2xl'}`}
+              className={`group relative p-6 sm:p-10 pl-9 sm:pl-14 rounded-[40px] border overflow-hidden transition-all scroll-mt-28 ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100'
+                } ${isAnimatingThisCard
+                  ? 'shadow-none disable-child-shadows pointer-events-none'
+                  : 'shadow-sm hover:shadow-2xl hover:z-10 hover:bg-[#0b0f1a]/60'
+                } ${!isDarkMode && !isAnimatingThisCard ? 'hover:bg-white' : ''}`}
               style={{
                 willChange: isAnimatingThisCard ? 'box-shadow' : 'auto',
                 contentVisibility: 'auto',
@@ -444,7 +447,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                     </div>
                   </div>
 
-                  <div id={`expanded-ctrl-${card.id}`} className="lg:col-span-12 grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8 scroll-mt-[22px]">
+                  <div id={`expanded-ctrl-${card.id}`} className="lg:col-span-12 grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8 scroll-mt-[22px] pointer-events-auto">
                     <button
                       onClick={() => handleCardExpand(card.id)}
                       className={`w-full p-5 rounded-[24px] border border-dashed font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-4 ${isExpanded
