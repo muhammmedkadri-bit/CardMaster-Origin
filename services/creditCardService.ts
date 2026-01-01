@@ -1,9 +1,19 @@
-import { CreditCard } from '../types';
+import { CreditCard, Transaction } from '../types';
 
 export interface StatementPeriod {
     startDate: Date;
     endDate: Date;
     dueDate: Date;
+}
+
+export interface Statement {
+    cardId: string;
+    period: StatementPeriod;
+    totalSpending: number;
+    totalPayment: number;
+    previousBalance: number; // Balance before this period started
+    totalDebt: number;       // Current debt as of statement date
+    minPayment: number;      // 20% or 40% of totalDebt
 }
 
 /**
@@ -99,5 +109,51 @@ export const creditCardService = {
             day: '2-digit',
             month: 'long'
         });
+    },
+
+    /**
+     * Calculates the full statement details for a specific period.
+     */
+    calculateStatement(card: CreditCard, transactions: Transaction[], period: StatementPeriod): Statement {
+        const cardTransactions = transactions.filter(t => t.cardId === card.id);
+
+        // 1. Calculate Previous Balance (all transactions before the period start)
+        const previousBalance = cardTransactions
+            .filter(t => new Date(t.date) < period.startDate)
+            .reduce((sum, t) => {
+                return t.type === 'spending' ? sum + t.amount : sum - t.amount;
+            }, 0);
+
+        // 2. Calculate Current Period Activity
+        let totalSpending = 0;
+        let totalPayment = 0;
+
+        cardTransactions
+            .filter(t => {
+                const d = new Date(t.date);
+                // Inclusive of both boundary dates
+                return d >= period.startDate && d <= period.endDate;
+            })
+            .forEach(t => {
+                if (t.type === 'spending') totalSpending += t.amount;
+                else totalPayment += t.amount;
+            });
+
+        // 3. Totals
+        const totalDebt = (previousBalance + totalSpending) - totalPayment;
+
+        // 4. Minimum Payment (Standard Turkish Banking rules 20% or 40%)
+        const ratio = card.minPaymentRatio || 20;
+        const minPayment = totalDebt > 0 ? (totalDebt * ratio) / 100 : 0;
+
+        return {
+            cardId: card.id,
+            period,
+            totalSpending,
+            totalPayment,
+            previousBalance,
+            totalDebt: Math.max(0, totalDebt),
+            minPayment: Math.round(minPayment * 100) / 100
+        };
     }
 };
