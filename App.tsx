@@ -855,8 +855,8 @@ const App: React.FC = () => {
             }
           }, 100);
         }
-      }, 200); // 200ms visible loading state (down from 500ms)
-    }, 150); // 150ms fade-in time (down from 300ms)
+      }, 800); // Increased from 200ms for a more relaxed feel
+    }, 500); // Increased from 150ms for smoother fade-in
   };
 
   const handleSaveAutoPayment = async (ap: AutoPayment) => {
@@ -1509,7 +1509,7 @@ const App: React.FC = () => {
 
       {/* Full Screen Page Transition Overlay */}
       <div
-        className={`fixed inset-0 z-[99999] bg-[#f8fafc] dark:bg-[#0b0f1a] flex items-center justify-center transition-opacity duration-300 pointer-events-none ${isPageTransitioning ? 'opacity-100 pointer-events-auto' : 'opacity-0'}`}
+        className={`fixed inset-0 z-[99999] bg-[#f8fafc] dark:bg-[#0b0f1a] flex items-center justify-center transition-opacity duration-500 pointer-events-none ${isPageTransitioning ? 'opacity-100 pointer-events-auto' : 'opacity-0'}`}
       >
         <div className={`flex flex-col items-center gap-3 sm:gap-4 transition-transform duration-500 ${isPageTransitioning ? 'scale-100 translate-y-0' : 'scale-90 translate-y-4'}`}>
           <div className="scale-100 sm:scale-125 animate-pulse">
