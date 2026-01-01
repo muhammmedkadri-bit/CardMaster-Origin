@@ -333,6 +333,22 @@ const App: React.FC = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [scrollX, setScrollX] = useState(0);
 
+  // Mouse Wheel Horizontal Scroll Logic for Cüzdanım
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault();
+        container.scrollLeft += e.deltaY;
+      }
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, []);
+
   const totalLimit = useMemo(() => cards.reduce((acc, c) => acc + c.limit, 0), [cards]);
   const totalBalance = useMemo(() => cards.reduce((acc, c) => acc + (c.balance > 0 ? c.balance : 0), 0), [cards]);
   const overallUtilization = totalLimit > 0 ? (totalBalance / totalLimit) * 100 : 0;

@@ -54,6 +54,23 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isScrolling, setIsScrolling] = useState(false);
 
+  // Mouse Wheel Horizontal Scroll Logic for Carousel
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      // Direct wheel scroll for carousel behavior
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault();
+        container.scrollLeft += e.deltaY;
+      }
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, []);
+
   // Prepare Cards Data
   const cardsData = useMemo<DataItem[]>(() => {
     return cards
