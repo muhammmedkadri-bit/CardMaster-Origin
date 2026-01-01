@@ -239,7 +239,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                 setSelectedBank(e.target.value);
                 setExpandedCardId(null);
               }}
-              className={`w-full appearance-none pl-11 pr-10 py-4 rounded-2xl border font-black text-xs uppercase tracking-widest outline-none transition-all cursor-pointer ${isDarkMode
+              className={`w-full appearance-none pl-11 pr-10 py-4 rounded-2xl border font-black text-xs tracking-widest outline-none transition-all cursor-pointer ${isDarkMode
                 ? 'bg-slate-800 border-slate-700 text-white focus:ring-blue-500/50'
                 : 'bg-white border-slate-200 text-slate-800 focus:ring-blue-500/20 shadow-sm'
                 }`}
