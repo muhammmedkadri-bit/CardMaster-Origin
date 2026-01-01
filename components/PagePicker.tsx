@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { smoothScrollElement } from '../utils/scrollUtils';
 
 interface PagePickerProps {
     totalPages: number;
@@ -31,10 +32,7 @@ const PagePicker: React.FC<PagePickerProps> = ({ totalPages, currentPage, onPage
         const diff = Math.abs(container.scrollLeft - targetX);
 
         if (diff > 2) {
-            container.scrollTo({
-                left: targetX,
-                behavior: 'smooth'
-            });
+            smoothScrollElement(container, { left: targetX }, 1200);
         }
     }, [currentPage]);
 
@@ -120,16 +118,16 @@ const PagePicker: React.FC<PagePickerProps> = ({ totalPages, currentPage, onPage
                                 {/* Number Container with Depth Effect */}
                                 <div
                                     className={`w-[46px] h-[46px] rounded-[16px] flex items-center justify-center transition-all duration-300 ${isActive
-                                            ? (isDarkMode
-                                                ? 'bg-slate-800 border border-slate-700 shadow-[inset_0_2px_6px_rgba(0,0,0,0.5),0_0_15px_rgba(148,163,184,0.2),0_4px_12px_rgba(0,0,0,0.3)]'
-                                                : 'bg-white border border-slate-100 shadow-[inset_0_2px_6px_rgba(0,0,0,0.06),0_0_15px_rgba(148,163,184,0.15),0_4px_12px_rgba(0,0,0,0.08)]')
-                                            : 'bg-transparent border-transparent'
+                                        ? (isDarkMode
+                                            ? 'bg-slate-800 border border-slate-700 shadow-[inset_0_2px_6px_rgba(0,0,0,0.5),0_0_15px_rgba(148,163,184,0.2),0_4px_12px_rgba(0,0,0,0.3)]'
+                                            : 'bg-white border border-slate-100 shadow-[inset_0_2px_6px_rgba(0,0,0,0.06),0_0_15px_rgba(148,163,184,0.15),0_4px_12px_rgba(0,0,0,0.08)]')
+                                        : 'bg-transparent border-transparent'
                                         }`}
                                 >
                                     <span
                                         className={`text-xl font-black tabular-nums transition-all duration-300 ${isActive
-                                                ? (isDarkMode ? 'text-white drop-shadow-[0_0_8px_rgba(148,163,184,0.5)]' : 'text-slate-900 drop-shadow-[0_0_8px_rgba(148,163,184,0.3)]')
-                                                : (isDarkMode ? 'text-slate-600' : 'text-slate-400')
+                                            ? (isDarkMode ? 'text-white drop-shadow-[0_0_8px_rgba(148,163,184,0.5)]' : 'text-slate-900 drop-shadow-[0_0_8px_rgba(148,163,184,0.3)]')
+                                            : (isDarkMode ? 'text-slate-600' : 'text-slate-400')
                                             }`}
                                         style={{ fontVariantNumeric: 'tabular-nums' }}
                                     >
@@ -162,14 +160,14 @@ const PagePicker: React.FC<PagePickerProps> = ({ totalPages, currentPage, onPage
                     <div
                         key={i}
                         className={`transition-all duration-300 rounded-full ${activeIndex === i
-                                ? `w-5 h-1.5 ${isDarkMode ? 'bg-slate-400 shadow-[0_0_10px_rgba(148,163,184,0.5)]' : 'bg-slate-700 shadow-[0_0_10px_rgba(71,85,105,0.3)]'}`
-                                : `w-1.5 h-1.5 ${isDarkMode ? 'bg-slate-700' : 'bg-slate-300'}`
+                            ? `w-5 h-1.5 ${isDarkMode ? 'bg-slate-400 shadow-[0_0_10px_rgba(148,163,184,0.5)]' : 'bg-slate-700 shadow-[0_0_10px_rgba(71,85,105,0.3)]'}`
+                            : `w-1.5 h-1.5 ${isDarkMode ? 'bg-slate-700' : 'bg-slate-300'}`
                             }`}
                     />
                 )) : (
                     <div className={`flex items-center gap-2 px-4 py-2 rounded-full border ${isDarkMode
-                            ? 'bg-slate-900/50 border-slate-800 shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)]'
-                            : 'bg-slate-50 border-slate-200 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]'
+                        ? 'bg-slate-900/50 border-slate-800 shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)]'
+                        : 'bg-slate-50 border-slate-200 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]'
                         }`}>
                         <span className={`text-sm font-black ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{activeIndex + 1}</span>
                         <span className={`text-xs font-bold ${isDarkMode ? 'text-slate-600' : 'text-slate-400'}`}>/</span>

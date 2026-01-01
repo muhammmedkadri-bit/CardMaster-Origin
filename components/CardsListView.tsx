@@ -1,9 +1,9 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import RollingNumber from './RollingNumber';
 import AutoFitText from './AutoFitText';
 import DateRangePicker from './DateRangePicker';
 import PagePicker from './PagePicker';
+import { smoothScrollTo } from '../utils/scrollUtils';
 import { CreditCard, Transaction, Category } from '../types';
 import {
   Plus,
@@ -89,7 +89,8 @@ const CardsListView: React.FC<CardsListViewProps> = ({
       const element = document.getElementById('cards-transactions-list');
       if (element) {
         setTimeout(() => {
-          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          const y = element.getBoundingClientRect().top + window.scrollY - 80;
+          smoothScrollTo(y, 1200);
         }, 100);
       }
     }
@@ -208,7 +209,8 @@ const CardsListView: React.FC<CardsListViewProps> = ({
       setTimeout(() => {
         const el = document.getElementById(`card-main-${cardId}`);
         if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          const y = el.getBoundingClientRect().top + window.scrollY - 80;
+          smoothScrollTo(y, 1200);
         }
       }, 5);
     } else {
@@ -231,7 +233,8 @@ const CardsListView: React.FC<CardsListViewProps> = ({
       setTimeout(() => {
         const el = document.getElementById(`expanded-ctrl-${cardId}`);
         if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          const y = el.getBoundingClientRect().top + window.scrollY - 100;
+          smoothScrollTo(y, 1200);
         }
       }, 5);
     }

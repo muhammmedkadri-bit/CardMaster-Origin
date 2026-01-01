@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Sector } from 'recharts';
 import { CreditCard, Transaction, Category } from '../types';
+import { smoothScrollElement } from '../utils/scrollUtils';
 import { PieChart as PieIcon, CreditCard as CardIcon, LayoutGrid, ArrowRight } from 'lucide-react';
 
 interface DistributionChartProps {
@@ -167,10 +168,7 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
       if (targetMode === 'banks') targetLeft = width;
       else if (targetMode === 'categories') targetLeft = width * 2;
 
-      scrollContainerRef.current.scrollTo({
-        left: targetLeft,
-        behavior: 'smooth'
-      });
+      smoothScrollElement(scrollContainerRef.current, { left: targetLeft }, 1200);
       setMode(targetMode);
       setActiveIndex(null);
       setTimeout(() => setIsScrolling(false), 500);

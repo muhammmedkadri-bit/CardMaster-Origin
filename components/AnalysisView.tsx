@@ -3,6 +3,7 @@ import React, { useMemo, useState, useRef } from 'react';
 import RollingNumber from './RollingNumber';
 import DateRangePicker from './DateRangePicker';
 import PagePicker from './PagePicker';
+import { smoothScrollTo } from '../utils/scrollUtils';
 import {
   BarChart,
   Bar,
@@ -92,7 +93,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
       const element = document.getElementById('analysis-transactions');
       if (element) {
         setTimeout(() => {
-          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          const y = element.getBoundingClientRect().top + window.scrollY - 20;
+          smoothScrollTo(y, 1200);
         }, 100);
       }
     }

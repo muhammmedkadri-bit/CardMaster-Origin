@@ -51,6 +51,7 @@ import StatementModal from './components/StatementModal';
 import DistributionChart from './components/DistributionChart';
 import { getFinancialAdvice, getChatResponse } from './services/geminiService';
 import { apiService } from './services/apiService';
+import { smoothScrollTo, smoothScrollElement } from './utils/scrollUtils';
 import { Send, Bot, User as UserIcon, MessageSquare, LogIn as LoginIcon, User as AccountIcon, LogOut } from 'lucide-react';
 import { supabase } from './services/supabaseClient';
 import AuthModal from './components/AuthModal';
@@ -783,14 +784,13 @@ const App: React.FC = () => {
   const handleViewChange = (newView: 'dashboard' | 'cards' | 'analysis' | 'settings', scrollId?: string) => {
     // If already on the same view and have a scroll target, just scroll without transition
     if (view === newView && scrollId) {
-      setTimeout(() => {
-        const element = document.getElementById(scrollId);
-        if (element) {
-          const offset = 20;
-          const y = element.getBoundingClientRect().top + window.scrollY - offset;
-          window.scrollTo({ top: y, behavior: 'smooth' });
-        }
-      }, 50); // Small delay for any pending renders
+      const element = document.getElementById(scrollId);
+      if (element) {
+        const isMobile = window.innerWidth < 768;
+        const offset = isMobile ? 5 : 20;
+        const y = element.getBoundingClientRect().top + window.scrollY - offset;
+        smoothScrollTo(y, 1200);
+      }
       return;
     }
 
@@ -819,7 +819,9 @@ const App: React.FC = () => {
               const isMobile = window.innerWidth < 768;
               const offset = isMobile ? 5 : 20;
               const y = element.getBoundingClientRect().top + window.scrollY - offset;
-              window.scrollTo({ top: y, behavior: 'smooth' });
+
+              // Slower, more fluid custom scroll
+              smoothScrollTo(y, 1200);
             }
           }, 200); // Increased delay to ensure AnalysisView is fully rendered
         }
@@ -1364,8 +1366,11 @@ const App: React.FC = () => {
     if (scrollContainerRef.current) setScrollX(scrollContainerRef.current.scrollLeft);
   };
 
-  const scrollBy = (amount: number) => {
-    if (scrollContainerRef.current) scrollContainerRef.current.scrollBy({ left: amount, behavior: 'smooth' });
+  const handleManualScroll = (direction: 'left' | 'right') => {
+    const amount = direction === 'left' ? -200 : 200;
+    if (scrollContainerRef.current) {
+      smoothScrollElement(scrollContainerRef.current, { left: scrollContainerRef.current.scrollLeft + amount }, 600);
+    }
   };
 
   const handleAddToCalendarClick = (card: CreditCard) => {
@@ -1465,7 +1470,7 @@ const App: React.FC = () => {
   const handleGoToTop = (e: React.MouseEvent) => {
     e.preventDefault();
     setView('dashboard');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    smoothScrollTo(0, 1200);
   };
 
   const logoScrollThreshold = 1; // Hide logo immediately on any scroll
@@ -1667,8 +1672,8 @@ const App: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <h2 className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>CÜZDANIM</h2>
                       <div className="hidden sm:flex gap-2">
-                        <button onClick={() => scrollBy(-400)} className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 cursor-pointer transition-colors active:scale-90"><ChevronLeft size={20} /></button>
-                        <button onClick={() => scrollBy(400)} className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 cursor-pointer transition-colors active:scale-90"><ChevronRight size={20} /></button>
+                        <button onClick={() => handleManualScroll('left')} className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 cursor-pointer transition-colors active:scale-90"><ChevronLeft size={20} /></button>
+                        <button onClick={() => handleManualScroll('right')} className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 cursor-pointer transition-colors active:scale-90"><ChevronRight size={20} /></button>
                       </div>
                     </div>
                     <div ref={scrollContainerRef} onScroll={handleScroll} className="flex overflow-x-auto gap-4 sm:gap-10 px-6 pt-6 sm:pt-10 pb-10 sm:pb-14 -mb-10 sm:-mb-14 snap-x no-scrollbar scroll-smooth min-h-[200px] sm:min-h-[220px]">
