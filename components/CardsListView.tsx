@@ -318,7 +318,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
             <div
               id={`card-main-${card.id}`}
               key={card.id}
-              className={`group relative p-6 sm:p-10 pl-9 sm:pl-14 rounded-[40px] border overflow-hidden transition-all hover:z-10 scroll-mt-28 ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800 hover:bg-[#0b0f1a]/60' : 'bg-white border-slate-100'
+              className={`group relative p-6 sm:p-10 pt-10 sm:pt-14 rounded-[40px] border overflow-hidden transition-all hover:z-10 scroll-mt-28 ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800 hover:bg-[#0b0f1a]/60' : 'bg-white border-slate-100'
                 } ${isAnimatingThisCard ? 'shadow-none disable-child-shadows' : 'shadow-sm'}`}
               style={{
                 willChange: isAnimatingThisCard ? 'box-shadow' : 'auto',
@@ -326,9 +326,9 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                 contain: 'layout style paint',
               }}
             >
-              {/* Card Color Side Accent - Hardware Accelerated */}
+              {/* Card Color Top Accent - Relocated from Left */}
               <div
-                className="absolute left-0 top-0 bottom-0 w-[14px] shadow-[rgba(0,0,0,0.1)_2px_0_10px]"
+                className="absolute left-0 top-0 right-0 h-[12px] shadow-[rgba(0,0,0,0.1)_0_2px_10px]"
                 style={{
                   backgroundColor: card.color,
                   transform: 'translateZ(0)',
