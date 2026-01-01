@@ -300,12 +300,21 @@ const CardsListView: React.FC<CardsListViewProps> = ({
               id={`card-main-${card.id}`}
               key={card.id}
               className={`group relative p-6 sm:p-10 pl-9 sm:pl-14 rounded-[40px] border overflow-hidden transition-all hover:z-10 scroll-mt-28 ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800 hover:bg-[#0b0f1a]/60' : 'bg-white border-slate-100'
-                } ${isAnimatingThisCard ? 'shadow-none disable-child-shadows duration-300 ease-out will-change-contents' : 'shadow-sm hover:shadow-2xl duration-300'}`}
+                } ${isAnimatingThisCard ? 'shadow-none disable-child-shadows' : 'shadow-sm hover:shadow-2xl'}`}
+              style={{
+                willChange: isAnimatingThisCard ? 'box-shadow' : 'auto',
+                contentVisibility: 'auto',
+                contain: 'layout style paint',
+              }}
             >
-              {/* Card Color Side Accent - Perfectly Integrated */}
+              {/* Card Color Side Accent - Hardware Accelerated */}
               <div
                 className="absolute left-0 top-0 bottom-0 w-[14px] shadow-[rgba(0,0,0,0.1)_2px_0_10px]"
-                style={{ backgroundColor: card.color }}
+                style={{
+                  backgroundColor: card.color,
+                  transform: 'translateZ(0)',
+                  willChange: 'auto',
+                }}
               />
 
               <div className="flex flex-col gap-8">
@@ -462,9 +471,9 @@ const CardsListView: React.FC<CardsListViewProps> = ({
 
                 {/* Expanded Transaction List Area */}
                 <div
-                  className={`grid transition-all duration-300 ease-out ${isExpanded ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0 mt-0'}`}
+                  className={`grid transition-all duration-250 ease-in-out ${isExpanded ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0 mt-0'}`}
                   style={{
-                    willChange: isExpanded ? 'grid-template-rows, opacity, margin' : 'auto',
+                    willChange: isExpanded || isAnimatingThisCard ? 'grid-template-rows, opacity, margin' : 'auto',
                     contain: 'layout style paint',
                     transform: 'translateZ(0)', // Force GPU acceleration
                   }}
@@ -475,6 +484,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                       style={{
                         transform: 'translateZ(0)', // Force GPU layer
                         backfaceVisibility: 'hidden', // Prevent subpixel rendering issues
+                        contain: 'layout paint',
                       }}
                     >
 
