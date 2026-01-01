@@ -814,8 +814,10 @@ const App: React.FC = () => {
           setTimeout(() => {
             const element = document.getElementById(scrollId);
             if (element) {
-              // Unified 20px offset for optimal positioning on all devices
-              const offset = 20;
+              // Mobile: 40px offset for optimal upper positioning
+              // Desktop: 20px offset
+              const isMobile = window.innerWidth < 768;
+              const offset = isMobile ? 40 : 20;
               const y = element.getBoundingClientRect().top + window.scrollY - offset;
               window.scrollTo({ top: y, behavior: 'smooth' });
             }
