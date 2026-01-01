@@ -53,23 +53,32 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isScrolling, setIsScrolling] = useState(false);
+  const dragRef = useRef({ isDragging: false, startX: 0, scrollLeft: 0 });
 
-  // Mouse Wheel Horizontal Scroll Logic for Carousel
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
+  // Mouse Drag Scroll Logic for Carousel
+  const handleDragStart = (e: React.MouseEvent) => {
+    if (!scrollContainerRef.current) return;
+    dragRef.current.isDragging = true;
+    dragRef.current.startX = e.pageX - scrollContainerRef.current.offsetLeft;
+    dragRef.current.scrollLeft = scrollContainerRef.current.scrollLeft;
+    scrollContainerRef.current.style.scrollBehavior = 'auto';
+    scrollContainerRef.current.style.scrollSnapType = 'none';
+  };
 
-    const handleWheel = (e: WheelEvent) => {
-      // Direct wheel scroll for carousel behavior
-      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-        e.preventDefault();
-        container.scrollLeft += e.deltaY;
-      }
-    };
+  const handleDragMove = (e: React.MouseEvent) => {
+    if (!dragRef.current.isDragging || !scrollContainerRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollContainerRef.current.offsetLeft;
+    const walk = (x - dragRef.current.startX) * 1.5;
+    scrollContainerRef.current.scrollLeft = dragRef.current.scrollLeft - walk;
+  };
 
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
-  }, []);
+  const handleDragEnd = () => {
+    if (!dragRef.current.isDragging || !scrollContainerRef.current) return;
+    dragRef.current.isDragging = false;
+    scrollContainerRef.current.style.scrollBehavior = 'smooth';
+    scrollContainerRef.current.style.scrollSnapType = 'x mandatory';
+  };
 
   // Prepare Cards Data
   const cardsData = useMemo<DataItem[]>(() => {
@@ -408,7 +417,11 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className="flex w-full overflow-x-auto snap-x snap-mandatory no-scrollbar"
+        onMouseDown={handleDragStart}
+        onMouseMove={handleDragMove}
+        onMouseUp={handleDragEnd}
+        onMouseLeave={handleDragEnd}
+        className="flex w-full overflow-x-auto snap-x snap-mandatory no-scrollbar cursor-grab active:cursor-grabbing"
         style={{ scrollBehavior: isScrolling ? 'smooth' : 'auto' }}
       >
         {renderChartSlide(cardsData, cardsTotal, cardsNetTotal, 'cards')}

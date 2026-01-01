@@ -332,22 +332,32 @@ const App: React.FC = () => {
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [scrollX, setScrollX] = useState(0);
+  const scrollDragRef = useRef({ isDragging: false, startX: 0, scrollLeft: 0 });
 
-  // Mouse Wheel Horizontal Scroll Logic for Cüzdanım
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
+  // Mouse Drag Scroll Logic for Cüzdanım
+  const handleDragStart = (e: React.MouseEvent) => {
+    if (!scrollContainerRef.current) return;
+    scrollDragRef.current.isDragging = true;
+    scrollDragRef.current.startX = e.pageX - scrollContainerRef.current.offsetLeft;
+    scrollDragRef.current.scrollLeft = scrollContainerRef.current.scrollLeft;
+    scrollContainerRef.current.style.scrollBehavior = 'auto'; // Disable smooth during drag
+    scrollContainerRef.current.style.scrollSnapType = 'none'; // Disable snap during drag
+  };
 
-    const handleWheel = (e: WheelEvent) => {
-      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-        e.preventDefault();
-        container.scrollLeft += e.deltaY;
-      }
-    };
+  const handleDragMove = (e: React.MouseEvent) => {
+    if (!scrollDragRef.current.isDragging || !scrollContainerRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollContainerRef.current.offsetLeft;
+    const walk = (x - scrollDragRef.current.startX) * 1.5; // Multiplier for speed
+    scrollContainerRef.current.scrollLeft = scrollDragRef.current.scrollLeft - walk;
+  };
 
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
-  }, []);
+  const handleDragEnd = () => {
+    if (!scrollDragRef.current.isDragging || !scrollContainerRef.current) return;
+    scrollDragRef.current.isDragging = false;
+    scrollContainerRef.current.style.scrollBehavior = 'smooth';
+    scrollContainerRef.current.style.scrollSnapType = 'x mandatory';
+  };
 
   const totalLimit = useMemo(() => cards.reduce((acc, c) => acc + c.limit, 0), [cards]);
   const totalBalance = useMemo(() => cards.reduce((acc, c) => acc + (c.balance > 0 ? c.balance : 0), 0), [cards]);
@@ -1383,9 +1393,9 @@ const App: React.FC = () => {
   };
 
   const handleManualScroll = (direction: 'left' | 'right') => {
-    const amount = direction === 'left' ? -200 : 200;
+    const amount = direction === 'left' ? -380 : 380;
     if (scrollContainerRef.current) {
-      smoothScrollElement(scrollContainerRef.current, { left: scrollContainerRef.current.scrollLeft + amount }, 600);
+      smoothScrollElement(scrollContainerRef.current, { left: scrollContainerRef.current.scrollLeft + amount }, 800);
     }
   };
 
@@ -1692,7 +1702,15 @@ const App: React.FC = () => {
                         <button onClick={() => handleManualScroll('right')} className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 cursor-pointer transition-colors active:scale-90"><ChevronRight size={20} /></button>
                       </div>
                     </div>
-                    <div ref={scrollContainerRef} onScroll={handleScroll} className="flex overflow-x-auto gap-4 sm:gap-10 px-6 pt-6 sm:pt-10 pb-10 sm:pb-14 -mb-10 sm:-mb-14 snap-x no-scrollbar scroll-smooth min-h-[200px] sm:min-h-[220px]">
+                    <div
+                      ref={scrollContainerRef}
+                      onScroll={handleScroll}
+                      onMouseDown={handleDragStart}
+                      onMouseMove={handleDragMove}
+                      onMouseUp={handleDragEnd}
+                      onMouseLeave={handleDragEnd}
+                      className="flex overflow-x-auto gap-4 sm:gap-10 px-6 pt-6 sm:pt-10 pb-10 sm:pb-14 -mb-10 sm:-mb-14 snap-x no-scrollbar scroll-smooth min-h-[200px] sm:min-h-[220px] cursor-grab active:cursor-grabbing"
+                    >
                       {cards.map((card, index) => {
                         const cardWidth = 380; const gap = 40; const cardCenter = index * (cardWidth + gap) + (cardWidth / 2);
                         const containerWidth = scrollContainerRef.current?.offsetWidth || 800; const viewportCenter = scrollX + (containerWidth / 2);
