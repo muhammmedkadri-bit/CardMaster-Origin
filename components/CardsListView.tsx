@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, memo } from 'react';
 import RollingNumber from './RollingNumber';
 import AutoFitText from './AutoFitText';
 import DateRangePicker from './DateRangePicker';
@@ -857,4 +857,4 @@ const CardsListView: React.FC<CardsListViewProps> = ({
   );
 };
 
-export default CardsListView;
+export default memo(CardsListView);

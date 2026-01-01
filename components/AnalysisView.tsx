@@ -1,5 +1,5 @@
 
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, memo } from 'react';
 import RollingNumber from './RollingNumber';
 import DateRangePicker from './DateRangePicker';
 import PagePicker from './PagePicker';
@@ -1036,4 +1036,4 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
   );
 };
 
-export default AnalysisView;
+export default memo(AnalysisView);

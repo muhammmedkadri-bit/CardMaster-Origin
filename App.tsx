@@ -282,7 +282,7 @@ const App: React.FC = () => {
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
   const [toastNotifications, setToastNotifications] = useState<{ id: number; message: string; type: 'warning' | 'info' | 'success' }[]>([]);
-  const [scrollY, setScrollY] = useState(0);
+  const [isScrolled, setIsScrolled] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(false); // DISABLED - Direct access
   const [realtimeRetryTrigger, setRealtimeRetryTrigger] = useState(0);
   const [isChangingView, setIsChangingView] = useState(false);
@@ -475,11 +475,17 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const handleWindowScroll = () => {
-      setScrollY(window.scrollY);
+      const currentScroll = window.scrollY;
+      const threshold = 10; // Slightly more than 1 to avoid jitter
+      if (currentScroll > threshold && !isScrolled) {
+        setIsScrolled(true);
+      } else if (currentScroll <= threshold && isScrolled) {
+        setIsScrolled(false);
+      }
     };
-    window.addEventListener('scroll', handleWindowScroll);
+    window.addEventListener('scroll', handleWindowScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleWindowScroll);
-  }, []);
+  }, [isScrolled]);
 
   useEffect(() => {
     if (cards.length > 0) {
@@ -840,8 +846,6 @@ const App: React.FC = () => {
           setTimeout(() => {
             const element = document.getElementById(scrollId);
             if (element) {
-              // Mobile: 5px offset to position container top border 4-5px below viewport top
-              // Desktop: 20px offset
               const isMobile = window.innerWidth < 768;
               const offset = isMobile ? 5 : 20;
               const y = element.getBoundingClientRect().top + window.scrollY - offset;
@@ -849,10 +853,10 @@ const App: React.FC = () => {
               // Slower, more fluid custom scroll
               smoothScrollTo(y, 1200);
             }
-          }, 200); // Increased delay to ensure AnalysisView is fully rendered
+          }, 100);
         }
-      }, 500); // 500ms visible loading state
-    }, 300); // 300ms fade-in time
+      }, 200); // 200ms visible loading state (down from 500ms)
+    }, 150); // 150ms fade-in time (down from 300ms)
   };
 
   const handleSaveAutoPayment = async (ap: AutoPayment) => {
@@ -1499,10 +1503,6 @@ const App: React.FC = () => {
     smoothScrollTo(0, 1200);
   };
 
-  const logoScrollThreshold = 1; // Hide logo immediately on any scroll
-  const logoOpacity = Math.max(0, 1 - scrollY / logoScrollThreshold);
-  const logoBlur = Math.min(10, (scrollY / logoScrollThreshold) * 10);
-
   return (
     <div className={`min-h-screen transition-colors duration-500 pb-[142px] sm:pb-[162px] overflow-x-hidden ${isDarkMode ? 'bg-[#0b0f1a] text-slate-100' : 'bg-[#f8fafc] text-slate-900'}`}>
 
@@ -1524,12 +1524,11 @@ const App: React.FC = () => {
         <div className="max-w-7xl mx-auto relative">
           {/* Logo - Perfectly Centered */}
           <div
-            onClick={() => logoOpacity > 0.1 && handleViewChange('dashboard')}
-            className={`absolute left-1/2 -translate-x-1/2 cursor-pointer transition-opacity duration-200 ${logoOpacity > 0.1 ? 'pointer-events-auto' : 'pointer-events-none'
+            onClick={() => !isScrolled && handleViewChange('dashboard')}
+            className={`absolute left-1/2 -translate-x-1/2 cursor-pointer transition-all duration-300 ${!isScrolled ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none scale-95 blur-sm'
               }`}
             style={{
-              opacity: logoOpacity,
-              willChange: 'opacity',
+              willChange: 'opacity, transform',
             }}
           >
             <Logo isDarkMode={isDarkMode} />
