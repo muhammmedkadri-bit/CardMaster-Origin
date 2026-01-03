@@ -6,16 +6,21 @@ import RollingNumber from './RollingNumber';
 
 interface CardVisualProps {
   card: CreditCard;
+  currentDebt?: number;
   scrollProgress?: number;
   onAddToCalendar?: (card: CreditCard) => void;
   onEdit?: (card: CreditCard) => void;
   onDelete?: (card: CreditCard) => void;
 }
 
-const CardVisual: React.FC<CardVisualProps> = ({ card, onAddToCalendar, onEdit, onDelete }) => {
-  const isCreditBalance = card.balance < 0;
-  const displayBalance = Math.abs(card.balance);
-  const utilization = isCreditBalance ? 0 : (card.balance / card.limit) * 100;
+const CardVisual: React.FC<CardVisualProps> = ({ card, currentDebt, onAddToCalendar, onEdit, onDelete }) => {
+  // Use currentDebt from card if not provided as prop
+  const debt = currentDebt !== undefined ? currentDebt : (card.currentDebt || 0);
+
+  const isCreditBalance = debt < 0;
+  const displayBalance = Math.abs(debt);
+
+  const utilization = (card.limit > 0) ? (debt / card.limit) * 100 : 0;
   const isOverThreshold = !isCreditBalance && utilization >= (card.alertThreshold || 80);
 
   // Silver Embossed Text Class - For Card Number
@@ -88,15 +93,15 @@ const CardVisual: React.FC<CardVisualProps> = ({ card, onAddToCalendar, onEdit, 
           <div className={`${silverTextStyle} text-sm sm:text-xl`}>{card.lastFour}</div>
         </div>
 
-        {/* Footer Info Area - Lifted UP for better visibility and avoiding overflow */}
-        <div className="mt-auto relative z-10 flex justify-between items-end pb-0.5 sm:pb-3">
+        {/* Footer Info Area - Adjusted for perfect fit within borders */}
+        <div className="mt-auto relative z-10 flex justify-between items-end pb-1 sm:pb-4">
           <div className="flex flex-col">
-            <div className="flex flex-col mb-1 sm:mb-3">
-              <span className={`text-[7px] sm:text-[10px] font-black uppercase tracking-[0.15em] mb-0.5 drop-shadow-md ${isCreditBalance ? 'text-emerald-400' : 'text-white'}`}>
-                {isCreditBalance ? 'ARTI BAKİYE' : 'GÜNCEL BORÇ'}
+            <div className="flex flex-col mb-1 sm:mb-2">
+              <span className={`text-[6px] sm:text-[9px] font-black uppercase tracking-[0.15em] mb-0.5 drop-shadow-md ${isCreditBalance ? 'text-emerald-400' : 'text-white'}`}>
+                {isCreditBalance ? 'ARTI BAKİYE' : 'Güncel Dönem Borcu'}
               </span>
               <div className="flex items-baseline gap-1 sm:gap-2">
-                <span className={`text-base sm:text-2xl font-mono font-black tracking-tighter ${isCreditBalance ? 'text-emerald-400 drop-shadow-[0_0_12px_rgba(52,211,153,0.6)]' : isOverThreshold ? 'text-rose-200' : 'text-white'}`}>
+                <span className={`text-sm sm:text-2xl font-mono font-black tracking-tighter ${isCreditBalance ? 'text-emerald-400 drop-shadow-[0_0_12px_rgba(52,211,153,0.6)]' : isOverThreshold ? 'text-rose-200' : 'text-white'}`}>
                   <RollingNumber value={displayBalance} className="gap-0.5" />
                 </span>
               </div>
@@ -105,19 +110,19 @@ const CardVisual: React.FC<CardVisualProps> = ({ card, onAddToCalendar, onEdit, 
             <div className="flex items-center gap-2 sm:gap-4">
               <div className="flex gap-1.5 sm:gap-3">
                 <div className="flex flex-col">
-                  <p className={`text-[5px] sm:text-[8px] ${labelStyle} mb-0.5`}>H.KESİM</p>
-                  <p className={`text-[9px] sm:text-[12px] ${valueStyle}`}>{card.statementDay}</p>
+                  <p className={`text-[5px] sm:text-[8px] ${labelStyle} mb-0.5`}>HESAP KESİM</p>
+                  <p className={`text-[8px] sm:text-[11px] ${valueStyle}`}>{card.statementDay}. Gün</p>
                 </div>
-                <div className="w-px h-2.5 sm:h-5 bg-white/20 self-center"></div>
+                <div className="w-px h-2 sm:h-4 bg-white/20 self-center"></div>
                 <div className="flex flex-col">
                   <p className={`text-[5px] sm:text-[8px] ${labelStyle} mb-0.5`}>SON ÖDEME</p>
-                  <p className={`text-[9px] sm:text-[12px] ${valueStyle}`}>{card.dueDay}</p>
+                  <p className={`text-[8px] sm:text-[11px] ${valueStyle}`}>{card.dueDay}. Gün</p>
                 </div>
               </div>
-              <div className="w-px h-2.5 sm:h-5 bg-white/20 self-center"></div>
+              <div className="w-px h-2 sm:h-4 bg-white/20 self-center"></div>
               <div className="flex flex-col">
                 <p className={`text-[5px] sm:text-[8px] ${labelStyle} mb-0.5`}>KULLANIM</p>
-                <p className={`text-[8px] sm:text-[12px] font-black ${isCreditBalance ? 'text-emerald-400' : isOverThreshold ? 'text-rose-400' : valueStyle}`}>
+                <p className={`text-[8px] sm:text-[11px] font-black ${isCreditBalance ? 'text-emerald-400' : isOverThreshold ? 'text-rose-400' : valueStyle}`}>
                   <span className="text-[0.8em] font-sans font-bold opacity-80 mr-0.5">%</span>{utilization.toFixed(0)}
                 </p>
               </div>
@@ -126,12 +131,12 @@ const CardVisual: React.FC<CardVisualProps> = ({ card, onAddToCalendar, onEdit, 
 
           <div className="flex flex-col items-end">
             {/* Mastercard-style Logo Area */}
-            <div className="flex -space-x-2 sm:-space-x-4 mb-1 sm:mb-2.5 filter drop-shadow-lg">
-              <div className="w-5 h-5 sm:w-10 sm:h-10 rounded-full bg-rose-500/95 border border-white/10"></div>
-              <div className="w-5 h-5 sm:w-10 sm:h-10 rounded-full bg-amber-500/95 border border-white/10 backdrop-blur-sm"></div>
+            <div className="flex -space-x-1.5 sm:-space-x-3 mb-1 sm:mb-2 filter drop-shadow-lg scale-75 sm:scale-100 origin-bottom-right">
+              <div className="w-4 h-4 sm:w-9 sm:h-9 rounded-full bg-rose-500/95 border border-white/10"></div>
+              <div className="w-4 h-4 sm:w-9 sm:h-9 rounded-full bg-amber-500/95 border border-white/10 backdrop-blur-sm"></div>
             </div>
             {/* Utilization Bar */}
-            <div className="w-12 sm:w-28 bg-black/40 h-0.5 sm:h-1.5 rounded-full overflow-hidden border border-white/10 p-[0.5px]">
+            <div className="w-10 sm:w-24 bg-black/40 h-0.5 sm:h-1.5 rounded-full overflow-hidden border border-white/10 p-[0.5px]">
               <div
                 className={`h-full rounded-full transition-all duration-1000 ease-out ${isCreditBalance ? 'bg-emerald-500 shadow-lg' : isOverThreshold ? 'bg-rose-500 shadow-lg' : 'bg-white shadow-lg'}`}
                 style={{ width: `${Math.min(utilization, 100)}%` }}

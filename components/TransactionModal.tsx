@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { CreditCard, Transaction, Category } from '../types';
-import { X, ArrowDownRight, ArrowUpRight, Link as LinkIcon, Calendar, Plus, TrendingUp } from 'lucide-react';
+import { X, ArrowDownRight, ArrowUpRight, Calendar, Plus, CreditCard as CardIcon } from 'lucide-react';
 
 interface TransactionModalProps {
   type: 'spending' | 'payment';
@@ -12,18 +12,9 @@ interface TransactionModalProps {
   categories: Category[];
 }
 
-const isColorLight = (color: string) => {
-  if (!color) return false;
-  const hex = color.replace('#', '');
-  const r = parseInt(hex.substr(0, 2), 16);
-  const g = parseInt(hex.substr(2, 2), 16);
-  const b = parseInt(hex.substr(4, 2), 16);
-  const brightness = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-  return brightness > 155;
-};
-
 const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initialData, onClose, onSave, categories }) => {
   const [formData, setFormData] = useState({
+    id: initialData?.id || crypto.randomUUID(),
     cardId: initialData?.cardId || (cards[0]?.id || ''),
     amount: initialData?.amount ?? 0,
     category: initialData?.category || (type === 'payment' ? 'Ödeme' : (categories[0]?.name || 'Diğer')),
@@ -31,22 +22,20 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
     date: initialData?.date ? initialData.date.split('T')[0] : new Date().toISOString().split('T')[0],
     confirmationUrl: initialData?.confirmationUrl || '',
     extraAmount: 0,
-    expenseType: (initialData?.expenseType || 'regular') as 'regular' | 'installment' | 'cash_advance',
-    installments: initialData?.installments || 1,
-    installmentAmount: initialData?.installmentAmount || 0,
+    expenseType: ((initialData as any)?.expenseType || 'single') as 'single' | 'installment',
+    installments: (initialData as any)?.installments || 1
   });
 
   const [newCategory, setNewCategory] = useState('');
   const [isAddingCategory, setIsAddingCategory] = useState(false);
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    // Robust scroll locking for mobile (especially iOS)
     const scrollY = window.scrollY;
     document.body.style.position = 'fixed';
     document.body.style.top = `-${scrollY}px`;
     document.body.style.width = '100%';
-    document.body.style.overflowY = 'scroll'; // Maintain scrollbar width to prevent shift
+    document.body.style.overflowY = 'scroll';
 
     return () => {
       document.body.style.position = '';
@@ -60,6 +49,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
   useEffect(() => {
     if (initialData) {
       setFormData({
+        id: initialData.id,
         cardId: initialData.cardId || (cards[0]?.id || ''),
         amount: initialData.amount ?? 0,
         category: initialData.category || '',
@@ -67,99 +57,126 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
         date: initialData.date ? initialData.date.split('T')[0] : new Date().toISOString().split('T')[0],
         confirmationUrl: initialData.confirmationUrl || '',
         extraAmount: 0,
-        expenseType: (initialData.expenseType || 'regular') as any,
-        installments: initialData.installments || 1,
-        installmentAmount: initialData.installmentAmount || 0
+        expenseType: ((initialData as any)?.expenseType || 'single') as 'single' | 'installment',
+        installments: (initialData as any)?.installments || 1
       });
     }
   }, [initialData, cards]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     const selectedCard = cards.find(c => c.id === formData.cardId);
     if (!selectedCard) return;
 
-    const finalCategory = (type === 'spending' && formData.category === 'Diğer' && newCategory.trim())
-      ? newCategory.trim()
-      : formData.category;
+    setIsSubmitting(true);
 
-    // Combine date with time for precise sorting
-    let finalDate = formData.date;
-    const now = new Date();
-    const timePart = now.toTimeString().split(' ')[0]; // HH:mm:ss
-    const ms = now.getMilliseconds().toString().padStart(3, '0');
+    try {
+      const finalCategory = (type === 'spending' && formData.category === 'Diğer' && newCategory.trim())
+        ? newCategory.trim()
+        : formData.category;
 
-    if (!initialData) {
-      // New transaction: current time
-      finalDate = `${formData.date}T${timePart}.${ms}`;
-    } else if (initialData.date.includes('T')) {
-      // Edit: keep existing time or use current if not present
-      finalDate = `${formData.date}T${initialData.date.split('T')[1]}`;
-    } else {
-      finalDate = `${formData.date}T${timePart}.${ms}`;
+      let finalDate = formData.date;
+      const now = new Date();
+      const timePart = now.toTimeString().split(' ')[0];
+      const ms = now.getMilliseconds().toString().padStart(3, '0');
+
+      if (!initialData) {
+        finalDate = `${formData.date}T${timePart}.${ms}`;
+      } else if (initialData.date.includes('T')) {
+        finalDate = `${formData.date}T${initialData.date.split('T')[1]}`;
+      } else {
+        finalDate = `${formData.date}T${timePart}.${ms}`;
+      }
+
+      const isInstallment = formData.expenseType === 'installment' && formData.installments > 1;
+
+      if (isInstallment) {
+        // Her taksit için ayrı işlem oluştur
+        const installmentGroupId = crypto.randomUUID();
+        const baseDate = new Date(formData.date);
+
+        for (let i = 0; i < formData.installments; i++) {
+          // Her taksit için tarih hesapla (her ay bir sonraki)
+          const installmentDate = new Date(baseDate);
+          installmentDate.setMonth(installmentDate.getMonth() + i);
+
+          const dateStr = installmentDate.toISOString().split('T')[0];
+          const installmentFinalDate = `${dateStr}T${timePart}.${ms.padStart(3, '0')}${i}`;
+
+          await onSave({
+            id: i === 0 ? formData.id : crypto.randomUUID(),
+            cardId: formData.cardId,
+            cardName: selectedCard.cardName,
+            type: initialData?.type || type,
+            amount: Number(formData.amount),
+            category: type === 'payment' ? 'Ödeme' : finalCategory,
+            date: installmentFinalDate,
+            description: formData.description,
+            confirmationUrl: formData.confirmationUrl || undefined,
+            expenseType: 'installment',
+            installments: formData.installments,
+            installmentAmount: Number(formData.amount),
+            totalAmount: Number(formData.amount) * formData.installments,
+            installmentGroupId: installmentGroupId,
+            installmentNumber: i + 1
+          } as Transaction);
+        }
+      } else {
+        // Tek çekim işlem
+        await onSave({
+          id: formData.id,
+          cardId: formData.cardId,
+          cardName: selectedCard.cardName,
+          type: initialData?.type || type,
+          amount: Number(formData.amount),
+          category: type === 'payment' ? 'Ödeme' : finalCategory,
+          date: finalDate,
+          description: formData.description,
+          confirmationUrl: formData.confirmationUrl || undefined,
+          expenseType: 'single'
+        } as Transaction);
+      }
+
+      if (type === 'payment' && Number(formData.extraAmount) > 0) {
+        await onSave({
+          id: crypto.randomUUID(),
+          cardId: formData.cardId,
+          cardName: selectedCard.cardName,
+          type: 'spending',
+          amount: Number(formData.extraAmount),
+          category: 'Faiz & Ek Ücretler',
+          date: finalDate,
+          description: formData.description ? `${formData.description} (Faiz/Ücret)` : 'Faiz ve Ücret Ödemesi',
+          confirmationUrl: formData.confirmationUrl || undefined,
+          expenseType: 'single'
+        } as Transaction);
+      }
+
+      onClose();
+    } catch (error) {
+      console.error("Submission failed", error);
+      setIsSubmitting(false);
     }
-
-    onSave({
-      id: initialData?.id || crypto.randomUUID(),
-      cardId: formData.cardId,
-      cardName: selectedCard.cardName,
-      type: initialData?.type || type,
-      amount: Number(formData.amount),
-      category: type === 'payment' ? 'Ödeme' : finalCategory,
-      date: finalDate,
-      description: formData.description,
-      confirmationUrl: formData.confirmationUrl || undefined,
-      expenseType: formData.expenseType,
-      installments: formData.expenseType !== 'regular' ? formData.installments : undefined,
-      installmentAmount: formData.expenseType !== 'regular' ? formData.installmentAmount : undefined,
-      totalAmount: Number(formData.amount)
-    });
-
-    if (type === 'payment' && Number(formData.extraAmount) > 0) {
-      onSave({
-        id: crypto.randomUUID(),
-        cardId: formData.cardId,
-        cardName: selectedCard.cardName,
-        type: 'spending',
-        amount: Number(formData.extraAmount),
-        category: 'Faiz & Ek Ücretler',
-        date: finalDate,
-        description: formData.description ? `${formData.description} (Faiz/Ücret)` : 'Faiz ve Ücret Ödemesi',
-        confirmationUrl: formData.confirmationUrl || undefined
-      });
-    }
-    onClose();
   };
 
   const handleAmountChange = (value: string) => {
     const num = value === '' ? 0 : Number(value);
     setFormData(prev => ({
       ...prev,
-      amount: value === '' ? '' as any : num,
-      installmentAmount: prev.expenseType !== 'regular' && prev.installments > 0 ? num / prev.installments : prev.installmentAmount
-    }));
-  };
-
-  const handleInstallmentAmountChange = (value: string) => {
-    const num = value === '' ? 0 : Number(value);
-    setFormData(prev => ({
-      ...prev,
-      installmentAmount: value === '' ? '' as any : num,
-      amount: prev.expenseType !== 'regular' ? num * prev.installments : prev.amount
-    }));
-  };
-
-  const handleInstallmentChange = (count: number) => {
-    setFormData(prev => ({
-      ...prev,
-      installments: count,
-      amount: prev.expenseType !== 'regular' ? Number(prev.installmentAmount) * count : prev.amount
+      amount: value === '' ? '' as any : num
     }));
   };
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     e.target.select();
   };
+
+  // Calculate total for installment display
+  const installmentTotal = formData.expenseType === 'installment' && formData.installments > 1
+    ? Number(formData.amount || 0) * formData.installments
+    : 0;
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[3000] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
@@ -189,98 +206,104 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
             </select>
           </div>
 
+          {/* Expense Type Toggle - Only for spending */}
           {type === 'spending' && (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-widest leading-none">Harcama Türü</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { id: 'regular', label: 'DÜZENLİ', icon: <ArrowUpRight size={14} /> },
-                    { id: 'installment', label: 'TAKSİTLİ ALIŞVERİŞ', icon: <TrendingUp size={14} /> },
-                    { id: 'cash_advance', label: 'TAKSİTLİ NAKİT AVANS', icon: <Plus size={14} /> }
-                  ].map((mode) => (
-                    <button
-                      key={mode.id}
-                      type="button"
-                      onClick={() => {
-                        const newType = mode.id as any;
-                        setFormData(prev => ({
-                          ...prev,
-                          expenseType: newType,
-                          // Ensure valid installment count when switching
-                          installments: newType === 'regular' ? 1 : (prev.installments < 2 ? 2 : prev.installments),
-                          // Recalculate amount if switching to installment
-                          amount: newType !== 'regular' ? (Number(prev.installmentAmount) || 0) * (prev.installments < 2 ? 2 : prev.installments) : prev.amount
-                        }));
-                      }}
-                      className={`flex flex-col items-center justify-center p-2.5 rounded-2xl border transition-all gap-1 h-full text-center ${formData.expenseType === mode.id
-                        ? 'bg-blue-600 border-blue-600 text-white shadow-lg'
-                        : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'
-                        }`}
-                    >
-                      {mode.icon}
-                      <span className="text-[7px] leading-tight font-black uppercase tracking-tight">{mode.label}</span>
-                    </button>
-                  ))}
-                </div>
+            <div>
+              <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-widest">İşlem Türü</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, expenseType: 'single', installments: 1 })}
+                  className={`py-3 px-4 rounded-xl font-bold text-sm transition-all ${formData.expenseType === 'single'
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                    }`}
+                >
+                  Tek Çekim
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, expenseType: 'installment', installments: 3 })}
+                  className={`py-3 px-4 rounded-xl font-bold text-sm transition-all ${formData.expenseType === 'installment'
+                    ? 'bg-purple-600 text-white shadow-lg'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                    }`}
+                >
+                  Taksitli
+                </button>
               </div>
-
-              {formData.expenseType !== 'regular' && (
-                <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-4 duration-500">
-                  <div className="min-w-0">
-                    <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-widest leading-none">Taksit Sayısı</label>
-                    <select
-                      className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-white font-bold text-sm appearance-none cursor-pointer h-[54px]"
-                      value={formData.installments}
-                      onChange={e => handleInstallmentChange(Number(e.target.value))}
-                    >
-                      {[2, 3, 4, 5, 6, 8, 9, 10, 12, 18, 24, 36].map(n => <option key={n} value={n}>{n} Taksit</option>)}
-                    </select>
-                  </div>
-                  <div className="min-w-0">
-                    <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-widest leading-none">Aylık Taksit</label>
-                    <input
-                      required
-                      type="number"
-                      step="0.01"
-                      className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-white text-base font-black h-[54px] appearance-none"
-                      value={formData.installmentAmount}
-                      onChange={e => handleInstallmentAmountChange(e.target.value)}
-                      onFocus={handleFocus}
-                      placeholder="0.00"
-                    />
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
-            {formData.expenseType === 'regular' ? (
+            <div className="min-w-0">
+              <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-widest text-left">
+                {formData.expenseType === 'installment' ? 'Aylık Taksit (TL)' : 'Tutar (TL)'}
+              </label>
+              <input
+                required
+                type="number"
+                step="0.01"
+                className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-white text-xl font-black h-[54px] sm:h-auto appearance-none"
+                value={formData.amount}
+                onChange={e => handleAmountChange(e.target.value)}
+                onFocus={handleFocus}
+                placeholder="0.00"
+              />
+            </div>
+
+            {formData.expenseType === 'installment' ? (
               <div className="min-w-0">
-                <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-widest text-left">Tutar (TL)</label>
-                <input
-                  required
-                  type="number"
-                  step="0.01"
-                  className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-white text-xl font-black h-[54px] sm:h-auto appearance-none"
-                  value={formData.amount}
-                  onChange={e => handleAmountChange(e.target.value)}
-                  onFocus={handleFocus}
-                  placeholder="0.00"
-                />
+                <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-widest">Taksit Sayısı</label>
+                <select
+                  className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-purple-500 outline-none bg-white dark:bg-slate-800 dark:text-white text-xl font-black h-[54px] sm:h-auto appearance-none"
+                  value={formData.installments}
+                  onChange={e => setFormData({ ...formData, installments: Number(e.target.value) })}
+                >
+                  {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 18, 24, 36].map(n => (
+                    <option key={n} value={n}>{n} Taksit</option>
+                  ))}
+                </select>
               </div>
             ) : (
               <div className="min-w-0">
-                <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-widest text-left">Toplam Tutar</label>
-                <div className="w-full px-4 py-3 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl font-black text-lg text-slate-400 dark:text-slate-500 h-[54px] flex items-center">
-                  {(Number(formData.amount) || 0).toLocaleString('tr-TR', { maximumFractionDigits: 2 })} ₺
-                </div>
+                <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-widest flex items-center gap-2">
+                  <Calendar size={12} /> İşlem Tarihi
+                </label>
+                <input
+                  required
+                  type="date"
+                  className="w-full min-w-0 px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-white text-sm font-bold h-[54px] sm:h-auto appearance-none"
+                  value={formData.date}
+                  onChange={e => setFormData({ ...formData, date: e.target.value })}
+                />
               </div>
             )}
-            <div className="min-w-0">
+          </div>
+
+          {/* Installment Total Display */}
+          {formData.expenseType === 'installment' && installmentTotal > 0 && (
+            <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-2xl border border-purple-200 dark:border-purple-800">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CardIcon size={18} className="text-purple-600" />
+                  <span className="text-sm font-bold text-purple-700 dark:text-purple-300">Toplam Borç</span>
+                </div>
+                <span className="text-xl font-black text-purple-600 dark:text-purple-400">
+                  {installmentTotal.toLocaleString('tr-TR')} ₺
+                </span>
+              </div>
+              <p className="text-xs text-purple-500 mt-1">
+                {formData.installments} × {Number(formData.amount || 0).toLocaleString('tr-TR')} ₺
+              </p>
+            </div>
+          )}
+
+          {/* Date for installment mode */}
+          {formData.expenseType === 'installment' && (
+            <div>
               <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-widest flex items-center gap-2">
-                <Calendar size={12} /> İşlem Tarihi
+                <Calendar size={12} /> İlk Taksit Tarihi
               </label>
               <input
                 required
@@ -290,69 +313,39 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
                 onChange={e => setFormData({ ...formData, date: e.target.value })}
               />
             </div>
-          </div>
+          )}
 
           {type === 'spending' && (
             <div>
               <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-widest">Kategori Seçin</label>
               <div className="bg-slate-50 dark:bg-slate-900/50 p-1.5 rounded-[24px] border border-slate-100 dark:border-slate-800 shadow-inner">
                 <div className="grid grid-cols-2 xs:grid-cols-3 gap-1.5">
-                  {(() => {
-                    const uniqueCats = React.useMemo(() => {
-                      const seen = new Set<string>();
-                      let list = categories.filter(c => {
-                        const key = c.name.toLocaleLowerCase('tr-TR').trim();
-                        if (seen.has(key)) return false;
-                        seen.add(key);
-                        return true;
-                      });
-
-                      const hasOther = list.some(c => c.name.toLocaleLowerCase('tr-TR') === 'diğer');
-                      if (!hasOther) {
-                        list.push({ id: 'default-other', name: 'Diğer', color: '#64748B' });
-                      } else {
-                        const otherIndex = list.findIndex(c => c.name.toLocaleLowerCase('tr-TR') === 'diğer');
-                        const otherCat = list.splice(otherIndex, 1)[0];
-                        list.push(otherCat);
-                      }
-                      return list;
-                    }, [categories]);
-
-                    return uniqueCats.length > 0 ? uniqueCats.map(cat => {
-                      const isSelected = formData.category.toLocaleLowerCase('tr-TR') === cat.name.toLocaleLowerCase('tr-TR');
-                      return (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => {
-                            setFormData({ ...formData, category: cat.name });
-                            if (cat.name.toLocaleLowerCase('tr-TR') !== 'diğer') {
-                              setIsAddingCategory(false);
-                              setNewCategory('');
-                            }
-                          }}
-                          style={{
-                            transform: isSelected ? 'translateY(-1px) scale(1.02)' : 'none'
-                          }}
-                          className={`py-3 px-1 text-[10px] rounded-2xl border transition-all duration-300 font-black tracking-widest flex items-center justify-center gap-1.5 ${isSelected
-                            ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-gray-100 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_2px_6px_-1px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_16px_-4px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.05)_inset] border-slate-200 dark:border-slate-700/50 z-10 ring-1 ring-slate-200 dark:ring-0'
-                            : 'bg-white/50 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 border-transparent hover:bg-white dark:hover:bg-slate-800'
-                            }`}
-                        >
-                          <div className={`w-2 h-2 rounded-full transition-transform ${isSelected ? 'scale-125' : ''}`} style={{ backgroundColor: cat.color }}></div>
-                          {cat.name.toLocaleUpperCase('tr-TR')}
-                        </button>);
-                    }) : (
-                      <div className="col-span-full py-4 text-center text-xs text-slate-400 italic">
-                        Kategoriler yükleniyor...
-                      </div>
+                  {categories.map(cat => {
+                    const isSelected = formData.category.toLocaleLowerCase('tr-TR') === cat.name.toLocaleLowerCase('tr-TR');
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => {
+                          setFormData({ ...formData, category: cat.name });
+                          setIsAddingCategory(false);
+                          setNewCategory('');
+                        }}
+                        className={`py-3 px-1 text-[10px] rounded-2xl border transition-all duration-300 font-black tracking-widest flex items-center justify-center gap-1.5 ${isSelected
+                          ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-gray-100 shadow-md border-slate-200 dark:border-slate-700/50 z-10'
+                          : 'bg-white/50 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 border-transparent hover:bg-white'
+                          }`}
+                      >
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }}></div>
+                        {cat.name.toLocaleUpperCase('tr-TR')}
+                      </button>
                     );
-                  })()}
+                  })}
                 </div>
               </div>
 
               {formData.category.toLocaleLowerCase('tr-TR') === 'diğer' && (
-                <div className="mt-4 animate-in fade-in slide-in-from-top-2">
+                <div className="mt-4">
                   {!isAddingCategory ? (
                     <button
                       type="button"
@@ -377,31 +370,17 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
 
           {type === 'payment' && (
             <div className="space-y-4">
-              <div className="p-5 bg-emerald-500/5 dark:bg-emerald-500/5 rounded-2xl border border-emerald-500/20 shadow-sm">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="p-1 bg-emerald-500 text-white rounded-md"><ArrowDownRight size={12} /></div>
-                  <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.2em]">İŞLEM KATEGORİSİ</span>
-                </div>
-                <p className="text-sm font-bold text-emerald-800 dark:text-emerald-200">Ödeme / Borç Kapatma</p>
-              </div>
-
               <div className="p-5 bg-rose-500/5 dark:bg-rose-500/5 rounded-2xl border border-rose-500/20 shadow-sm">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1 bg-rose-500 text-white rounded-md"><TrendingUp size={12} /></div>
-                    <label className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-[0.2em]">Faiz & ek ücret (İsteğe Bağlı)</label>
-                  </div>
-                </div>
+                <label className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-[0.2em]">Faiz & ek ücret (İsteğe Bağlı)</label>
                 <input
                   type="number"
                   step="0.01"
-                  className="w-full px-4 py-3 border border-rose-100 dark:border-rose-900/40 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none bg-white dark:bg-slate-800 dark:text-white text-lg font-black appearance-none"
+                  className="w-full px-4 py-3 border border-rose-100 dark:border-rose-900/40 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none bg-white dark:bg-slate-800 dark:text-white text-lg font-black appearance-none mt-2"
                   value={formData.extraAmount}
                   onChange={e => setFormData({ ...formData, extraAmount: Number(e.target.value) })}
                   onFocus={handleFocus}
                   placeholder="0.00"
                 />
-                <p className="mt-2 text-[10px] font-bold text-slate-400 italic leading-relaxed">Faiz veya ek ödemeniz var ise bu alanı doldurun. Bu tutar 'Faiz & Ek Ücretler' kategorisinde harcama olarak kaydedilir.</p>
               </div>
             </div>
           )}
@@ -416,25 +395,13 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ type, cards, initia
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-2">
-              <LinkIcon size={14} /> Dekont / Onay URL (İsteğe Bağlı)
-            </label>
-            <input
-              type="url"
-              className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-white"
-              value={formData.confirmationUrl}
-              onChange={e => setFormData({ ...formData, confirmationUrl: e.target.value })}
-              placeholder="https://..."
-            />
-          </div>
-
           <div className="pt-4">
             <button
               type="submit"
-              className={`w-full py-4 text-white rounded-[20px] font-bold text-lg shadow-lg transition-all active:scale-95 ${type === 'spending' ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-200 dark:shadow-rose-950/40' : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-200 dark:shadow-emerald-950/40'}`}
+              disabled={isSubmitting}
+              className={`w-full py-4 text-white rounded-[20px] font-bold text-lg shadow-lg transition-all active:scale-95 ${isSubmitting ? 'bg-slate-400' : (type === 'spending' ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-200' : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-200')}`}
             >
-              {initialData ? 'Değişiklikleri Kaydet' : 'Kaydet'}
+              {isSubmitting ? 'İşleniyor...' : (initialData ? 'Değişiklikleri Kaydet' : 'Kaydet')}
             </button>
           </div>
         </form>

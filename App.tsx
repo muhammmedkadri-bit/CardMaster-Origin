@@ -59,6 +59,7 @@ import { User } from '@supabase/supabase-js';
 import { dataSyncService } from './services/dataSyncService';
 import RollingNumber from './components/RollingNumber';
 import StatementArchiveModal from './components/StatementArchiveModal';
+import { creditCardService } from './services/creditCardService';
 
 // Ultra-Modern & Aesthetic Layered Card Logo Component
 const Logo: React.FC<{ isDarkMode: boolean; isAnimated?: boolean }> = ({ isDarkMode, isAnimated }) => (
@@ -118,14 +119,12 @@ const Logo: React.FC<{ isDarkMode: boolean; isAnimated?: boolean }> = ({ isDarkM
 
 
 
-const Toast: React.FC<{ message: string; type: 'warning' | 'info' | 'success'; onClose: () => void }> = ({ message, type, onClose }) => {
+const Toast: React.FC<{ message: string; type: 'warning' | 'info' | 'success' | 'error'; onClose: () => void }> = ({ message, type, onClose }) => {
   const [isExiting, setIsExiting] = useState(false);
 
   useEffect(() => {
-    // 1.7 saniye sonra çıkış animasyonunu başlat
-    const exitTimer = setTimeout(() => setIsExiting(true), 1700);
-    // 2 saniye sonra tamamen kaldır
-    const closeTimer = setTimeout(onClose, 2000);
+    const exitTimer = setTimeout(() => setIsExiting(true), 2700);
+    const closeTimer = setTimeout(onClose, 3000);
 
     return () => {
       clearTimeout(exitTimer);
@@ -134,20 +133,28 @@ const Toast: React.FC<{ message: string; type: 'warning' | 'info' | 'success'; o
   }, [onClose]);
 
   const colors = {
-    warning: 'bg-rose-600 border-rose-500 shadow-rose-900/20',
+    warning: 'bg-amber-600 border-amber-500 shadow-amber-900/20',
     info: 'bg-blue-600 border-blue-500 shadow-blue-900/20',
-    success: 'bg-emerald-600 border-emerald-500 shadow-emerald-900/20'
+    success: 'bg-emerald-600 border-emerald-500 shadow-emerald-900/20',
+    error: 'bg-rose-600 border-rose-500 shadow-rose-900/20'
+  };
+
+  const icons = {
+    warning: <AlertCircle size={18} />,
+    info: <Zap size={18} />,
+    success: <RefreshCw size={18} />,
+    error: <X size={18} />
   };
 
   return (
     <div
-      className={`p-4 rounded-2xl shadow-2xl transition-all duration-300 ease-in-out flex items-center gap-3 border text-white ${colors[type]} ${isExiting
+      className={`p-4 rounded-2xl shadow-2xl transition-all duration-300 ease-in-out flex items-center gap-3 border text-white ${colors[type] || colors.info} ${isExiting
         ? 'opacity-0 translate-x-12 scale-95 blur-sm'
         : 'animate-in slide-in-from-right duration-300 opacity-100 translate-x-0 scale-100'
         }`}
     >
       <div className="bg-white/20 p-1.5 rounded-lg shrink-0">
-        {type === 'warning' ? <AlertCircle size={18} /> : type === 'success' ? <RefreshCw size={18} /> : <Zap size={18} />}
+        {icons[type] || icons.info}
       </div>
       <p className="font-bold text-xs pr-4 whitespace-nowrap">{message}</p>
       <button
@@ -179,6 +186,40 @@ const deduplicateCategories = (cats: Category[]) => {
   return [...rest, diger || { id: 'default-other', name: 'Diğer', color: '#64748B' }];
 };
 
+const deduplicateTransactions = (txs: Transaction[]) => {
+  const seen = new Set<string>();
+  return txs.filter(t => {
+    if (!t.id) return true;
+    if (seen.has(t.id)) return false;
+    seen.add(t.id);
+    return true;
+  });
+};
+
+// Helper: Get installment info from transaction
+const getInstallmentInfo = (tx: Transaction): { current: number; total: number } | null => {
+  const installments = (tx as any).installments || 1;
+  const installmentNumber = (tx as any).installmentNumber || 1;
+  if (installments <= 1 || (tx as any).expenseType !== 'installment') return null;
+
+  return { current: installmentNumber, total: installments };
+};
+
+// Installment Pill Component
+const InstallmentPill: React.FC<{ tx: Transaction; size?: 'sm' | 'md' }> = ({ tx, size = 'sm' }) => {
+  const info = getInstallmentInfo(tx);
+  if (!info) return null;
+
+  const textSize = size === 'sm' ? 'text-[8px]' : 'text-[9px]';
+  const padding = size === 'sm' ? 'px-2 py-0.5' : 'px-2.5 py-1';
+
+  return (
+    <span className={`${padding} rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-black ${textSize} uppercase tracking-wide whitespace-nowrap`}>
+      {info.current}/{info.total} Taksit
+    </span>
+  );
+};
+
 const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('theme');
@@ -189,8 +230,9 @@ const App: React.FC = () => {
   const lastSyncTimeRef = useRef<number>(Date.now());
   const shownNotificationsRef = useRef<Set<string>>(new Set());
   const processedAlertKeysRef = useRef<Set<string>>(new Set());
+  const recentLocalChangesRef = useRef<Map<string, number>>(new Map()); // id -> timestamp
 
-  const [cards, setCards] = useState<CreditCard[]>(() => {
+  const [baseCards, setBaseCards] = useState<CreditCard[]>(() => {
     const saved = localStorage.getItem('user_cards');
     return saved ? JSON.parse(saved) : [];
   });
@@ -204,6 +246,27 @@ const App: React.FC = () => {
     const saved = localStorage.getItem('user_auto_payments');
     return saved ? JSON.parse(saved) : [];
   });
+
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // --- PERSISTENCE GUARD ---
+  useEffect(() => {
+    // Only save to localStorage AFTER we've had a chance to load or sync once
+    if (isHydrated) {
+      localStorage.setItem('user_cards', JSON.stringify(baseCards));
+    }
+  }, [baseCards, isHydrated]);
+
+  useEffect(() => {
+    if (isHydrated) {
+      localStorage.setItem('user_transactions', JSON.stringify(transactions));
+    }
+  }, [transactions, isHydrated]);
+
+  useEffect(() => {
+    // Mark as hydrated after initial load/state initialization
+    setIsHydrated(true);
+  }, []);
 
   const [categories, setCategories] = useState<Category[]>(() => {
     const saved = localStorage.getItem('user_categories');
@@ -281,7 +344,7 @@ const App: React.FC = () => {
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
-  const [toastNotifications, setToastNotifications] = useState<{ id: number; message: string; type: 'warning' | 'info' | 'success' }[]>([]);
+  const [toastNotifications, setToastNotifications] = useState<{ id: number; message: string; type: 'warning' | 'info' | 'success' | 'error' }[]>([]);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(false); // DISABLED - Direct access
   const [realtimeRetryTrigger, setRealtimeRetryTrigger] = useState(0);
@@ -359,55 +422,71 @@ const App: React.FC = () => {
     scrollContainerRef.current.style.scrollSnapType = 'x mandatory';
   };
 
+  // Helper: Calculate the effective debt amount for a transaction
+  // Each installment is now a separate record, so just use amount directly
+  const getTransactionDebtValue = (tx: Transaction): number => {
+    if (tx.type === 'payment') return -tx.amount; // Payments reduce debt
+    return tx.amount; // For spending (including individual installments)
+  };
+
+  const cards = useMemo<CreditCard[]>(() => {
+    return baseCards.map(card => {
+      const cardTxs = transactions.filter(t => t.cardId === card.id);
+
+      // Calculate cumulative debt: all spending - all payments
+      // For installments, count the FULL amount
+      const cumulativeDebt = cardTxs.reduce((sum, tx) => {
+        return sum + getTransactionDebtValue(tx);
+      }, 0);
+
+      return {
+        ...card,
+        currentDebt: Math.max(0, cumulativeDebt),
+        availableLimit: card.limit - Math.max(0, cumulativeDebt)
+      } as CreditCard;
+    });
+  }, [baseCards, transactions]);
+
   const totalLimit = useMemo(() => cards.reduce((acc, c) => acc + c.limit, 0), [cards]);
-  const totalBalance = useMemo(() => cards.reduce((acc, c) => acc + (c.balance > 0 ? c.balance : 0), 0), [cards]);
+  const totalBalance = useMemo(() => cards.reduce((acc, c) => acc + (c.currentDebt || 0), 0), [cards]);
   const overallUtilization = totalLimit > 0 ? (totalBalance / totalLimit) * 100 : 0;
 
   const widgetsData = useMemo(() => {
-    if (cards.length === 0) return { closestDue: null, highestDebt: null, statusItems: [] };
-    const today = new Date().getDate();
+    if (cards.length === 0) return { closestDue: null, highestDebt: null, statusItems: [], cardStatements: {} };
 
-    // Status Logic - Collect ALL relevant items
-    const statusItems: { type: 'overdue' | 'dueSoon' | 'statement', card: CreditCard }[] = [];
+    const statusItems: { type: 'overdue' | 'dueSoon' | 'statement', card: CreditCard, days?: number }[] = [];
+    const cardStatements: Record<string, any> = {};
 
-    // 1. Overdue
     cards.forEach(c => {
-      if (c.dueDay < today && c.balance > 0) {
-        statusItems.push({ type: 'overdue', card: c });
-      }
+      const period = creditCardService.getCurrentPeriod(c);
+      const statement = creditCardService.calculateStatement(c, transactions, period);
+      cardStatements[c.id] = statement;
+
+      const daysToDue = creditCardService.getDaysRemaining(period.dueDate);
+      const daysToCut = creditCardService.getDaysRemaining(period.endDate);
+
+      if (daysToDue < 0 && c.currentDebt > 0) statusItems.push({ type: 'overdue', card: c, days: Math.abs(daysToDue) });
+      if (daysToDue >= 0 && daysToDue <= 3 && c.currentDebt > 0) statusItems.push({ type: 'dueSoon', card: c, days: daysToDue });
+      if (daysToCut >= 0 && daysToCut <= 2 && c.currentDebt > 0) statusItems.push({ type: 'statement', card: c, days: daysToCut });
     });
 
-    // 2. Due Soon
-    cards.forEach(c => {
-      if (c.balance <= 0) return;
-      let isDueSoon = false;
-      if (c.dueDay > c.statementDay) {
-        isDueSoon = today > c.statementDay && today <= c.dueDay;
-      } else {
-        isDueSoon = today > c.statementDay || today <= c.dueDay;
-      }
-
-      if (isDueSoon && !statusItems.find(item => item.card.id === c.id)) {
-        statusItems.push({ type: 'dueSoon', card: c });
-      }
+    const sortedByDue = [...cards].sort((a, b) => {
+      const perA = creditCardService.getCurrentPeriod(a);
+      const perB = creditCardService.getCurrentPeriod(b);
+      return perA.dueDate.getTime() - perB.dueDate.getTime();
     });
 
-    // 3. Statement Day
-    cards.forEach(c => {
-      if (today === c.statementDay && c.balance > 0) {
-        if (!statusItems.find(item => item.card.id === c.id)) {
-          statusItems.push({ type: 'statement', card: c });
-        }
-      }
-    });
+    const closestDue = sortedByDue.length > 0 ? sortedByDue[0] : null;
 
-    const futureDueDates = cards.filter(c => c.dueDay >= today).sort((a, b) => a.dueDay - b.dueDay);
-    const pastDueDates = cards.filter(c => c.dueDay < today).sort((a, b) => a.dueDay - b.dueDay);
-    const closestDue = futureDueDates.length > 0 ? futureDueDates[0] : pastDueDates[0];
-    const highestDebt = [...cards].sort((a, b) => b.balance - a.balance)[0];
+    // Find card with highest total debt (cumulative)
+    const highestDebtCard = [...cards].sort((a, b) => {
+      const debtA = a.currentDebt || 0;
+      const debtB = b.currentDebt || 0;
+      return debtB - debtA;
+    })[0];
 
-    return { closestDue, highestDebt, statusItems };
-  }, [cards]);
+    return { closestDue, highestDebt: highestDebtCard, statusItems, cardStatements };
+  }, [cards, transactions]);
 
   // Cycle status widgets if there are multiple items
   useEffect(() => {
@@ -442,11 +521,12 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    localStorage.setItem('user_cards', JSON.stringify(cards));
+    localStorage.setItem('user_cards', JSON.stringify(baseCards));
     localStorage.setItem('user_transactions', JSON.stringify(transactions));
     localStorage.setItem('user_auto_payments', JSON.stringify(autoPayments));
     checkFinancialDeadlines();
     processAutoPayments();
+    processInterestTransactions();
   }, [cards, transactions, autoPayments]);
 
   useEffect(() => {
@@ -497,7 +577,9 @@ const App: React.FC = () => {
     if (!supabase) return;
 
     // Listen for auth changes
-    const handleAuthState = async (sessionUser: User | null) => {
+    const handleAuthState = async (sessionUser: User | null, isExplicitSignOut: boolean = false) => {
+      if (sessionUser?.id === user?.id && user !== null && !isExplicitSignOut) return;
+
       setUser(sessionUser);
 
       if (sessionUser) {
@@ -505,43 +587,50 @@ const App: React.FC = () => {
         const data = await dataSyncService.fetchAllData(sessionUser.id);
 
         if (data) {
+          // MERGE LOGIC: Don't just overwrite, merge local and remote to be safe
           if (data.cards.length > 0) {
-            setCards(data.cards);
-            setTransactions(data.transactions);
-          }
-          if (data.categories.length > 0) {
-            setCategories(data.categories);
-          } else {
-            setCategories([
-              { id: '1', name: 'Market', color: '#3B82F6' },
-              { id: '2', name: 'Ulaşım', color: '#10B981' },
-              { id: '3', name: 'Restoran', color: '#F59E0B' },
-              { id: '4', name: 'Fatura', color: '#EF4444' },
-              { id: '5', name: 'Eğlence', color: '#8B5CF6' },
-              { id: '6', name: 'Diğer', color: '#64748B' }
+            setBaseCards(prev => {
+              const prevIds = new Set(prev.map(c => c.id));
+              const merged = [...data.cards];
+              prev.forEach(c => { if (!prevIds.has(c.id)) merged.push(c); });
+              return merged;
+            });
+
+            setTransactions(prev => deduplicateTransactions([...data.transactions, ...prev]));
+          } else if (cardsRef.current.length > 0) {
+            // SYNC UP: Cloud is empty, user has local data
+            await Promise.all([
+              ...cardsRef.current.map(c => dataSyncService.upsertCard(sessionUser.id, c)),
+              ...transactionsRef.current.map(t => dataSyncService.saveTransaction(sessionUser.id, t))
             ]);
           }
+
+          if (data.categories.length > 0) setCategories(data.categories);
           setNotificationHistory(data.notifications);
           setChatHistory(data.chat);
           if (data.autoPayments) setAutoPayments(data.autoPayments);
         }
-      } else {
-        setCards([]);
+      } else if (isExplicitSignOut) {
+        // ONLY clear if we explicitly signed out
+        setBaseCards([]);
         setTransactions([]);
         setNotificationHistory([]);
         setChatHistory([]);
         setIsAuthModalOpen(true);
+        localStorage.clear();
       }
     };
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      handleAuthState(session?.user ?? null);
+      if (session) handleAuthState(session.user);
     });
 
-
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      handleAuthState(session?.user ?? null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        handleAuthState(null, true);
+      } else if (session) {
+        handleAuthState(session.user);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -559,9 +648,12 @@ const App: React.FC = () => {
 
   // --- REF FOR STABLE STATE ACCESS IN REALTIME ---
   const cardsRef = useRef(cards);
-  useEffect(() => {
-    cardsRef.current = cards;
-  }, [cards]);
+  const transactionsRef = useRef(transactions);
+  const autoPaymentsRef = useRef(autoPayments);
+
+  useEffect(() => { cardsRef.current = cards; }, [cards]);
+  useEffect(() => { transactionsRef.current = transactions; }, [transactions]);
+  useEffect(() => { autoPaymentsRef.current = autoPayments; }, [autoPayments]);
 
   // --- HYBRID REALTIME + POLLING SYNC (Safari Compatibility) ---
   useEffect(() => {
@@ -572,7 +664,6 @@ const App: React.FC = () => {
     const syncAll = async () => {
       const data = await dataSyncService.fetchAllData(user.id);
       if (data) {
-        // Create hash to detect changes (include notifications robustly)
         const newHash = JSON.stringify({
           cards: data.cards.length,
           transactions: data.transactions.length,
@@ -581,13 +672,30 @@ const App: React.FC = () => {
         });
 
         if (newHash !== lastDataHash) {
+          const now = Date.now();
 
-          if (data.cards) setCards(data.cards);
-          if (data.transactions) setTransactions(data.transactions);
-          if (data.categories) setCategories(deduplicateCategories(data.categories));
+          if (data.cards) {
+            const serverCardIds = new Set(data.cards.map(c => c.id));
+            setBaseCards(prev => {
+              // Local items created in the last 2 minutes stay even if not on server yet
+              const localOnly = prev.filter(c => !serverCardIds.has(c.id) && (now - (recentLocalChangesRef.current.get(c.id) || 0) < 120000));
+              return [...data.cards, ...localOnly];
+            });
+          }
+
+          if (data.transactions) {
+            const serverTxIds = new Set(data.transactions.map(t => t.id));
+            setTransactions(prev => {
+              const localOnly = prev.filter(t => !serverTxIds.has(t.id) && (now - (recentLocalChangesRef.current.get(t.id) || 0) < 120000));
+              return deduplicateTransactions([...data.transactions, ...localOnly]);
+            });
+          }
+
+          if (data.categories?.length) setCategories(deduplicateCategories(data.categories));
           if (data.chat) setChatHistory(data.chat);
           if (data.notifications) setNotificationHistory(data.notifications);
           if (data.autoPayments) setAutoPayments(data.autoPayments);
+
           setLastUpdate(Date.now());
           lastDataHash = newHash;
         }
@@ -661,12 +769,12 @@ const App: React.FC = () => {
 
         if (table === 'cards') {
           if (payload.eventType === 'UPDATE' && payload.new) {
-            setCards(prev => prev.map(c => c.id === payload.new.id ? dataSyncService.mapCardFromDB(payload.new) : c));
+            setBaseCards(prev => prev.map(c => c.id === payload.new.id ? dataSyncService.mapCardFromDB(payload.new) : c));
             setLastUpdate(Date.now());
             return;
           } else if (payload.eventType === 'INSERT' && payload.new) {
             const newCard = dataSyncService.mapCardFromDB(payload.new);
-            setCards(prev => {
+            setBaseCards(prev => {
               const exists = prev.some(c => c.id === newCard.id);
               if (exists) {
 
@@ -676,7 +784,7 @@ const App: React.FC = () => {
             });
             return;
           } else if (payload.eventType === 'DELETE' && payload.old) {
-            setCards(prev => prev.filter(c => c.id !== payload.old.id));
+            setBaseCards(prev => prev.filter(c => c.id !== payload.old.id));
             return;
           }
         }
@@ -760,7 +868,7 @@ const App: React.FC = () => {
         // 1. Immediate Data Refresh
         const data = await dataSyncService.fetchAllData(user.id);
         if (data) {
-          setCards(data.cards);
+          setBaseCards(data.cards);
           setTransactions(data.transactions);
           setCategories(data.categories);
           setNotificationHistory(data.notifications);
@@ -786,7 +894,7 @@ const App: React.FC = () => {
           console.log("[App] Safari periodic sync...");
           const data = await dataSyncService.fetchAllData(user.id);
           if (data) {
-            setCards(data.cards);
+            setBaseCards(data.cards);
             setTransactions(data.transactions);
           }
         }
@@ -855,8 +963,8 @@ const App: React.FC = () => {
             }
           }, 100);
         }
-      }, 800); // Increased from 200ms for a more relaxed feel
-    }, 500); // Increased from 150ms for smoother fade-in
+      }, 200); // 200ms
+    }, 150); // 150ms
   };
 
   const handleSaveAutoPayment = async (ap: AutoPayment) => {
@@ -895,21 +1003,18 @@ const App: React.FC = () => {
         amount: ap.amount,
         category: ap.category,
         date: now.toISOString(),
-        description: ap.description || `${ap.category} Otomatik Ödemesi`
+        description: ap.description || `${ap.category} Otomatik Ödemesi`,
+        expenseType: 'single'
       };
 
-      const updatedCard = { ...card, balance: card.balance + ap.amount };
       const updatedAp = { ...ap, lastProcessedMonth: currentMonthKey };
 
-      // Optimized local update
       setTransactions(prev => [newTx, ...prev]);
-      setCards(prev => prev.map(c => c.id === card.id ? updatedCard : c));
       setAutoPayments(prev => prev.map(x => x.id === ap.id ? updatedAp : x));
 
       try {
         await Promise.all([
           dataSyncService.saveTransaction(user.id, newTx),
-          dataSyncService.upsertCard(user.id, updatedCard),
           dataSyncService.upsertAutoPayment(user.id, updatedAp)
         ]);
 
@@ -928,6 +1033,42 @@ const App: React.FC = () => {
     await dataSyncService.sendSyncSignal(user.id);
   };
 
+  const processInterestTransactions = async () => {
+    if (!user || cards.length === 0) return;
+
+    let processedCount = 0;
+
+    for (const card of cards) {
+      const interestTx = creditCardService.calculateInterestTransaction(card, transactions);
+      if (interestTx) {
+        // Double check existence in state to block duplicates in same loop
+        if (transactions.some(t => t.id === interestTx.id)) continue;
+
+        setTransactions(prev => [interestTx, ...prev]);
+        processedCount++;
+
+        try {
+          await dataSyncService.saveTransaction(user.id, interestTx);
+        } catch (err) {
+          console.error('Interest sync failed:', err);
+        }
+
+        addFinancialAlert(
+          `${card.cardName} kartına ${interestTx.amount.toLocaleString('tr-TR')} ₺ tutarında Faiz ve Gecikme Bedeli yansıtıldı.`,
+          'warning',
+          `int_alert_${interestTx.id}`,
+          card.color,
+          card.cardName
+        );
+        processedCount++;
+      }
+    }
+
+    if (processedCount > 0) {
+      await dataSyncService.sendSyncSignal(user.id);
+    }
+  };
+
   const checkFinancialDeadlines = () => {
     if (cards.length === 0 || !user) return;
 
@@ -938,7 +1079,7 @@ const App: React.FC = () => {
     const dateKeyToday = `${currentYear}-${currentMonth}-${today}`;
 
     cards.forEach(card => {
-      const balanceVal = Math.max(0, card.balance).toLocaleString('tr-TR');
+      const balanceVal = Math.max(0, card.currentDebt || 0).toLocaleString('tr-TR');
       const balanceStr = balanceVal !== '0' ? `(Borç: ${balanceVal} ₺)` : '';
 
       // Rule 1: Statement Day Notification (Only on that day)
@@ -1039,7 +1180,7 @@ const App: React.FC = () => {
     }
   };
 
-  const showToast = (message: string, type: 'warning' | 'info' | 'success') => {
+  const showToast = (message: string, type: 'warning' | 'info' | 'success' | 'error') => {
     // Create unique key for this notification
     const notificationKey = `${message}-${type}`;
 
@@ -1154,7 +1295,7 @@ const App: React.FC = () => {
     try {
       const balanceUpdates = await apiService.fetchLatestBalances(cards);
       const newTransactions = await apiService.fetchNewTransactions(cards);
-      setCards(prevCards => prevCards.map(card => ({
+      setBaseCards(prevCards => prevCards.map(card => ({
         ...card,
         balance: balanceUpdates[card.id] !== undefined ? balanceUpdates[card.id] : card.balance
       })));
@@ -1175,167 +1316,168 @@ const App: React.FC = () => {
   }, [transactions]);
 
   const handleSaveCard = async (savedCard: CreditCard) => {
-    // 1. Optimistic Update (Immediate Feedback)
-    setCards(prev => {
+    // 1. Optimistic Update
+    recentLocalChangesRef.current.set(savedCard.id, Date.now());
+
+    // Check if this is a NEW card with an initial balance
+    const initialBalance = (savedCard as any).balance || 0;
+
+    setBaseCards(prev => {
       const exists = prev.find(c => c.id === savedCard.id);
       if (exists) return prev.map(c => c.id === savedCard.id ? savedCard : c);
       return [...prev, savedCard];
     });
 
-    showToast(`${savedCard.cardName} kaydediliyor...`, 'info');
+    // If new card has balance, create opening transaction in the ledger
+    const isNew = !baseCards.find(c => c.id === savedCard.id);
+    const openingBalance = (savedCard as any).openingBalance || 0;
+
+    if (isNew && openingBalance > 0) {
+      const openingTx: Transaction = {
+        id: `open-${savedCard.id}-${Date.now()}`,
+        cardId: savedCard.id,
+        cardName: savedCard.cardName,
+        type: 'spending',
+        amount: openingBalance,
+        category: 'Diğer',
+        date: new Date().toISOString(),
+        description: 'Açılış Bakiyesi',
+        expenseType: 'single'
+      };
+      setTransactions(prev => [openingTx, ...prev]);
+      if (user) dataSyncService.saveTransaction(user.id, openingTx);
+    }
+
+    showToast(`${savedCard.cardName} kaydedildi.`, 'success');
     setModalMode(null);
     setEditingCard(undefined);
 
     // 2. Server Sync
     if (user) {
-      await dataSyncService.upsertCard(user.id, savedCard);
+      try {
+        await dataSyncService.upsertCard(user.id, savedCard);
+        await dataSyncService.sendSyncSignal(user.id);
+      } catch (error) {
+        showToast('Senkronizasyon hatası', 'warning');
+      }
     }
   };
 
-  const handleTransaction = async (finalTx: Transaction) => {
+  const handleSingleTransaction = async (tx: Transaction) => {
     if (!user) return;
-
-    // A. Check for new category
-    let updatedCategories = categories;
-    if (finalTx.type === 'spending' && finalTx.category !== 'Diğer') {
-      const exists = categories.some(cat => cat.name.toLocaleLowerCase('tr-TR') === finalTx.category.toLocaleLowerCase('tr-TR'));
-      if (!exists) {
-        const newCat: Category = {
-          id: crypto.randomUUID(),
-          name: finalTx.category,
-          color: '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')
-        };
-        const diger = categories.find(c => c.name === 'Diğer');
-        const rest = categories.filter(c => c.name !== 'Diğer');
-        updatedCategories = [...rest, newCat, diger].filter(Boolean) as Category[];
-        setCategories(updatedCategories);
-        dataSyncService.upsertCategory(user.id, newCat);
-      }
-    }
-
-    // 1. Find affected card
-    const affectedCard = cards.find(c => c.id === finalTx.cardId);
-    if (!affectedCard) {
+    const card = cards.find(c => c.id === tx.cardId);
+    if (!card) {
       showToast('Kart bulunamadı', 'warning');
       return;
     }
 
-    // 2. Calculate balance impact logic
-    const calculateImpact = (tx: Transaction) => {
-      // "Faiz & Ek Ücretler" mantığı: 
-      // Harcama ise borcu artırır (+ amount).
-      // Ödeme ise; karta borç eklenip ( +amount ) sonra ödendiği ( -amount ) varsayılarak net etki 0 olur.
-      if (tx.category === 'Faiz & Ek Ücretler') {
-        return tx.type === 'spending' ? tx.amount : 0;
-      }
-      return tx.type === 'spending' ? tx.amount : -tx.amount;
-    };
+    // A. Strict Limit Check
+    if (tx.type === 'spending') {
+      const existingTx = transactions.find(t => t.id === tx.id);
+      const diff = tx.amount - (existingTx?.amount || 0);
 
-    // Handle updates by reversing old impact if transaction existed
-    const existingTx = transactions.find(t => t.id === finalTx.id);
-    let netBalanceDiff = 0;
-
-    if (existingTx) {
-      // Revert old impact on the ORIGINAL card (might be different if card changed)
-      const oldCard = cards.find(c => c.id === existingTx.cardId);
-      if (oldCard) {
-        const reverseOldImpact = -calculateImpact(existingTx);
-        // If card is same, we'll accumulate diff. If different, we'll update both.
-        if (oldCard.id === finalTx.cardId) {
-          netBalanceDiff += reverseOldImpact;
-        } else {
-          // Different card: update the old card immediately
-          const updatedOldCard = { ...oldCard, balance: oldCard.balance + reverseOldImpact };
-          setCards(prev => prev.map(c => c.id === oldCard.id ? updatedOldCard : c));
-          dataSyncService.upsertCard(user.id, updatedOldCard);
-        }
+      if (card.currentDebt + diff > card.limit) {
+        showToast('Kart limiti yetersiz!', 'warning');
+        return;
       }
     }
 
-    netBalanceDiff += calculateImpact(finalTx);
-    const updatedCard = { ...affectedCard, balance: affectedCard.balance + netBalanceDiff };
-
-    // 3. IMMEDIATE UI UPDATE
-    const optimisticTx = { ...finalTx, cardName: affectedCard.cardName };
-    setTransactions(prev => {
-      const exists = prev.some(t => t.id === finalTx.id);
-      if (exists) return prev.map(t => t.id === finalTx.id ? optimisticTx : t);
-      return [optimisticTx, ...prev];
-    });
-    setCards(prev => prev.map(c => c.id === finalTx.cardId ? updatedCard : c));
-
-    setModalMode(null);
-    setEditingTransaction(undefined);
-    showToast(existingTx ? 'İşlem güncellendi' : 'İşlem başarıyla eklendi', 'success');
-
-    // 4. DATABASE SYNC
-    try {
-      await Promise.all([
-        dataSyncService.saveTransaction(user.id, finalTx),
-        dataSyncService.upsertCard(user.id, updatedCard)
-      ]);
-      await dataSyncService.sendSyncSignal(user.id);
-    } catch (error) {
-      console.error('[Transaction] Failed to sync:', error);
-      showToast('Senkronizasyon hatası', 'warning');
-      const data = await dataSyncService.fetchAllData(user.id);
-      if (data) {
-        setCards(data.cards);
-        setTransactions(data.transactions);
+    // B. Category Auto-Instantiation
+    if (tx.type === 'spending' && tx.category !== 'Diğer') {
+      const categoryExists = categories.some(cat => cat.name.toLocaleLowerCase('tr-TR') === tx.category.toLocaleLowerCase('tr-TR'));
+      if (!categoryExists) {
+        const newCat: Category = {
+          id: crypto.randomUUID(),
+          name: tx.category,
+          color: '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')
+        };
+        setCategories(prev => deduplicateCategories([...prev, newCat]));
+        dataSyncService.upsertCategory(user.id, newCat);
       }
+    }
+
+    // C. DATABASE-FIRST PERSISTENCE (CRITICAL FIX)
+    // Write to Supabase FIRST, before updating UI
+    // This prevents "ghost data" that appears but isn't actually saved
+    try {
+      console.log('[Transaction] Attempting to save to database:', { txId: tx.id, amount: tx.amount, type: tx.type });
+
+      await dataSyncService.saveTransaction(user.id, tx);
+
+      console.log('[Transaction] ✅ Database write successful');
+
+      // D. Only update UI AFTER successful database write
+      recentLocalChangesRef.current.set(tx.id, Date.now());
+      setTransactions(prev => {
+        const filtered = prev.filter(t => t.id !== tx.id);
+        return deduplicateTransactions([tx, ...filtered]);
+      });
+
+      setModalMode(null);
+      setEditingTransaction(undefined);
+      showToast('İşlem kaydedildi.', 'success');
+
+      // E. Signal other clients
+      await dataSyncService.sendSyncSignal(user.id);
+
+    } catch (error: any) {
+      // CRITICAL: Log exact error for diagnosis
+      console.error('❌ [Transaction] DATABASE WRITE FAILED:', {
+        error,
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+        status: error?.status
+      });
+
+      // Provide specific user feedback based on error type
+      if (error?.code === '42501' || error?.code === 'PGRST301' || error?.message?.includes('policy')) {
+        showToast('Yetki hatası: Veritabanı izinleri kontrol edilmeli (RLS)', 'error');
+        console.error('🔒 RLS POLICY ERROR: Check Supabase RLS policies for transactions table');
+      } else if (error?.message?.includes('network') || error?.message?.includes('fetch')) {
+        showToast('Bağlantı hatası: İnternet bağlantınızı kontrol edin', 'warning');
+      } else {
+        showToast('Kayıt hatası: ' + (error?.message || 'Bilinmeyen hata'), 'error');
+      }
+
+      // DO NOT update UI - transaction was not saved
+      // This prevents the "disappearing data" bug
     }
   };
 
+  const handleTransaction = handleSingleTransaction;
+
+
   const deleteTransaction = async () => {
     if (!transactionToDelete || !user) return;
-    const txId = transactionToDelete.id;
-    const deletedTx = transactions.find(t => t.id === txId);
+    const tx = transactionToDelete;
+    const groupId = (tx as any).installmentGroupId;
 
-    if (!deletedTx) return;
+    if (groupId) {
+      // Delete ALL installments in the group
+      setTransactions(prev => prev.filter(t => (t as any).installmentGroupId !== groupId));
+      showToast('Tüm taksit grubu silindi.', 'success');
+    } else {
+      // Single transaction
+      setTransactions(prev => prev.filter(t => t.id !== tx.id));
+      showToast('İşlem günlüğünden silindi.', 'success');
+    }
 
-    // 1. Calculate new balance
-    const calculateImpact = (tx: Transaction) => {
-      if (tx.category === 'Faiz & Ek Ücretler') {
-        return tx.type === 'spending' ? tx.amount : 0;
-      }
-      return tx.type === 'spending' ? tx.amount : -tx.amount;
-    };
-
-    const reverseImpact = -calculateImpact(deletedTx);
-    const affectedCard = cards.find(c => c.id === deletedTx.cardId);
-
-    if (!affectedCard) return;
-
-    const updatedCard = { ...affectedCard, balance: affectedCard.balance + reverseImpact };
-
-    // 2. IMMEDIATE UI UPDATE
-    setTransactions(prev => prev.filter(t => t.id !== txId));
-    setCards(prev => prev.map(c => c.id === deletedTx.cardId ? updatedCard : c));
     setTransactionToDelete(null);
-    showToast('İşlem silindi', 'success');
 
-    // 3. IMMEDIATE DATABASE SYNC (CRITICAL FOR CROSS-DEVICE)
     try {
-      // Delete transaction and update card balance in parallel
-      await Promise.all([
-        dataSyncService.deleteTransaction(txId),
-        dataSyncService.upsertCard(user.id, updatedCard)
-      ]);
-
-      // Broadcast sync signal to other devices
-      await dataSyncService.sendSyncSignal(user.id);
-
-
-    } catch (error) {
-      console.error('[Delete] Failed to sync:', error);
-      showToast('Senkronizasyon hatası', 'warning');
-
-      // Revert on error
-      const data = await dataSyncService.fetchAllData(user.id);
-      if (data) {
-        setCards(data.cards);
-        setTransactions(data.transactions);
+      if (groupId) {
+        // Find all IDs in this group to delete from Supabase
+        const groupTxs = transactions.filter(t => (t as any).installmentGroupId === groupId);
+        await Promise.all(groupTxs.map(t => dataSyncService.deleteTransaction(t.id)));
+      } else {
+        await dataSyncService.deleteTransaction(tx.id);
       }
+      await dataSyncService.sendSyncSignal(user.id);
+    } catch (err) {
+      console.error('[Delete] Sync error:', err);
+      showToast('Senkronizasyon hatası', 'warning');
     }
   };
 
@@ -1343,17 +1485,41 @@ const App: React.FC = () => {
     if (!cardToDelete) return;
     const cardId = cardToDelete.id;
 
-    // 1. Optimistic Update (Immediate Feedback)
-    setCards(prev => prev.filter(c => c.id !== cardId));
+    // 1. Ledger Cleanup: Remove the card and ALL associated history
+    setBaseCards(prev => prev.filter(c => c.id !== cardId));
+    setTransactions(prev => prev.filter(t => t.cardId !== cardId));
+
     setCardToDelete(null);
-    showToast('Kart kaldırılıyor...', 'info');
+    showToast('Kart ve tüm geçmişi silindi.', 'success');
 
     // 2. Server Sync
-    if (user) await dataSyncService.deleteCard(cardId);
+    if (user) {
+      try {
+        await dataSyncService.deleteCard(cardId);
+        // Cascading delete is already handled by server schema usually, 
+        // but we'll manually ensure it here for consistency.
+        const txsToDelete = transactions.filter(t => t.cardId === cardId);
+        await Promise.all(txsToDelete.map(t => dataSyncService.deleteTransaction(t.id)));
+      } catch (err) {
+        console.error('Failed to purge card ledger:', err);
+      }
+    }
   };
 
-  const resetAllData = () => {
-    setCards([]);
+  const resetAllData = async () => {
+    showToast('Tüm veriler sıfırlanıyor...', 'info');
+
+    // 1. Clear Remote Data (if logged in)
+    if (user) {
+      try {
+        await dataSyncService.resetUserData(user.id);
+      } catch (err) {
+        console.error('Failed to reset remote data:', err);
+      }
+    }
+
+    // 2. Clear Local State
+    setBaseCards([]);
     setTransactions([]);
     setNotificationHistory([]);
     setAiInsights([]);
@@ -1365,13 +1531,17 @@ const App: React.FC = () => {
       { id: '5', name: 'Eğlence', color: '#8B5CF6' },
       { id: '6', name: 'Diğer', color: '#64748B' }
     ]);
-    localStorage.removeItem('user_cards');
-    localStorage.removeItem('user_transactions');
-    localStorage.removeItem('notifications');
-    localStorage.removeItem('user_categories');
+
+    // 3. Clear Storage Keys
+    const keys = [
+      'user_cards', 'user_transactions', 'notifications',
+      'user_categories', 'chat_history', 'auto_payments'
+    ];
+    keys.forEach(k => localStorage.removeItem(k));
+
     setModalMode(null);
     setView('dashboard');
-    showToast('Tüm uygulama verileri sıfırlandı.', 'info');
+    showToast('Tüm uygulama verileri sıfırlandı.', 'success');
   };
 
   const startEdit = (card: CreditCard) => {
@@ -1547,351 +1717,315 @@ const App: React.FC = () => {
       <main className="max-w-7xl mx-auto pt-24 px-4 sm:px-6 space-y-8 sm:space-y-12 relative z-0">
         <div key={view} className="animate-in fade-in duration-200">
           {view === 'dashboard' ? (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 pt-4 sm:pt-8">
+            <div className="space-y-12 pb-20">
+              {/* Summary Stats Cards */}
+              {/* Top Stats Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 pt-4 sm:pt-10">
                 {[
-                  { label: 'TOPLAM LİMİT', val: totalLimit, icon: <TrendingUp size={28} />, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-                  { label: 'TOPLAM BORÇ', val: totalBalance, icon: <CardIcon size={28} />, color: 'text-rose-500', bg: 'bg-rose-500/10' },
-                  { label: 'KULLANIM ORANI', val: overallUtilization, icon: <Zap size={28} />, color: 'text-blue-500', bg: 'bg-blue-500/10', suffix: '%' }
+                  {
+                    label: 'TOPLAM LİMİT',
+                    val: totalLimit,
+                    icon: <TrendingUp size={24} />,
+                    color: 'text-emerald-500',
+                    bg: 'bg-emerald-500/10',
+                    valuePrefix: '',
+                    valueSuffix: '₺'
+                  },
+                  {
+                    label: 'GENEL TOPLAM BORÇ',
+                    val: totalBalance,
+                    icon: <CardIcon size={24} />,
+                    color: 'text-rose-500',
+                    bg: 'bg-rose-500/10',
+                    valuePrefix: '',
+                    valueSuffix: '₺'
+                  },
+                  {
+                    label: 'KULLANIM ORANI',
+                    val: overallUtilization,
+                    icon: <Zap size={24} />,
+                    color: 'text-blue-500',
+                    bg: 'bg-blue-500/10',
+                    valuePrefix: '%',
+                    valueSuffix: ''
+                  }
                 ].map((item, i) => (
-                  <div key={i} className={`p-6 sm:p-8 rounded-[40px] border transition-all duration-300 group flex items-center gap-6 ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-100 shadow-sm hover:shadow-md'}`}>
-                    <div className={`w-14 h-14 shrink-0 ${item.bg} ${item.color} rounded-3xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                  <div key={i} className={`p-8 rounded-[40px] border flex items-center gap-6 transition-all hover:scale-[1.02] duration-300 ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                    <div className={`w-14 h-14 rounded-3xl flex items-center justify-center shrink-0 ${item.bg} ${item.color}`}>
                       {item.icon}
                     </div>
-                    <div>
-                      <span className="text-[10px] font-black text-slate-500 dark:text-slate-500 tracking-[0.2em] block mb-1 uppercase">{item.label}</span>
-                      <div className={`text-xl sm:text-3xl font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                        {item.suffix === '%' ? (
-                          <div className="flex items-baseline gap-1">
-                            <span className="text-[0.7em] font-sans font-bold opacity-70 relative -top-[0.05em]">%</span>
-                            <span>{item.val.toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</span>
-                          </div>
-                        ) : (
-                          <span>{item.val.toLocaleString('tr-TR')} ₺</span>
-                        )}
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-[10px] font-black uppercase tracking-[2px] mb-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>{item.label}</p>
+                      <div className="flex items-baseline gap-1">
+                        {item.valuePrefix && <span className={`text-[21px] font-bold opacity-70 ${isDarkMode ? 'text-white' : 'text-slate-900'} relative -top-[1px] mr-1`}>{item.valuePrefix}</span>}
+                        <span className={`text-3xl font-black ${isDarkMode ? 'text-white' : 'text-slate-900'} tracking-[-1.5px] leading-none`}>
+                          <RollingNumber value={item.val} currency="" />
+                        </span>
+                        {item.valueSuffix && <span className={`text-3xl font-black ${isDarkMode ? 'text-white' : 'text-slate-900'} tracking-[-1.5px] ml-1.5`}>{item.valueSuffix}</span>}
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="grid grid-cols-1 gap-6 sm:gap-10 items-start max-w-5xl mx-auto">
-                <div className="space-y-6 sm:space-y-10">
-                  {cards.length > 0 && (
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 pt-2 sm:pt-4">
-                      <div className={`p-5 rounded-[24px] border h-full ${isDarkMode ? 'bg-blue-500/5 border-blue-500/20' : 'bg-blue-50 border-blue-100 shadow-sm'}`}>
-                        {/* Mobile Layout */}
-                        <div className="flex flex-col justify-between h-full md:hidden">
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2.5 bg-blue-500/10 text-blue-600 rounded-xl shrink-0"><Clock size={18} /></div>
-                            <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-tight">SIRADAKİ ÖDEME</p>
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <AutoFitText
-                              text={`${widgetsData.closestDue?.cardName} (${widgetsData.closestDue?.dueDay}. Gün)`}
-                              color={widgetsData.closestDue?.color || (isDarkMode ? '#ffffff' : '#1e293b')}
-                            />
-                            <p className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                              {Math.max(0, widgetsData.closestDue?.balance || 0).toLocaleString('tr-TR')} ₺
-                            </p>
-                          </div>
-                        </div>
-                        {/* Desktop Layout (Original) */}
-                        <div className="hidden md:flex items-center gap-4 h-full">
-                          <div className="p-3 bg-blue-500/10 text-blue-600 rounded-xl"><Clock size={20} /></div>
-                          <div className="flex flex-col gap-0.5 overflow-hidden">
-                            <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-0.5">SIRADAKİ ÖDEME</p>
-                            <p className="text-xl font-black truncate" style={{ color: widgetsData.closestDue?.color || (isDarkMode ? '#ffffff' : '#1e293b') }}>
-                              {`${widgetsData.closestDue?.cardName} (${widgetsData.closestDue?.dueDay}. Gün)`}
-                            </p>
-                            <p className={`text-lg font-black mt-1 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                              {Math.max(0, widgetsData.closestDue?.balance || 0).toLocaleString('tr-TR')} ₺
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className={`p-5 rounded-[24px] border h-full ${isDarkMode ? 'bg-amber-500/5 border-amber-500/20' : 'bg-amber-50 border-amber-100 shadow-sm'}`}>
-                        {/* Mobile Layout */}
-                        <div className="flex flex-col justify-between h-full md:hidden">
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2.5 bg-amber-500/10 text-amber-600 rounded-xl shrink-0"><TrendingUp size={18} /></div>
-                            <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest leading-tight">EN YÜKSEK BORÇ</p>
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <AutoFitText
-                              text={widgetsData.highestDebt?.cardName || ""}
-                              color={widgetsData.highestDebt?.color || (isDarkMode ? '#ffffff' : '#1e293b')}
-                            />
-                            <p className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                              {Math.max(0, widgetsData.highestDebt?.balance || 0).toLocaleString('tr-TR')} ₺
-                            </p>
-                          </div>
-                        </div>
-                        {/* Desktop Layout (Original) */}
-                        <div className="hidden md:flex items-center gap-4 h-full">
-                          <div className="p-3 bg-amber-500/10 text-amber-600 rounded-xl"><TrendingUp size={20} /></div>
-                          <div className="flex flex-col gap-0.5 overflow-hidden">
-                            <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-0.5">EN YÜKSEK BORÇ</p>
-                            <p className="text-xl font-black truncate" style={{ color: widgetsData.highestDebt?.color || (isDarkMode ? '#ffffff' : '#1e293b') }}>
-                              {widgetsData.highestDebt?.cardName || ""}
-                            </p>
-                            <p className={`text-lg font-black mt-1 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                              {Math.max(0, widgetsData.highestDebt?.balance || 0).toLocaleString('tr-TR')} ₺
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {widgetsData.statusItems.length > 0 ? (
-                        <div key={`status-${statusIndex}`} className={`col-span-2 md:col-span-1 flex items-center gap-4 p-5 rounded-[24px] border-[1.5px] transition-all duration-500 animate-in fade-in slide-in-from-right-4 ${widgetsData.statusItems[statusIndex % widgetsData.statusItems.length].type === 'overdue'
-                          ? 'animate-pulse-red bg-rose-500/5 border-rose-500/50'
-                          : widgetsData.statusItems[statusIndex % widgetsData.statusItems.length].type === 'dueSoon'
-                            ? 'animate-pulse-orange bg-amber-500/5 border-amber-500/50'
-                            : 'animate-pulse-blue bg-blue-500/5 border-blue-500/50'
-                          }`}>
-                          <div className={`p-3 rounded-xl ${widgetsData.statusItems[statusIndex % widgetsData.statusItems.length].type === 'overdue'
-                            ? 'bg-rose-500/10 text-rose-500'
-                            : widgetsData.statusItems[statusIndex % widgetsData.statusItems.length].type === 'dueSoon'
-                              ? 'bg-amber-500/10 text-amber-500'
-                              : 'bg-blue-500/10 text-blue-500'
-                            }`}>
-                            {widgetsData.statusItems[statusIndex % widgetsData.statusItems.length].type === 'overdue' ? <AlertTriangle size={20} className="animate-pulse" /> :
-                              widgetsData.statusItems[statusIndex % widgetsData.statusItems.length].type === 'dueSoon' ? <Clock size={20} /> : <Calendar size={20} />}
-                          </div>
-                          <div className="overflow-hidden">
-                            <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${widgetsData.statusItems[statusIndex % widgetsData.statusItems.length].type === 'overdue'
-                              ? 'text-rose-500'
-                              : widgetsData.statusItems[statusIndex % widgetsData.statusItems.length].type === 'dueSoon'
-                                ? 'text-amber-500'
-                                : 'text-blue-500'
-                              }`}>
-                              {widgetsData.statusItems[statusIndex % widgetsData.statusItems.length].type === 'overdue' ? 'ÖDEME GÜNÜ GEÇTİ' :
-                                widgetsData.statusItems[statusIndex % widgetsData.statusItems.length].type === 'dueSoon' ? 'SON ÖDEME YAKLAŞIYOR' : 'HESAP KESİM GÜNÜ'}
-                            </p>
-                            <AutoFitText
-                              text={widgetsData.statusItems[statusIndex % widgetsData.statusItems.length].card.cardName}
-                              color={widgetsData.statusItems[statusIndex % widgetsData.statusItems.length].card.color || (isDarkMode ? '#ffffff' : '#1e293b')}
-                            />
-                            <p className="text-[10px] font-bold text-slate-500">
-                              {widgetsData.statusItems[statusIndex % widgetsData.statusItems.length].type === 'overdue' ? `Ayın ${widgetsData.statusItems[statusIndex % widgetsData.statusItems.length].card.dueDay}. günüydü` :
-                                widgetsData.statusItems[statusIndex % widgetsData.statusItems.length].type === 'dueSoon' ? `Son ödeme günü ayın ${widgetsData.statusItems[statusIndex % widgetsData.statusItems.length].card.dueDay}. günü` :
-                                  `Hesap kesim günü bugün (Ayın ${widgetsData.statusItems[statusIndex % widgetsData.statusItems.length].card.statementDay}. günü)`}
-                            </p>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className={`col-span-2 md:col-span-1 flex items-center gap-4 p-5 rounded-[24px] border ${isDarkMode ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100 shadow-sm'}`}>
-                          <div className="p-3 bg-emerald-500/10 text-emerald-600 rounded-xl"><CheckCircle2 size={20} /></div>
-                          <div className="overflow-hidden">
-                            <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">DURUM ÖZETİ</p>
-                            <p className={`text-sm font-black truncate ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Ödemeler Güncel</p>
-                            <p className="text-[10px] font-bold text-slate-500">Kritik borç bulunmuyor</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  <section id="cuzdan" className="space-y-4 sm:space-y-6">
-                    <div className="flex items-center justify-between">
-                      <h2 className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>CÜZDANIM</h2>
-                      <div className="hidden sm:flex gap-2">
-                        <button onClick={() => handleManualScroll('left')} className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 cursor-pointer transition-colors active:scale-90"><ChevronLeft size={20} /></button>
-                        <button onClick={() => handleManualScroll('right')} className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 cursor-pointer transition-colors active:scale-90"><ChevronRight size={20} /></button>
-                      </div>
-                    </div>
-                    <div
-                      ref={scrollContainerRef}
-                      onScroll={handleScroll}
-                      onMouseDown={handleDragStart}
-                      onMouseMove={handleDragMove}
-                      onMouseUp={handleDragEnd}
-                      onMouseLeave={handleDragEnd}
-                      className="flex overflow-x-auto gap-4 sm:gap-10 px-6 pt-6 sm:pt-10 pb-10 sm:pb-14 -mb-10 sm:-mb-14 snap-x no-scrollbar scroll-smooth min-h-[200px] sm:min-h-[220px] cursor-grab active:cursor-grabbing"
-                    >
-                      {cards.map((card, index) => {
-                        const cardWidth = 380; const gap = 40; const cardCenter = index * (cardWidth + gap) + (cardWidth / 2);
-                        const containerWidth = scrollContainerRef.current?.offsetWidth || 800; const viewportCenter = scrollX + (containerWidth / 2);
-                        const relativePos = (cardCenter - viewportCenter) / containerWidth;
-                        return (
-                          <div key={card.id} className="snap-start shrink-0 w-[280px] sm:w-[380px] relative">
-                            <CardVisual card={card} scrollProgress={relativePos} onAddToCalendar={handleAddToCalendarClick} onEdit={startEdit} onDelete={setCardToDelete} />
-                          </div>
-                        );
-                      })}
-                      <button onClick={() => setModalMode('add')} className={`snap-start shrink-0 w-[280px] sm:w-[380px] aspect-[1.586/1] border-2 border-dashed rounded-[32px] flex flex-col items-center justify-center gap-4 sm:gap-6 transition-all group ${isDarkMode ? 'border-slate-800 hover:bg-slate-900/50' : 'border-slate-200 hover:bg-slate-50'}`}>
-                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
-                          <Plus size={32} />
-                        </div>
-                        <span className={`font-black text-[9px] sm:text-[10px] tracking-[0.3em] uppercase ${isDarkMode ? 'text-slate-600' : 'text-slate-400'}`}>YENİ KART EKLE</span>
-                      </button>
-                    </div>
-                  </section>
-
-                  <div className={`p-6 sm:p-10 rounded-[40px] border transition-all ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-                      <h3 className={`text-xl font-black flex items-center gap-4 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                        <ArrowUpRight size={24} className="text-blue-500" /> SON HAREKETLER
-                      </h3>
-                      {isSyncing && (
-                        <div className="flex items-center gap-2 text-[10px] font-black text-blue-500 uppercase tracking-widest bg-blue-500/10 px-4 py-2 rounded-full animate-pulse">
-                          <RefreshCw size={12} className="animate-spin" /> GÜNCELLENİYOR
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="space-y-2.5">
-                      {sortedTransactions.length > 0 ? (
-                        <>
-                          {sortedTransactions.slice(0, 5).map(tx => {
-                            const card = cards.find(c => c.id === tx.cardId);
-                            const cardColor = card?.color || '#3b82f6';
-                            const cardName = card?.cardName || tx.cardName || 'Bilinmeyen Kart';
-                            const categoryInfo = categories.find(c => c.name.toLocaleLowerCase('tr-TR') === (tx.category || 'Diğer').toLocaleLowerCase('tr-TR'));
-                            const categoryColor = categoryInfo?.color || cardColor;
-                            const isSpending = tx.type === 'spending';
-
-                            return (
-                              <div key={tx.id} className={`relative p-3.5 sm:px-5 sm:py-3.5 rounded-[24px] border transition-all ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-white border-slate-100 shadow-sm'}`}>
-                                {/* Mobile Layout */}
-                                <div className="flex flex-col gap-3 sm:hidden">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                      <div className={`w-1 h-4 rounded-full shrink-0 ${isSpending ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]'}`} />
-                                      <span className={`text-[9px] font-black uppercase tracking-[0.15em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                                        {isSpending ? 'HARCAMA' : 'ÖDEME'}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                      <button onClick={() => startEditTransaction(tx)} className={`p-2 rounded-lg transition-all ${isDarkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}><Edit2 size={12} /></button>
-                                      <button onClick={() => setTransactionToDelete(tx)} className={`p-2 rounded-lg transition-all ${isDarkMode ? 'bg-rose-500/10 text-rose-400' : 'bg-rose-50 text-rose-600'}`}><Trash2 size={12} /></button>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center justify-between gap-3">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <p className={`text-[13px] font-black tracking-tight truncate flex-1 ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-                                        {tx.description || (isSpending ? 'Harcama' : 'Ödeme')}
-                                      </p>
-                                      {tx.confirmationUrl && (
-                                        <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 text-blue-500" onClick={(e) => e.stopPropagation()}><ExternalLink size={12} /></a>
-                                      )}
-                                    </div>
-                                    <p className={`text-sm font-black tracking-tighter shrink-0 ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                      {isSpending ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
-                                    </p>
-                                  </div>
-                                  <div className="flex items-center justify-between">
-                                    <div className="px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest text-white shadow-sm" style={{ backgroundColor: categoryColor }}>
-                                      {tx.category || 'Diğer'}
-                                    </div>
-                                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest opacity-60">{formatDateDisplay(tx.date)}</p>
-                                  </div>
-                                </div>
-
-                                {/* Desktop Layout */}
-                                <div className="hidden sm:flex items-center justify-between gap-4">
-                                  <div className="flex items-center gap-4 flex-1 min-w-0">
-                                    <div className={`p-2.5 rounded-xl shrink-0 ${isSpending ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                                      {isSpending ? <ShoppingBag size={16} /> : <PaymentIcon size={16} />}
-                                    </div>
-                                    <div className="flex flex-col min-w-0">
-                                      <div className="flex items-center gap-2">
-                                        <p className={`font-black text-sm tracking-tight truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-                                          {tx.description || (isSpending ? 'HARCAMA' : 'ÖDEME')}
-                                        </p>
-                                        {tx.confirmationUrl && (
-                                          <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 p-1 rounded-md text-blue-500 hover:bg-blue-500/10 transition-colors" onClick={(e) => e.stopPropagation()}><ExternalLink size={12} /></a>
-                                        )}
-                                      </div>
-                                      <div className="flex items-center gap-2 mt-0.5">
-                                        <div className="px-2 py-0.5 rounded-md border text-[8px] font-black tracking-widest" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
-                                          {cardName.toLocaleUpperCase('tr-TR')}
-                                        </div>
-                                        <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">{formatDateDisplay(tx.date)}</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-5">
-                                    <p className={`text-base font-black tracking-tighter ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                      {isSpending ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
-                                    </p>
-                                    <div className="flex items-center gap-1.5">
-                                      <button onClick={() => startEditTransaction(tx)} className={`p-2 rounded-xl transition-all border ${isDarkMode ? 'bg-blue-500/5 text-blue-400 border-blue-500/10 hover:bg-blue-500/20' : 'bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100'}`} title="Düzenle"><Edit2 size={14} /></button>
-                                      <button onClick={() => setTransactionToDelete(tx)} className={`p-2 rounded-xl transition-all border ${isDarkMode ? 'bg-rose-500/5 text-rose-400 border-rose-500/10 hover:bg-rose-500/20' : 'bg-rose-50 text-rose-600 border-rose-100 hover:bg-rose-100'}`} title="Sil"><Trash2 size={14} /></button>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                          <button
-                            onClick={() => handleViewChange('analysis', 'analysis-transactions')}
-                            className={`w-full mt-4 p-5 rounded-[24px] border-2 border-dashed font-black text-xs uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3 ${isDarkMode
-                              ? 'border-slate-800 text-slate-400 hover:bg-slate-800/30 hover:text-blue-400 hover:border-blue-500/50'
-                              : 'border-slate-200 text-slate-500 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200'
-                              }`}
-                          >
-                            <span className="text-center">TÜMÜNÜ GÖR</span>
-                            <ChevronRight size={16} />
-                          </button>
-                        </>
-                      ) : (
-                        <div className="py-20 text-center text-slate-500 font-bold italic">İşlem geçmişi bulunmuyor.</div>
-                      )}
-                    </div>
+              {/* Status Section */}
+              {/* Status Section */}
+              {/* Status Section */}
+              {/* Status Section */}
+              {/* Status Section */}
+              {/* Status Section */}
+              {/* Status Section */}
+              {/* Status Section */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-[2px] mx-10">
+                {/* Next Payment Widget */}
+                <div className={`px-5 py-[21px] rounded-[24px] border flex items-center gap-4 transition-all ${isDarkMode ? 'bg-blue-500/5 border-blue-500/20 shadow-[0_8px_32px_rgba(59,130,246,0.1)]' : 'bg-blue-50/50 border-blue-100/50 shadow-sm'}`}>
+                  <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                    <Clock size={22} />
                   </div>
-
-                  <div id="dağılım" className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className={`p-8 rounded-[32px] border transition-all min-h-[480px] h-auto ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
-                      <h3 className={`text-lg font-black mb-8 flex items-center gap-3 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                        <PieIcon size={20} className="text-blue-500" /> DAĞILIM
-                      </h3>
-                      <div className="relative">
-                        <DistributionChart cards={cards} transactions={transactions} isDarkMode={isDarkMode} categories={categories} />
-                      </div>
-                    </div>
-                    <div id="odemeler" className={`p-8 rounded-[32px] border transition-all ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
-                      <h3 className={`text-lg font-black mb-8 flex items-center gap-3 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                        <Calendar size={20} className="text-blue-500" /> ÖDEMELER
-                      </h3>
-                      <div className="space-y-4">
-                        {cards.length > 0 ? [...cards].sort((a, b) => a.dueDay - b.dueDay).map(card => (
-                          <div key={card.id} className={`group flex items-center justify-between p-4 sm:p-5 rounded-[24px] transition-all border ${isDarkMode ? 'bg-slate-800/20 border-slate-800 hover:bg-slate-800/40 hover:border-slate-700' : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-blue-100 hover:shadow-sm'}`}>
-                            <div className="flex items-center gap-4">
-                              <div className="w-1.5 h-10 rounded-full shadow-sm" style={{ backgroundColor: card.color }} />
-                              <div className="flex flex-col gap-1.5 items-start">
-                                <p className="font-black text-sm uppercase tracking-tight" style={{ color: card.color }}>{card.cardName}</p>
-                                <span className={`text-[9px] font-black px-2 py-0.5 rounded-md border ${isDarkMode ? 'bg-slate-800/80 text-slate-400 border-slate-700' : 'bg-white text-slate-500 border-slate-100 shadow-xs'}`}>AYIN {card.dueDay}. GÜNÜ</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3 sm:gap-4">
-                              <div className="text-right">
-                                <p className={`font-black text-base sm:text-lg tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                                  {Math.max(0, card.balance).toLocaleString('tr-TR')} ₺
-                                </p>
-                              </div>
-                              <button
-                                onClick={() => handleAddToCalendarClick(card)}
-                                className={`p-3 min-h-[44px] min-w-[44px] rounded-xl transition-all flex items-center justify-center ${isDarkMode ? 'bg-slate-700 text-blue-400 hover:bg-blue-600 hover:text-white active:scale-95' : 'bg-white text-blue-600 hover:bg-blue-600 hover:text-white border border-slate-200 shadow-sm active:scale-95'}`}
-                                title="Takvime Ekle"
-                              >
-                                <CalendarPlus size={18} />
-                              </button>
-                            </div>
-                          </div>
-                        )) : <div className="py-12 flex flex-col items-center justify-center text-slate-500 italic text-sm opacity-40">
-                          <Calendar size={24} className="mb-2" />
-                          Henüz bir ödeme planı yok
-                        </div>}
-                      </div>
-                    </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black text-blue-500 uppercase tracking-[1px] mb-0.5">SIRADAKİ ÖDEME</p>
+                    <h4 className="text-[15px] font-black text-rose-500 truncate leading-tight mb-0.5">
+                      {widgetsData.closestDue?.cardName || "KART YOK"} <span className="text-[13px] font-bold text-rose-400">({widgetsData.closestDue?.dueDay}. Gün)</span>
+                    </h4>
+                    <p className={`text-2xl font-black ${isDarkMode ? 'text-white' : 'text-slate-900'} tracking-[-1px]`}>
+                      {(widgetsData.closestDue ? (widgetsData.cardStatements[widgetsData.closestDue.id]?.totalDebt || 0) : 0).toLocaleString('tr-TR')} ₺
+                    </p>
                   </div>
+                </div>
 
-                  <MonthlyAnalysis transactions={transactions} cards={cards} isDarkMode={isDarkMode} categories={categories} />
+                {/* Highest Debt Widget */}
+                <div
+                  className={`px-5 py-[21px] rounded-[24px] border flex items-center gap-4 transition-all ${isDarkMode ? 'bg-amber-500/5 border-amber-500/20 shadow-[0_8px_32px_rgba(245,158,11,0.1)]' : 'bg-amber-50/50 border-amber-100/50 shadow-sm'}`}
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0 transition-transform">
+                    <TrendingUp size={22} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black text-amber-600 uppercase tracking-[1px] mb-0.5">EN YÜKSEK BORÇ</p>
+                    <h4 className="text-[15px] font-black text-emerald-500 truncate leading-tight mb-0.5">
+                      {widgetsData.highestDebt?.cardName || "KART YOK"}
+                    </h4>
+                    <p className={`text-2xl font-black ${isDarkMode ? 'text-white' : 'text-slate-900'} tracking-[-1px]`}>
+                      {(widgetsData.highestDebt?.currentDebt || 0).toLocaleString('tr-TR')} ₺
+                    </p>
+                  </div>
+                </div>
+
+                {/* Status Summary Widget */}
+                <div className={`px-5 py-[21px] rounded-[24px] border flex items-center gap-4 transition-all ${isDarkMode ? 'bg-emerald-500/5 border-emerald-500/20 shadow-[0_8px_32px_rgba(16,185,129,0.1)]' : 'bg-emerald-50/50 border-emerald-100/50 shadow-sm'}`}>
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                    <CheckCircle2 size={22} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black text-emerald-500 uppercase tracking-[1px] mb-0.5">DURUM ÖZETİ</p>
+                    <h4 className={`text-lg font-black ${isDarkMode ? 'text-white' : 'text-slate-900'} tracking-[-0.5px] leading-tight mb-0.5`}>Ödemeler Güncel</h4>
+                    <p className="text-[10px] font-bold text-slate-500/60 uppercase tracking-wider">Kritik borç bulunmuyor</p>
+                  </div>
                 </div>
               </div>
-            </>
+
+              {/* Cards Carousel */}
+              <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                  <h2 className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>CÜZDANIM</h2>
+                  <div className="hidden sm:flex gap-4">
+                    <button onClick={() => handleManualScroll('left')} className="w-12 h-12 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 transition-colors active:scale-90"><ChevronLeft size={24} /></button>
+                    <button onClick={() => handleManualScroll('right')} className="w-12 h-12 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 transition-colors active:scale-90"><ChevronRight size={24} /></button>
+                  </div>
+                </div>
+
+                <div
+                  ref={scrollContainerRef}
+                  onScroll={handleScroll}
+                  onMouseDown={handleDragStart}
+                  onMouseMove={handleDragMove}
+                  onMouseUp={handleDragEnd}
+                  onMouseLeave={handleDragEnd}
+                  className="flex overflow-x-auto gap-8 px-8 py-4 -mx-8 snap-x no-scrollbar cursor-grab active:cursor-grabbing"
+                >
+                  {cards.map((card, index) => {
+                    const cardWidth = 380; const gap = 32; const cardCenter = index * (cardWidth + gap) + (cardWidth / 2);
+                    const containerWidth = scrollContainerRef.current?.offsetWidth || 800; const viewportCenter = scrollX + (containerWidth / 2);
+                    const relativePos = (cardCenter - viewportCenter) / containerWidth;
+
+                    // Calculate Current Debt for Display
+                    const currentPeriod = creditCardService.getCurrentPeriod(card);
+                    const currentStatement = creditCardService.calculateStatement(card, transactions, currentPeriod);
+
+                    return (
+                      <div key={card.id} className="snap-start shrink-0 w-[280px] sm:w-[380px]">
+                        <CardVisual card={card} currentDebt={currentStatement.totalDebt} scrollProgress={relativePos} onAddToCalendar={handleAddToCalendarClick} onEdit={startEdit} onDelete={setCardToDelete} />
+                      </div>
+                    );
+                  })}
+                  <button onClick={() => setModalMode('add')} className={`snap-start shrink-0 w-[280px] sm:w-[380px] aspect-[1.586/1] border-2 border-dashed rounded-[32px] flex flex-col items-center justify-center gap-6 transition-all group ${isDarkMode ? 'border-slate-800 hover:bg-slate-900/50' : 'border-slate-200 hover:bg-slate-50'}`}>
+                    <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform"><Plus size={32} /></div>
+                    <span className={`font-black text-[10px] tracking-[0.3em] uppercase ${isDarkMode ? 'text-slate-600' : 'text-slate-400'}`}>YENİ KART EKLE</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Recent Transactions Section */}
+              <div className={`p-8 sm:p-12 rounded-[48px] border transition-all ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                <div className="flex items-baseline gap-3 mb-12">
+                  <ArrowRight size={24} className="text-blue-500 translate-y-1" />
+                  <h3 className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>SON HAREKETLER</h3>
+                </div>
+
+                <div className="space-y-3">
+                  {sortedTransactions.length > 0 ? (
+                    sortedTransactions
+                      .filter(tx => new Date(tx.date) <= new Date())
+                      .slice(0, 5)
+                      .map(tx => {
+                        const card = cards.find(c => c.id === tx.cardId);
+                        const cardColor = card?.color || '#3b82f6';
+                        const cardName = card?.cardName || 'Bilinmeyen Kart';
+                        const isSpending = tx.type === 'spending';
+
+                        return (
+                          <div key={tx.id} className={`relative p-3.5 sm:px-5 sm:py-3.5 rounded-[24px] border transition-all ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-white border-slate-100 shadow-sm'}`}>
+                            {/* Mobile Layout */}
+                            <div className="flex flex-col gap-3 sm:hidden">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-1 h-4 rounded-full shrink-0 ${isSpending ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]'}`} />
+                                  <span className={`text-[9px] font-black uppercase tracking-[0.15em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                                    {isSpending ? 'HARCAMA' : 'ÖDEME'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <button onClick={() => startEditTransaction(tx)} className={`p-2 rounded-lg transition-all ${isDarkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}><Edit2 size={12} /></button>
+                                  <button onClick={() => setTransactionToDelete(tx)} className={`p-2 rounded-lg transition-all ${isDarkMode ? 'bg-rose-500/10 text-rose-400' : 'bg-rose-50 text-rose-600'}`}><Trash2 size={12} /></button>
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex flex-col gap-1 min-w-0 flex-1">
+                                  <p className={`text-[13px] font-black tracking-tight truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                                    {tx.description || tx.category}
+                                  </p>
+                                  <InstallmentPill tx={tx} size="sm" />
+                                </div>
+                                <p className={`text-sm font-black tracking-tighter shrink-0 ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                  {isSpending ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
+                                </p>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <div className="px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest text-white shadow-sm" style={{ backgroundColor: cardColor }}>
+                                  {tx.category || 'Diğer'}
+                                </div>
+                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest opacity-60">{formatDateDisplay(tx.date)}</p>
+                              </div>
+                            </div>
+
+                            {/* Desktop Layout */}
+                            <div className="hidden sm:flex items-center justify-between gap-4">
+                              <div className="flex items-center gap-4 flex-1 min-w-0">
+                                <div className={`p-2.5 rounded-xl shrink-0 ${isSpending ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                                  {isSpending ? <ShoppingBag size={16} /> : <CheckCircle2 size={16} />}
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <p className={`font-black text-sm tracking-tight truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+                                      {tx.description || tx.category}
+                                    </p>
+                                    <InstallmentPill tx={tx} size="sm" />
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <div className="px-2 py-0.5 rounded-md border text-[8px] font-black tracking-widest" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
+                                      {cardName.toLocaleUpperCase('tr-TR')}
+                                    </div>
+                                    <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">{formatDateDisplay(tx.date)}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-5">
+                                <p className={`text-base font-black tracking-tighter ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                  {isSpending ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
+                                </p>
+                                <div className="flex items-center gap-1.5">
+                                  <button onClick={() => startEditTransaction(tx)} className={`p-2 rounded-xl transition-all border ${isDarkMode ? 'bg-blue-500/5 text-blue-400 border-blue-500/10 hover:bg-blue-500/20' : 'bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100'}`} title="Düzenle"><Edit2 size={14} /></button>
+                                  <button onClick={() => setTransactionToDelete(tx)} className={`p-2 rounded-xl transition-all border ${isDarkMode ? 'bg-rose-500/5 text-rose-400 border-rose-500/10 hover:bg-rose-500/20' : 'bg-rose-50 text-rose-600 border-rose-100 hover:bg-rose-100'}`} title="Sil"><Trash2 size={14} /></button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                  ) : (
+                    <div className="py-20 text-center text-slate-500 font-bold italic opacity-40">İşlem geçmişi bulunmuyor.</div>
+                  )}
+
+                  <div className="pt-8 flex justify-center">
+                    <button
+                      onClick={() => handleViewChange('analysis')}
+                      className="text-[12px] font-black text-slate-400 uppercase tracking-[3.6px] px-8 py-5 rounded-[24px] border-2 border-dashed border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-all w-full"
+                    >
+                      TÜMÜNÜ GÖR
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Distribution & Payments Section */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Distribution Widget */}
+                <div className={`p-8 rounded-[48px] border transition-all ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                  <h3 className={`text-lg font-black mb-8 flex items-center gap-3 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                    <PieIcon size={20} className="text-blue-500" /> HARCAMA DAĞILIMI
+                  </h3>
+                  <div className="relative min-h-[400px]">
+                    <DistributionChart cards={cards} transactions={transactions} isDarkMode={isDarkMode} categories={categories} />
+                  </div>
+                </div>
+
+                {/* Payments Widget */}
+                <div className={`p-8 rounded-[48px] border transition-all ${isDarkMode ? 'bg-[#0b0f1a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                  <h3 className={`text-lg font-black mb-8 flex items-center gap-3 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                    <Calendar size={20} className="text-blue-500" /> ÖDEME TAKVİMİ
+                  </h3>
+                  <div className="space-y-4">
+                    {cards.length > 0 ? (
+                      [...cards].sort((a, b) => a.dueDay - b.dueDay).map(card => (
+                        <div key={card.id} className={`group flex items-center justify-between p-4 rounded-[28px] transition-all border ${isDarkMode ? 'bg-slate-800/20 border-slate-800 hover:bg-slate-800/40' : 'bg-slate-50 border-slate-100 hover:bg-white shadow-sm'}`}>
+                          <div className="flex items-center gap-4">
+                            <div className="w-1.5 h-10 rounded-full" style={{ backgroundColor: card.color }} />
+                            <div>
+                              <p className="font-black text-sm uppercase" style={{ color: card.color }}>{card.cardName}</p>
+                              <span className="text-[10px] font-bold text-slate-500 uppercase">AYIN {card.dueDay}. GÜNÜ</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4 ml-auto">
+                            <div className="flex flex-col gap-1.5 items-end min-w-[140px]">
+                              <div className="flex items-center gap-3">
+                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">ASGARİ TUTAR</span>
+                                <span className={`font-black text-sm tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                                  {(widgetsData.cardStatements[card.id]?.minPayment || 0).toLocaleString('tr-TR')} ₺
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">DÖNEM BORCU</span>
+                                <span className={`font-black text-sm tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                                  {(widgetsData.cardStatements[card.id]?.totalDebt || 0).toLocaleString('tr-TR')} ₺
+                                </span>
+                              </div>
+                            </div>
+                            <button onClick={() => handleAddToCalendarClick(card)} className={`p-3 rounded-xl transition-all ${isDarkMode ? 'bg-slate-700 text-blue-400 hover:bg-blue-600 hover:text-white' : 'bg-white text-blue-600 hover:bg-blue-600 hover:text-white border'}`}><CalendarPlus size={18} /></button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="py-12 text-center text-slate-500 font-bold italic opacity-40">Henüz kart eklenmemiş.</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Advanced Analytics Section */}
+              <div className="pt-8">
+                <MonthlyAnalysis transactions={transactions} cards={cards} isDarkMode={isDarkMode} categories={categories} />
+              </div>
+            </div>
           ) : view === 'cards' ? (
             <div className="animate-none transition-none transform-none">
               <CardsListView cards={cards} transactions={transactions} isDarkMode={isDarkMode} onEdit={startEdit} onDelete={setCardToDelete} onAddToCalendar={handleAddToCalendarClick} onShowStatement={handleShowStatementClick} onShowArchive={handleShowArchiveClick} onAddCard={() => setModalMode('add')} onBack={() => setView('dashboard')} onEditTransaction={startEditTransaction} onDeleteTransaction={setTransactionToDelete} categories={categories} />
@@ -2104,23 +2238,25 @@ const App: React.FC = () => {
       }
 
       {/* Premium View Transition Overlay */}
-      {isChangingView && (
-        <div className="fixed inset-0 z-[3000] flex flex-col items-center justify-center bg-[#070b14]/95 backdrop-blur-xl animate-in fade-in duration-300">
-          <div className="flex flex-col items-center animate-in zoom-in-95 slide-in-from-bottom-4 duration-500">
-            <Logo isDarkMode={true} isAnimated={true} />
-            <div className="mt-8 flex flex-col items-center">
-              <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.5em] animate-pulse">LÜTFEN BEKLEYİN</span>
+      {
+        isChangingView && (
+          <div className="fixed inset-0 z-[3000] flex flex-col items-center justify-center bg-[#070b14]/95 backdrop-blur-xl animate-in fade-in duration-300">
+            <div className="flex flex-col items-center animate-in zoom-in-95 slide-in-from-bottom-4 duration-500">
+              <Logo isDarkMode={true} isAnimated={true} />
+              <div className="mt-8 flex flex-col items-center">
+                <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.5em] animate-pulse">LÜTFEN BEKLEYİN</span>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => { if (user) setIsAuthModalOpen(false); }}
         isDarkMode={isDarkMode}
       />
-    </div>
+    </div >
   );
 };
 

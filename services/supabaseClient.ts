@@ -16,5 +16,8 @@ export const supabase: SupabaseClient | null = (supabaseUrl && supabaseAnonKey)
 
 if (!supabase) {
     console.warn('Supabase configuration missing or invalid. Cloud sync features will be disabled.');
+} else {
+    // Expose to window for console debugging
+    (window as any).supabase = supabase;
+    console.log('[Supabase] Client initialized and exposed to window.supabase for debugging');
 }
-

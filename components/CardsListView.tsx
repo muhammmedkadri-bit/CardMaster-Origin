@@ -5,6 +5,7 @@ import DateRangePicker from './DateRangePicker';
 import PagePicker from './PagePicker';
 import { smoothScrollTo } from '../utils/scrollUtils';
 import { CreditCard, Transaction, Category } from '../types';
+import { creditCardService } from '../services/creditCardService';
 import {
   Plus,
   CreditCard as CardIcon,
@@ -50,6 +51,29 @@ interface CardsListViewProps {
 
 type LocalTimeRange = 'today' | 'thisweek' | 'thismonth' | 'thisyear' | 'custom';
 
+// Helper: Get installment info from transaction
+const getInstallmentInfo = (tx: Transaction): { current: number; total: number } | null => {
+  const installments = (tx as any).installments || 1;
+  const installmentNumber = (tx as any).installmentNumber || 1;
+  if (installments <= 1 || (tx as any).expenseType !== 'installment') return null;
+
+  return { current: installmentNumber, total: installments };
+};
+
+// Installment Pill Component
+const InstallmentPill: React.FC<{ tx: Transaction; size?: 'sm' | 'md' }> = ({ tx, size = 'sm' }) => {
+  const info = getInstallmentInfo(tx);
+  if (!info) return null;
+
+  const textSize = size === 'sm' ? 'text-[8px]' : 'text-[9px]';
+  const padding = size === 'sm' ? 'px-2 py-0.5' : 'px-2.5 py-1';
+
+  return (
+    <span className={`${padding} rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-black ${textSize} uppercase tracking-wide whitespace-nowrap`}>
+      {info.current}/{info.total} Taksit
+    </span>
+  );
+};
 
 
 const CardsListView: React.FC<CardsListViewProps> = ({
@@ -145,42 +169,48 @@ const CardsListView: React.FC<CardsListViewProps> = ({
   const getFilteredTransactions = (cardId: string) => {
     let list = transactions.filter(t => t.cardId === cardId);
     const now = new Date();
-    const start = new Date(now);
-    const end = new Date(now);
+    let start: Date;
+    let end: Date;
 
     if (localRange === 'today') {
+      start = new Date(now);
       start.setHours(0, 0, 0, 0);
+      end = new Date(now);
       end.setHours(23, 59, 59, 999);
-      list = list.filter(t => {
-        const d = new Date(t.date);
-        return d >= start && d <= end;
-      });
     } else if (localRange === 'thisweek') {
       const day = now.getDay();
-      const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+      const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday
+      start = new Date(now);
       start.setDate(diff);
       start.setHours(0, 0, 0, 0);
-      list = list.filter(t => new Date(t.date) >= start);
+      end = new Date(start);
+      end.setDate(start.getDate() + 6); // Sunday
+      end.setHours(23, 59, 59, 999);
     } else if (localRange === 'thismonth') {
-      start.setDate(1);
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
       start.setHours(0, 0, 0, 0);
-      list = list.filter(t => new Date(t.date) >= start);
+      end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      end.setHours(23, 59, 59, 999);
     } else if (localRange === 'thisyear') {
-      start.setMonth(0, 1);
+      start = new Date(now.getFullYear(), 0, 1);
       start.setHours(0, 0, 0, 0);
-      list = list.filter(t => new Date(t.date) >= start);
+      end = new Date(now.getFullYear(), 11, 31);
+      end.setHours(23, 59, 59, 999);
     } else if (localRange === 'custom') {
-      const cStart = new Date(customStart);
-      cStart.setHours(0, 0, 0, 0);
-      const cEnd = new Date(customEnd);
-      cEnd.setHours(23, 59, 59, 999);
-      list = list.filter(t => {
-        const d = new Date(t.date);
-        return d >= cStart && d <= cEnd;
-      });
+      start = new Date(customStart);
+      start.setHours(0, 0, 0, 0);
+      end = new Date(customEnd);
+      end.setHours(23, 59, 59, 999);
+    } else {
+      return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }
 
-    return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return list
+      .filter(t => {
+        const d = new Date(t.date);
+        return d >= start && d <= end;
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   };
 
   // Optimize: Memoize transactions for all cards to prevent recalculation on every render
@@ -302,16 +332,27 @@ const CardsListView: React.FC<CardsListViewProps> = ({
       {/* Cards Detailed List */}
       <div className="space-y-6">
         {filteredCards.length > 0 ? filteredCards.map((card) => {
-          const balanceValue = card.balance;
-          const isCreditBalance = balanceValue < 0;
-          const isNeutralBalance = balanceValue === 0;
-          const displayBalance = Math.abs(balanceValue);
-          const utilization = isNeutralBalance ? 0 : (balanceValue > 0 ? (balanceValue / card.limit) * 100 : 0);
-          const remainingLimit = card.limit - card.balance;
-          const isHighUsage = utilization >= 80;
-          const estimatedMinPayment = card.balance > 0 ? (card.balance * (card.minPaymentRatio / 100)) : 0;
-          const isExpanded = expandedCardId === card.id;
           const cardTransactions = transactionsByCard[card.id] || [];
+
+          // Calculate requested values using FULL transactions (unfiltered) for financial accuracy
+          const currentPeriod = creditCardService.getCurrentPeriod(card);
+          const rawCardTransactions = transactions.filter(t => t.cardId === card.id);
+          const currentStatement = creditCardService.calculateStatement(card, rawCardTransactions, currentPeriod);
+
+          // Consistent with App.tsx: currentDebt is the TOTAL liability (Single + All Installments)
+          const totalDebtValue = card.currentDebt || 0;
+          const statementDebt = currentStatement.totalDebt; // Debt strictly for the current statement
+
+          const isCreditBalance = totalDebtValue < 0;
+          const isNeutralBalance = totalDebtValue === 0;
+
+          // Utilization is based on TOTAL debt (blocking the limit)
+          const utilization = totalDebtValue > 0 ? (totalDebtValue / card.limit) * 100 : 0;
+          const remainingLimit = card.limit - totalDebtValue;
+
+          const isHighUsage = utilization >= 80;
+          const estimatedMinPayment = currentStatement.minPayment;
+          const isExpanded = expandedCardId === card.id;
           const totalPages = Math.ceil(cardTransactions.length / ITEMS_PER_PAGE);
           const paginatedTransactions = cardTransactions.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
@@ -430,7 +471,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                     </div>
                     <div className="flex justify-between items-center text-[10px] font-black text-slate-500 uppercase tracking-tight">
                       <span className={isCreditBalance ? 'text-emerald-500 font-black' : ''}>
-                        {isCreditBalance ? 'ALACAK' : 'BORÇ'}: {displayBalance.toLocaleString('tr-TR')} ₺
+                        {isCreditBalance ? 'ALACAK' : 'Kart Toplam Borcu'}: {Math.abs(totalDebtValue).toLocaleString('tr-TR')} ₺
                       </span>
                       <span>LİMİT: {card.limit.toLocaleString('tr-TR')} ₺</span>
                     </div>
@@ -550,7 +591,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                                         : 'bg-white text-slate-500 border-slate-100 hover:bg-slate-50 hover:border-slate-200 shadow-sm'
                                       } active:scale-95`}
                                   >
-                                    {r === 'today' ? 'Bugün' : r === 'thisweek' ? 'Hafta' : r === 'thismonth' ? 'Ay' : r === 'thisyear' ? 'Yıl' : 'Özel'}
+                                    {r === 'today' ? 'Bugün' : r === 'thisweek' ? 'Bu Hafta' : r === 'thismonth' ? 'Bu Ay' : r === 'thisyear' ? 'Bu Yıl' : 'Özel'}
                                   </button>
                                 ))}
                               </div>
@@ -611,22 +652,7 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                                           <p className={`text-[13px] font-black tracking-tight truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
                                             {tx.description || (isSpending ? 'Harcama' : 'Ödeme')}
                                           </p>
-                                          {isSpending && tx.expenseType === 'installment' && (
-                                            <div className="flex items-center gap-1.5 mt-0.5">
-                                              <TrendingUp size={10} className="text-blue-500" />
-                                              <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">
-                                                {tx.installments} TAKSİT ({tx.installmentAmount?.toLocaleString('tr-TR')} ₺ / Ay)
-                                              </span>
-                                            </div>
-                                          )}
-                                          {isSpending && tx.expenseType === 'cash_advance' && (
-                                            <div className="flex items-center gap-1.5 mt-0.5">
-                                              <Zap size={10} className="text-rose-500" />
-                                              <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest">
-                                                TAKSİTLİ NAKİT AVANS
-                                              </span>
-                                            </div>
-                                          )}
+                                          <InstallmentPill tx={tx} size="sm" />
                                         </div>
                                         <p className={`text-sm font-black tracking-tighter shrink-0 ${isSpending ? 'text-rose-500' : 'text-emerald-500'}`}>
                                           {isSpending ? '-' : '+'} {tx.amount.toLocaleString('tr-TR')} ₺
@@ -649,25 +675,12 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                                           {isSpending ? <ShoppingBag size={16} /> : <PaymentIcon size={16} />}
                                         </div>
                                         <div className="flex flex-col min-w-0">
-                                          <p className={`font-black text-sm tracking-tight truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-                                            {tx.description || (isSpending ? 'HARCAMA' : 'ÖDEME')}
-                                          </p>
-                                          {isSpending && tx.expenseType === 'installment' && (
-                                            <div className="flex items-center gap-1.5 mb-1">
-                                              <TrendingUp size={10} className="text-blue-600" />
-                                              <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest">
-                                                {tx.installments} TAKSİT ({tx.installmentAmount?.toLocaleString('tr-TR')} ₺ / AY)
-                                              </span>
-                                            </div>
-                                          )}
-                                          {isSpending && tx.expenseType === 'cash_advance' && (
-                                            <div className="flex items-center gap-1.5 mb-1">
-                                              <Zap size={10} className="text-rose-600" />
-                                              <span className="text-[9px] font-black text-rose-600 uppercase tracking-widest">
-                                                TAKSİTLİ NAKİT AVANS
-                                              </span>
-                                            </div>
-                                          )}
+                                          <div className="flex items-center gap-2">
+                                            <p className={`font-black text-sm tracking-tight truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+                                              {tx.description || (isSpending ? 'HARCAMA' : 'ÖDEME')}
+                                            </p>
+                                            <InstallmentPill tx={tx} size="sm" />
+                                          </div>
                                           <div className="flex items-center gap-2 mt-0.5">
                                             <div className="px-2 py-0.5 rounded-md border text-[8px] font-black tracking-widest" style={{ color: cardColor, borderColor: `${cardColor}40`, backgroundColor: `${cardColor}15` }}>
                                               {card.cardName.toLocaleUpperCase('tr-TR')}
@@ -797,9 +810,8 @@ const CardsListView: React.FC<CardsListViewProps> = ({
         )}
       </div>
 
-      {/* Quick Summary Footer */}
       {
-        cards.length > 0 && (
+        cards.length > 0 && filteredCards.length > 0 && (
           <div className={`mt-4 p-8 sm:p-10 rounded-[40px] border grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
             <div className="flex items-center gap-5">
               <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-500'}`}>
@@ -831,9 +843,8 @@ const CardsListView: React.FC<CardsListViewProps> = ({
               <div>
                 <span className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] block mb-0.5">TOPLAM BORÇ</span>
                 <RollingNumber
-                  value={filteredCards.reduce((a, b) => a + (b.balance > 0 ? b.balance : 0), 0)}
+                  value={filteredCards.reduce((a, b) => a + Math.max(0, b.currentDebt || 0), 0)}
                   className="text-xl font-black text-rose-500"
-                  showSign={filteredCards.reduce((a, b) => a + (b.balance > 0 ? b.balance : 0), 0) > 0}
                 />
               </div>
             </div>
@@ -843,9 +854,9 @@ const CardsListView: React.FC<CardsListViewProps> = ({
                 <Zap size={20} />
               </div>
               <div>
-                <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] block mb-0.5">TOPLAM ASGARİ</span>
+                <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] block mb-0.5">KALAN LİMİT</span>
                 <RollingNumber
-                  value={filteredCards.reduce((acc, c) => acc + (c.balance > 0 ? (c.balance * (c.minPaymentRatio / 100)) : 0), 0)}
+                  value={filteredCards.reduce((acc, c) => acc + (c.availableLimit || 0), 0)}
                   className="text-xl font-black text-blue-600"
                 />
               </div>

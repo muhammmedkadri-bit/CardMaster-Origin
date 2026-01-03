@@ -20,6 +20,7 @@ import {
   Area
 } from 'recharts';
 import { Transaction, CreditCard, Category } from '../types';
+import { creditCardService } from '../services/creditCardService';
 import {
   FileText,
   TrendingUp,
@@ -61,7 +62,31 @@ interface AnalysisViewProps {
   lastUpdate?: number;
 }
 
-type TimeRange = 'today' | 'thisweek' | 'thismonth' | 'thisyear' | 'custom';
+type TimeRange = 'today' | 'thisweek' | 'thismonth' | 'thisyear' | 'custom' | 'statement';
+
+// Helper: Get installment info from transaction
+const getInstallmentInfo = (tx: Transaction): { current: number; total: number } | null => {
+  const installments = (tx as any).installments || 1;
+  const installmentNumber = (tx as any).installmentNumber || 1;
+  if (installments <= 1 || (tx as any).expenseType !== 'installment') return null;
+
+  return { current: installmentNumber, total: installments };
+};
+
+// Installment Pill Component
+const InstallmentPill: React.FC<{ tx: Transaction; size?: 'sm' | 'md' }> = ({ tx, size = 'sm' }) => {
+  const info = getInstallmentInfo(tx);
+  if (!info) return null;
+
+  const textSize = size === 'sm' ? 'text-[8px]' : 'text-[9px]';
+  const padding = size === 'sm' ? 'px-2 py-0.5' : 'px-2.5 py-1';
+
+  return (
+    <span className={`${padding} rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-black ${textSize} uppercase tracking-wide whitespace-nowrap`}>
+      {info.current}/{info.total} Taksit
+    </span>
+  );
+};
 
 const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDarkMode, onBack, onEditTransaction, onDeleteTransaction, categories, lastUpdate }) => {
   const [selectedBank, setSelectedBank] = React.useState<string>('all');
@@ -161,18 +186,29 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
       start.setHours(0, 0, 0, 0);
       end.setHours(23, 59, 59, 999);
     } else if (timeRange === 'thismonth') {
-      start.setDate(1);
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
       start.setHours(0, 0, 0, 0);
+      end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
       end.setHours(23, 59, 59, 999);
     } else if (timeRange === 'thisyear') {
-      start.setMonth(0, 1);
+      start = new Date(now.getFullYear(), 0, 1);
       start.setHours(0, 0, 0, 0);
+      end = new Date(now.getFullYear(), 11, 31);
       end.setHours(23, 59, 59, 999);
     } else if (timeRange === 'custom') {
       start = new Date(customStart);
       end = new Date(customEnd);
       start.setHours(0, 0, 0, 0);
       end.setHours(23, 59, 59, 999);
+    } else if (timeRange === 'statement') {
+      if (selectedCardId !== 'all') {
+        const card = cards.find(c => c.id === selectedCardId);
+        if (card) {
+          const period = creditCardService.getCurrentPeriod(card);
+          start = period.startDate;
+          end = period.endDate;
+        }
+      }
     }
 
     // Pre-map dates to timestamps for faster comparison and sorting
@@ -215,16 +251,33 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
         : { ...(cards.find(c => c.id === selectedCardId) || {}), cardName: cards.find(c => c.id === selectedCardId)?.cardName || 'Bilinmeyen Kart', balance: periodBalance };
 
     let minPayment = 0;
+    let statementBalance = periodBalance;
+    let previousBalance = 0;
+
     if (selectedCardId !== 'all') {
       const card = cards.find(c => c.id === selectedCardId);
-      if (card) minPayment = (card.balance * (card.minPaymentRatio || 20)) / 100;
+      if (card) {
+        // If we are looking at the statement period, use the actual service calculation
+        if (timeRange === 'statement') {
+          const period = creditCardService.getCurrentPeriod(card);
+          const statement = creditCardService.calculateStatement(card, transactions, period);
+          statementBalance = statement.totalDebt;
+          minPayment = statement.minPayment;
+          previousBalance = statement.previousBalance;
+        } else {
+          // Standard calculation for other ranges
+          minPayment = (card.balance * (card.minPaymentRatio || 20)) / 100;
+          statementBalance = periodBalance;
+        }
+      }
     } else {
-      // For bank or general overview, sum all relevant cards' min payments
+      // For bank or general overview
       minPayment = bankFilteredCards.reduce((acc, c) => acc + (c.balance > 0 ? (c.balance * (c.minPaymentRatio / 100)) : 0), 0);
+      statementBalance = periodBalance;
     }
 
-    return { cardData, spending, payment, minPayment };
-  }, [selectedBank, selectedCardId, cards, bankFilteredCards, filteredTransactions, lastUpdate]);
+    return { cardData, spending, payment, minPayment, statementBalance, previousBalance };
+  }, [selectedBank, selectedCardId, cards, bankFilteredCards, filteredTransactions, timeRange, lastUpdate, transactions]);
 
   const trendData = useMemo(() => {
     const data: Record<string, { label: string, spending: number, payment: number, net: number, timestamp: number }> = {};
@@ -242,18 +295,29 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
       start.setHours(0, 0, 0, 0);
       end.setHours(23, 59, 59, 999);
     } else if (timeRange === 'thismonth') {
-      start.setDate(1);
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
       start.setHours(0, 0, 0, 0);
+      end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
       end.setHours(23, 59, 59, 999);
     } else if (timeRange === 'thisyear') {
-      start.setMonth(0, 1);
+      start = new Date(now.getFullYear(), 0, 1);
       start.setHours(0, 0, 0, 0);
+      end = new Date(now.getFullYear(), 11, 31);
       end.setHours(23, 59, 59, 999);
     } else if (timeRange === 'custom') {
       start = new Date(customStart);
       end = new Date(customEnd);
       start.setHours(0, 0, 0, 0);
       end.setHours(23, 59, 59, 999);
+    } else if (timeRange === 'statement') {
+      if (selectedCardId !== 'all') {
+        const card = cards.find(c => c.id === selectedCardId);
+        if (card) {
+          const period = creditCardService.getCurrentPeriod(card);
+          start = period.startDate;
+          end = period.endDate;
+        }
+      }
     }
 
     // Calculate duration in days to decide aggregation strategy
@@ -318,6 +382,75 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
       })
       .sort((a, b) => b.value - a.value);
   }, [filteredTransactions, categories, lastUpdate]);
+
+  // TÜM DÖNEMLER - GENEL İSTATİSTİKLER
+  const allTimeStats = useMemo(() => {
+    const totalSpending = transactions
+      .filter(t => t.type === 'spending')
+      .reduce((acc, t) => acc + t.amount, 0);
+
+    const totalPayment = transactions
+      .filter(t => t.type === 'payment')
+      .reduce((acc, t) => acc + t.amount, 0);
+
+    const totalDebt = totalSpending - totalPayment;
+
+    return { totalSpending, totalPayment, totalDebt };
+  }, [transactions, lastUpdate]);
+
+  // TÜM DÖNEMLER - BANKA BAZLI BORÇ DAĞILIMI
+  const bankDistribution = useMemo(() => {
+    const bankData: Record<string, { spending: number; payment: number; debt: number; color: string }> = {};
+
+    transactions.forEach(t => {
+      const card = cards.find(c => c.id === t.cardId);
+      if (!card) return;
+
+      const bankName = card.bankName;
+      if (!bankData[bankName]) {
+        bankData[bankName] = { spending: 0, payment: 0, debt: 0, color: card.color || '#3b82f6' };
+      }
+
+      if (t.type === 'spending') {
+        bankData[bankName].spending += t.amount;
+      } else {
+        bankData[bankName].payment += t.amount;
+      }
+      bankData[bankName].debt = bankData[bankName].spending - bankData[bankName].payment;
+    });
+
+    return Object.entries(bankData)
+      .map(([name, data]) => ({
+        name: name.toLocaleUpperCase('tr-TR'),
+        value: Math.max(0, data.debt),
+        spending: data.spending,
+        payment: data.payment,
+        color: data.color
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, [transactions, cards, lastUpdate]);
+
+  // TÜM DÖNEMLER - KATEGORİ BAZLI HARCAMA DAĞILIMI
+  const allTimeCategoryData = useMemo(() => {
+    const data: Record<string, number> = {};
+    transactions
+      .filter(t => t.type === 'spending')
+      .forEach(t => {
+        const cat = t.category || 'Diğer';
+        data[cat] = (data[cat] || 0) + t.amount;
+      });
+
+    return Object.entries(data)
+      .map(([name, value]) => {
+        const catInfo = categories.find(c => c.name.toLocaleLowerCase('tr-TR') === name.toLocaleLowerCase('tr-TR'));
+        return {
+          name: name.toLocaleUpperCase('tr-TR'),
+          value,
+          color: catInfo?.color || '#6b7280'
+        };
+      })
+      .sort((a, b) => b.value - a.value);
+  }, [transactions, categories, lastUpdate]);
 
   React.useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -530,15 +663,16 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
             </div>
 
             <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-4">
-              {(['today', 'thisweek', 'thismonth', 'thisyear', 'custom'] as TimeRange[]).map(range => (
+              {(['today', 'thisweek', 'thismonth', 'thisyear', 'statement', 'custom'] as TimeRange[]).map(range => (
                 <button
                   key={range}
+                  disabled={range === 'statement' && selectedCardId === 'all'}
                   onClick={() => {
                     React.startTransition(() => {
                       setTimeRange(range);
                     });
                   }}
-                  className={`px-3 py-4 sm:px-6 sm:py-3.5 rounded-[20px] text-[9px] sm:text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 select-none border ${timeRange === range
+                  className={`px-3 py-4 sm:px-6 sm:py-3.5 rounded-[20px] text-[9px] sm:text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 select-none border ${range === 'statement' && selectedCardId === 'all' ? 'opacity-30 cursor-not-allowed' : ''} ${timeRange === range
                     ? (isDarkMode
                       ? 'bg-slate-700 text-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-black/20 translate-y-[1px]'
                       : 'bg-white text-blue-600 shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)] border-slate-200/50 translate-y-[1px]')
@@ -547,7 +681,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                       : 'bg-white text-slate-500 border-slate-100 shadow-sm hover:bg-slate-50 hover:border-slate-200'
                     } active:scale-95`}
                 >
-                  {range === 'today' ? 'Bugün' : range === 'thisweek' ? 'Bu Hafta' : range === 'thismonth' ? 'Bu Ay' : range === 'thisyear' ? 'Bu Yıl' : 'Özel'}
+                  {range === 'today' ? 'Bugün' : range === 'thisweek' ? 'Bu Hafta' : range === 'thismonth' ? 'Bu Ay' : range === 'thisyear' ? 'Bu Yıl' : range === 'statement' ? 'HESAP DÖNEMİ' : 'Özel'}
                 </button>
               ))}
             </div>
@@ -655,11 +789,11 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
               {cardStats.cardData!.balance === 0 ? '' : (cardStats.cardData!.balance < 0 ? '+' : '-')}
             </span>
             <RollingNumber
-              value={Math.abs(cardStats.cardData!.balance)}
-              className={`text-4xl font-black tracking-tighter ${cardStats.cardData!.balance === 0 ? (isDarkMode ? 'text-white' : 'text-slate-900') : (cardStats.cardData!.balance < 0 ? 'text-emerald-500' : (isDarkMode ? 'text-white' : 'text-slate-900'))}`}
+              value={Math.abs(cardStats.statementBalance)}
+              className={`text-4xl font-black tracking-tighter ${cardStats.statementBalance === 0 ? (isDarkMode ? 'text-white' : 'text-slate-900') : (cardStats.statementBalance < 0 ? 'text-emerald-500' : (isDarkMode ? 'text-white' : 'text-slate-900'))}`}
             />
           </div>
-          <div className="flex items-center gap-2 text-slate-500 font-bold text-xs">
+          <div className="flex items-center gap-2 text-slate-500 font-bold text-xs mt-4">
             <Clock size={14} />
             <span>Son Güncelleme: {new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
           </div>
@@ -673,7 +807,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
               className={`text-2xl font-black ${isDarkMode ? 'text-rose-400' : 'text-rose-600'}`}
             />
           </div>
-          <div className={`w-14 h-14 rounded-2xl bg-rose-500/10 flex items-center justify-center ${isDarkMode ? 'text-rose-400' : 'text-rose-500'}`}>
+          <div className={`w-14 h-14 rounded-2xl bg-rose-500/10 flex items-center justify-center ${isDarkMode ? 'text-rose-400' : 'text-rose-600'}`}>
             <TrendingUp size={24} />
           </div>
         </div>
@@ -686,7 +820,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
               className={`text-2xl font-black ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}
             />
           </div>
-          <div className={`w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center ${isDarkMode ? 'text-emerald-400' : 'text-emerald-500'}`}>
+          <div className={`w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
             <Zap size={24} />
           </div>
         </div>
@@ -843,6 +977,89 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
         </div>
       </div>
 
+      {/* TÜM DÖNEMLER DAĞILIMI - Yeni Bölüm */}
+      <div className="mb-12">
+        <div className={`p-8 sm:p-12 rounded-[48px] border transition-all ${isDarkMode ? 'bg-gradient-to-br from-purple-900/20 to-indigo-900/20 border-white/10' : 'bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-100 shadow-lg'}`}>
+          <div className="flex items-center gap-4 mb-10">
+            <div className="w-1.5 h-8 bg-purple-500 rounded-full"></div>
+            <h3 className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>TÜM DÖNEMLER DAĞILIMI</h3>
+          </div>
+
+          {/* Özet Kartları */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
+            <div className={`p-6 rounded-[28px] border ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-white border-slate-100 shadow-sm'}`}>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">TOPLAM HARCAMA</p>
+              <RollingNumber value={allTimeStats.totalSpending} className={`text-2xl font-black ${isDarkMode ? 'text-rose-400' : 'text-rose-600'}`} />
+              <span className="text-sm font-bold text-slate-500 ml-1">₺</span>
+            </div>
+            <div className={`p-6 rounded-[28px] border ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-white border-slate-100 shadow-sm'}`}>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">TOPLAM ÖDEME</p>
+              <RollingNumber value={allTimeStats.totalPayment} className={`text-2xl font-black ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`} />
+              <span className="text-sm font-bold text-slate-500 ml-1">₺</span>
+            </div>
+            <div className={`p-6 rounded-[28px] border ${isDarkMode ? 'bg-purple-500/10 border-purple-500/20' : 'bg-purple-50 border-purple-200'}`}>
+              <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest mb-2">NET BORÇ</p>
+              <RollingNumber value={Math.max(0, allTimeStats.totalDebt)} className={`text-2xl font-black text-purple-600`} />
+              <span className="text-sm font-bold text-purple-400 ml-1">₺</span>
+            </div>
+          </div>
+
+          {/* Banka Bazlı Dağılım */}
+          {bankDistribution.length > 0 && (
+            <div className="mb-8">
+              <p className={`text-xs font-black uppercase tracking-widest mb-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>BANKA BAZLI BORÇ DAĞILIMI</p>
+              <div className="space-y-3">
+                {bankDistribution.map((bank, idx) => {
+                  const maxValue = Math.max(...bankDistribution.map(b => b.value));
+                  const percentage = maxValue > 0 ? (bank.value / maxValue) * 100 : 0;
+                  return (
+                    <div key={idx} className={`p-4 rounded-2xl border transition-all ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-white border-slate-100'}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-6 rounded-full" style={{ backgroundColor: bank.color }}></div>
+                          <span className={`font-black text-sm ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{bank.name}</span>
+                        </div>
+                        <span className={`font-black text-sm ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{bank.value.toLocaleString('tr-TR')} ₺</span>
+                      </div>
+                      <div className={`h-2 rounded-full overflow-hidden ${isDarkMode ? 'bg-white/10' : 'bg-slate-100'}`}>
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${percentage}%`, backgroundColor: bank.color }}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Kategori Bazlı Tüm Dönem Harcamaları */}
+          {allTimeCategoryData.length > 0 && (
+            <div>
+              <p className={`text-xs font-black uppercase tracking-widest mb-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>KATEGORİ BAZLI TÜM HARCAMALAR</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                {allTimeCategoryData.slice(0, 8).map((cat, idx) => {
+                  const percentage = allTimeStats.totalSpending > 0 ? (cat.value / allTimeStats.totalSpending) * 100 : 0;
+                  return (
+                    <div key={idx} className={`p-4 rounded-2xl border transition-all hover:scale-105 ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-white border-slate-100'}`}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }}></div>
+                        <span className={`text-[10px] font-black uppercase tracking-wide truncate ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>{cat.name}</span>
+                      </div>
+                      <p className={`text-lg font-black ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                        {cat.value.toLocaleString('tr-TR')} <span className="text-xs text-slate-500">₺</span>
+                      </p>
+                      <p className="text-[9px] font-bold text-slate-500 mt-1">%{percentage.toFixed(1)} pay</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Transactions Section */}
       <div id="analysis-transactions" className="grid grid-cols-1 gap-8 mb-0 scroll-mt-0 sm:scroll-mt-9">
         <div className={`p-8 sm:p-12 rounded-[40px] border transition-all ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-sm'}`}>
@@ -888,10 +1105,11 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                             </div>
                           </div>
                           <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <p className={`text-[13px] font-black tracking-tight truncate flex-1 ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                            <div className="flex flex-col gap-1 min-w-0 flex-1">
+                              <p className={`text-[13px] font-black tracking-tight truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
                                 {tx.description || tx.category}
                               </p>
+                              <InstallmentPill tx={tx} size="sm" />
                               {tx.confirmationUrl && (
                                 <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 text-blue-500" onClick={(e) => e.stopPropagation()}><ExternalLink size={12} /></a>
                               )}
@@ -919,6 +1137,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ cards, transactions, isDark
                                 <p className={`font-black text-sm tracking-tight truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
                                   {tx.description || tx.category}
                                 </p>
+                                <InstallmentPill tx={tx} size="sm" />
                                 {tx.confirmationUrl && (
                                   <a href={tx.confirmationUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 p-1 rounded-md text-blue-500 hover:bg-blue-500/10 transition-colors" onClick={(e) => e.stopPropagation()}><ExternalLink size={12} /></a>
                                 )}

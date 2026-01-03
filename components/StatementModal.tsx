@@ -24,6 +24,21 @@ interface StatementModalProps {
 
 type TimeRange = 'today' | 'thisweek' | '30days' | 'year' | 'custom';
 
+// Helper: Get installment info from transaction
+const getInstallmentInfo = (tx: Transaction): { current: number; total: number } | null => {
+  const installments = (tx as any).installments || 1;
+  const installmentNumber = (tx as any).installmentNumber || 1;
+  if (installments <= 1 || (tx as any).expenseType !== 'installment') return null;
+  return { current: installmentNumber, total: installments };
+};
+
+// Installment label for PDF description
+const getInstallmentLabel = (tx: Transaction): string => {
+  const info = getInstallmentInfo(tx);
+  if (!info) return '';
+  return ` (${info.current}/${info.total} Taksit)`;
+};
+
 const StatementModal: React.FC<StatementModalProps> = ({ card, transactions, isDarkMode, onClose }) => {
   const [timeRange, setTimeRange] = useState<TimeRange>('30days');
   const [customStart, setCustomStart] = useState<string>(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
@@ -248,7 +263,7 @@ const StatementModal: React.FC<StatementModalProps> = ({ card, transactions, isD
 
       const tableData = filteredTransactions.map(t => [
         formatDateDisplay(t.date),
-        (t.description || 'İŞLEM').toUpperCase(),
+        ((t.description || 'İŞLEM') + getInstallmentLabel(t)).toUpperCase(),
         (t.category || 'DİĞER').toUpperCase(),
         card.cardName.toUpperCase(),
         formatCurrency(t.amount)

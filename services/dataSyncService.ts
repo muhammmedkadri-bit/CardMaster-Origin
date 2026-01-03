@@ -8,23 +8,39 @@ export const dataSyncService = {
     async fetchAllData(userId: string) {
         if (!supabase) return null;
 
-        const [cards, transactions, categories, notifications, chat, autoPayments] = await Promise.all([
-            supabase.from('cards').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
-            supabase.from('transactions').select('*').eq('user_id', userId).order('date', { ascending: false }),
-            supabase.from('categories').select('*').eq('user_id', userId).order('name', { ascending: true }),
-            supabase.from('notifications').select('*').eq('user_id', userId).order('timestamp', { ascending: false }),
-            supabase.from('chat_history').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
-            supabase.from('auto_payments').select('*').eq('user_id', userId).order('day_of_month', { ascending: true })
-        ]);
+        try {
+            const [cards, transactions, categories, notifications, chat, autoPayments] = await Promise.all([
+                supabase.from('cards').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
+                supabase.from('transactions').select('*').eq('user_id', userId).order('date', { ascending: false }),
+                supabase.from('categories').select('*').eq('user_id', userId).order('name', { ascending: true }),
+                supabase.from('notifications').select('*').eq('user_id', userId).order('timestamp', { ascending: false }),
+                supabase.from('chat_history').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
+                supabase.from('auto_payments').select('*').eq('user_id', userId).order('day_of_month', { ascending: true })
+            ]);
 
-        return {
-            cards: (cards.data || []).map(c => this.mapCardFromDB(c)),
-            transactions: (transactions.data || []).map(t => this.mapTransactionFromDB(t)),
-            categories: (categories.data || []).map(cat => this.mapCategoryFromDB(cat)),
-            notifications: (notifications.data || []).map(n => this.mapNotificationFromDB(n)),
-            chat: (chat.data || []).map(m => this.mapChatFromDB(m)),
-            autoPayments: (autoPayments.data || []).map(ap => this.mapAutoPaymentFromDB(ap))
-        };
+            // If any critical fetch failed, return null instead of empty arrays
+            // This prevents overwriting local state with "nothing" due to a temporary network error
+            if (cards.error || transactions.error || categories.error) {
+                console.error('[DataSync] Fetch error:', {
+                    cards: cards.error,
+                    transactions: transactions.error,
+                    categories: categories.error
+                });
+                return null;
+            }
+
+            return {
+                cards: (cards.data || []).map(c => this.mapCardFromDB(c)),
+                transactions: (transactions.data || []).map(t => this.mapTransactionFromDB(t)),
+                categories: (categories.data || []).map(cat => this.mapCategoryFromDB(cat)),
+                notifications: (notifications.data || []).map(n => this.mapNotificationFromDB(n)),
+                chat: (chat.data || []).map(m => this.mapChatFromDB(m)),
+                autoPayments: (autoPayments.data || []).map(ap => this.mapAutoPaymentFromDB(ap))
+            };
+        } catch (e) {
+            console.error('[DataSync] Unknown fetch error:', e);
+            return null;
+        }
     },
 
     // --- REALTIME SUBSCRIPTION ---
@@ -85,7 +101,11 @@ export const dataSyncService = {
 
     // --- MUTATIONS ---
     async saveTransaction(userId: string, tx: Transaction) {
-        if (!supabase) return;
+        if (!supabase) {
+            console.error('[DataSync] Supabase client not initialized!');
+            throw new Error('Supabase client not available');
+        }
+
         const dbTx = {
             id: tx.id.length > 20 ? tx.id : undefined,
             user_id: userId,
@@ -95,10 +115,39 @@ export const dataSyncService = {
             category: tx.category,
             date: tx.date,
             description: tx.description,
-            confirmation_url: tx.confirmationUrl
+            confirmation_url: tx.confirmationUrl,
+            expense_type: tx.expenseType,
+            installments: (tx as any).installments,
+            installment_amount: (tx as any).installmentAmount,
+            total_amount: (tx as any).totalAmount,
+            installment_group_id: (tx as any).installmentGroupId,
+            installment_number: (tx as any).installmentNumber
         };
-        const result = await supabase.from('transactions').upsert(dbTx).select().single();
-        return result;
+
+        console.log('[DataSync] Saving transaction to Supabase:', {
+            txId: tx.id,
+            userId,
+            amount: tx.amount,
+            type: tx.type,
+            dbPayload: dbTx
+        });
+
+        const { data, error } = await supabase.from('transactions').upsert(dbTx).select().single();
+
+        if (error) {
+            console.error('❌ [DataSync] Supabase transaction save FAILED:', {
+                error,
+                code: error.code,
+                message: error.message,
+                details: error.details,
+                hint: error.hint
+            });
+            // CRITICAL: Throw the error so App.tsx can handle it
+            throw error;
+        }
+
+        console.log('✅ [DataSync] Transaction saved successfully:', data);
+        return { data, error: null };
     },
 
     async deleteTransaction(txId: string) {
@@ -107,7 +156,11 @@ export const dataSyncService = {
     },
 
     async upsertCard(userId: string, card: CreditCard) {
-        if (!supabase) return;
+        if (!supabase) {
+            console.error('[DataSync] Supabase client not initialized!');
+            throw new Error('Supabase client not available');
+        }
+
         const dbCard = {
             id: card.id.length > 20 ? card.id : undefined,
             user_id: userId,
@@ -115,13 +168,29 @@ export const dataSyncService = {
             card_name: card.cardName,
             last_four: card.lastFour,
             limit: card.limit,
-            balance: card.balance,
             statement_day: card.statementDay,
             due_day: card.dueDay,
             color: card.color,
             min_payment_ratio: card.minPaymentRatio
         };
-        return await supabase.from('cards').upsert(dbCard).select().single();
+
+        console.log('[DataSync] Saving card to Supabase:', { cardId: card.id, userId, cardName: card.cardName });
+
+        const { data, error } = await supabase.from('cards').upsert(dbCard).select().single();
+
+        if (error) {
+            console.error('❌ [DataSync] Supabase card save FAILED:', {
+                error,
+                code: error.code,
+                message: error.message,
+                details: error.details,
+                hint: error.hint
+            });
+            throw error;
+        }
+
+        console.log('✅ [DataSync] Card saved successfully:', data);
+        return { data, error: null };
     },
 
     async deleteCard(cardId: string) {
@@ -207,6 +276,20 @@ export const dataSyncService = {
         return await supabase.from('auto_payments').upsert(dbAp).select().single();
     },
 
+    async resetUserData(userId: string) {
+        if (!supabase) return;
+
+        // Parallel deletion across all user-related tables for a clean slate
+        return await Promise.all([
+            supabase.from('cards').delete().eq('user_id', userId),
+            supabase.from('transactions').delete().eq('user_id', userId),
+            supabase.from('categories').delete().eq('user_id', userId),
+            supabase.from('notifications').delete().eq('user_id', userId),
+            supabase.from('chat_history').delete().eq('user_id', userId),
+            supabase.from('auto_payments').delete().eq('user_id', userId)
+        ]);
+    },
+
     async deleteAutoPayment(id: string) {
         if (!supabase) return;
         return await supabase.from('auto_payments').delete().eq('id', id);
@@ -220,9 +303,8 @@ export const dataSyncService = {
             cardName: c.card_name,
             lastFour: c.last_four,
             limit: Number(c.limit),
-            balance: Number(c.balance),
             statementDay: c.statement_day,
-            dueDay: c.due_day,
+            dueDay: Number(c.due_day),
             color: c.color,
             minPaymentRatio: c.min_payment_ratio
         };
@@ -238,7 +320,14 @@ export const dataSyncService = {
             category: t.category,
             date: t.date,
             description: t.description,
-            confirmationUrl: t.confirmation_url
+            confirmationUrl: t.confirmation_url,
+            // Map metadata fields
+            expenseType: t.expense_type,
+            installments: t.installments,
+            installmentAmount: Number(t.installment_amount) || undefined,
+            totalAmount: Number(t.total_amount) || undefined,
+            installmentGroupId: t.installment_group_id,
+            installmentNumber: t.installment_number
         };
     },
 

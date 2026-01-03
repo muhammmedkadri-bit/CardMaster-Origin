@@ -26,6 +26,21 @@ interface StatementArchiveModalProps {
     onClose: () => void;
 }
 
+// Helper: Get installment info from transaction
+const getInstallmentInfo = (tx: Transaction): { current: number; total: number } | null => {
+    const installments = (tx as any).installments || 1;
+    const installmentNumber = (tx as any).installmentNumber || 1;
+    if (installments <= 1 || (tx as any).expenseType !== 'installment') return null;
+    return { current: installmentNumber, total: installments };
+};
+
+// Installment Pill Component for PDF description
+const getInstallmentLabel = (tx: Transaction): string => {
+    const info = getInstallmentInfo(tx);
+    if (!info) return '';
+    return ` (${info.current}/${info.total} Taksit)`;
+};
+
 const StatementArchiveModal: React.FC<StatementArchiveModalProps> = ({ card, transactions, isDarkMode, onClose }) => {
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const years = useMemo(() => {
@@ -160,10 +175,10 @@ const StatementArchiveModal: React.FC<StatementArchiveModalProps> = ({ card, tra
             doc.text(formatCurrency(monthData.spending), margin + 10, summaryY + 18);
             doc.text(formatCurrency(monthData.payment), pageWidth / 2, summaryY + 18);
 
-            // Transactions Table
+            // Transactions Table - Include installment info in description
             const tableData = monthData.transactions.map(t => [
                 new Date(t.date).toLocaleDateString('tr-TR'),
-                (t.description || 'İŞLEM').toUpperCase(),
+                ((t.description || 'İŞLEM') + getInstallmentLabel(t)).toUpperCase(),
                 (t.category || 'DİĞER').toUpperCase(),
                 t.type === 'spending' ? 'HARCAMA' : 'ÖDEME',
                 formatCurrency(t.amount)

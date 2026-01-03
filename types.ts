@@ -5,12 +5,12 @@ export interface CreditCard {
   cardName: string;
   lastFour: string;
   limit: number;
-  balance: number;
+  currentDebt: number;      // Current period debt
+  availableLimit: number;   // Calculated: limit - currentDebt
   statementDay: number;
   dueDay: number;
   color: string;
-  minPaymentRatio: number; // Asgari ödeme yüzdesi (örn: 20 veya 40)
-  // Added optional property used for utilization alerts in visualization components
+  minPaymentRatio: number;
   alertThreshold?: number;
 }
 
@@ -19,16 +19,17 @@ export interface Transaction {
   cardId: string;
   cardName: string;
   type: 'spending' | 'payment';
-  amount: number; // This remains the 'impact' amount (e.g., total for limit, or monthly installment depending on logic)
+  amount: number;
   category: string;
   date: string;
   description: string;
-  confirmationUrl?: string;
-  // Enhanced Fields
-  expenseType?: 'regular' | 'installment' | 'cash_advance';
+  expenseType: 'single' | 'installment';
   installments?: number;
   installmentAmount?: number;
   totalAmount?: number;
+  installmentGroupId?: string;
+  installmentNumber?: number;
+  confirmationUrl?: string;
 }
 
 export interface AIInsight {

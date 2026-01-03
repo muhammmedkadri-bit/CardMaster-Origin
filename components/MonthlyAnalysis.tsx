@@ -1,5 +1,6 @@
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
+import RollingNumber from './RollingNumber';
 import {
   BarChart,
   Bar,
@@ -23,6 +24,10 @@ interface MonthlyAnalysisProps {
 
 const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, isDarkMode, categories }) => {
   const [selectedCardId, setSelectedCardId] = useState<string>('all');
+  const [isMarqueePaused, setIsMarqueePaused] = useState(false);
+  const marqueeRef = useRef<HTMLDivElement>(null);
+  const scrollPosRef = useRef(0);
+  const dragRef = useRef({ isDragging: false, startX: 0, currentTranslation: 0 });
 
   const analysisData = useMemo(() => {
     const filteredTxs = selectedCardId === 'all'
@@ -32,13 +37,12 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
     // Group by month using a more robust Map-based approach
     const monthlyMap = new Map<string, { month: string, spending: number, payment: number, timestamp: number }>();
 
-    // Prepare exactly 12 months in chronological order
-    for (let i = 11; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(1); // Crucial: avoid month jumping
-      d.setMonth(d.getMonth() - i);
-      const key = `${d.getFullYear()}-${d.getMonth()}`;
-      const label = d.toLocaleString('tr-TR', { month: 'short', year: '2-digit' });
+    // Prepare all 12 months of the current year (January to December)
+    const currentYear = new Date().getFullYear();
+    for (let monthIdx = 0; monthIdx < 12; monthIdx++) {
+      const d = new Date(currentYear, monthIdx, 1);
+      const key = `${currentYear}-${monthIdx}`;
+      const label = d.toLocaleString('tr-TR', { month: 'short' }).toUpperCase();
       monthlyMap.set(key, {
         month: label,
         spending: 0,
@@ -47,18 +51,20 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
       });
     }
 
-    // Assign transactions to their respective months
+    // Assign transactions to their respective months (only current year)
     filteredTxs.forEach(t => {
       const date = new Date(t.date);
-      const key = `${date.getFullYear()}-${date.getMonth()}`;
-      if (monthlyMap.has(key)) {
-        const entry = monthlyMap.get(key)!;
-        if (t.type === 'spending') entry.spending += t.amount;
-        else entry.payment += t.amount;
+      if (date.getFullYear() === currentYear) {
+        const key = `${currentYear}-${date.getMonth()}`;
+        if (monthlyMap.has(key)) {
+          const entry = monthlyMap.get(key)!;
+          if (t.type === 'spending') entry.spending += t.amount;
+          else entry.payment += t.amount;
+        }
       }
     });
 
-    // Convert to sorted array for the chart
+    // Convert to sorted array for the chart (January to December)
     const monthlyChart = Array.from(monthlyMap.values())
       .sort((a, b) => a.timestamp - b.timestamp);
 
@@ -93,8 +99,82 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
       })
       .sort((a, b) => b.value - a.value);
 
-    return { monthlyChart, categoryBreakdown };
+    // Get current month name for display
+    const currentMonthName = new Date().toLocaleString('tr-TR', { month: 'long' }).toUpperCase();
+    const currentMonthData = monthlyChart[new Date().getMonth()] || { spending: 0, payment: 0 };
+
+    return { monthlyChart, categoryBreakdown, currentMonthName, currentMonthData };
   }, [transactions, selectedCardId, categories]);
+
+  // Ultra-Smooth GPU-Accelerated Infinite Scroll Logic
+  useEffect(() => {
+    const list = marqueeRef.current?.firstElementChild as HTMLDivElement;
+    if (!list || isMarqueePaused || dragRef.current.isDragging || analysisData.categoryBreakdown.length === 0) return;
+
+    let animationId: number;
+    let lastTime = performance.now();
+
+    // Initial sync
+    const initialWidth = list.scrollWidth / 3;
+    if (scrollPosRef.current === 0) {
+      scrollPosRef.current = -initialWidth;
+    }
+
+    const animate = (time: number) => {
+      if (list) {
+        const deltaTime = time - lastTime;
+        lastTime = time;
+        const speed = 45;
+        scrollPosRef.current -= (speed * deltaTime) / 1000;
+        const singleWidth = list.scrollWidth / 3;
+
+        if (Math.abs(scrollPosRef.current) >= singleWidth * 2) {
+          scrollPosRef.current += singleWidth;
+        } else if (scrollPosRef.current > -singleWidth / 2) {
+          if (scrollPosRef.current >= 0) {
+            scrollPosRef.current -= singleWidth;
+          }
+        }
+
+        list.style.transform = `translate3d(${scrollPosRef.current}px, 0, 0)`;
+        dragRef.current.currentTranslation = scrollPosRef.current;
+      }
+      animationId = requestAnimationFrame(animate);
+    };
+
+    animationId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationId);
+  }, [isMarqueePaused, analysisData.categoryBreakdown]);
+
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    setIsMarqueePaused(true);
+    dragRef.current.isDragging = true;
+    dragRef.current.startX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const list = marqueeRef.current?.firstElementChild as HTMLDivElement;
+    if (list) list.style.transition = 'none';
+  };
+
+  const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!dragRef.current.isDragging) return;
+    const x = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const walk = x - dragRef.current.startX;
+    dragRef.current.startX = x;
+
+    const list = marqueeRef.current?.firstElementChild as HTMLDivElement;
+    if (list) {
+      scrollPosRef.current += walk;
+      const singleSetWidth = list.scrollWidth / 3;
+      if (Math.abs(scrollPosRef.current) >= singleSetWidth * 2.5) scrollPosRef.current += singleSetWidth;
+      if (scrollPosRef.current >= -singleSetWidth / 2) scrollPosRef.current -= singleSetWidth;
+      list.style.transform = `translate3d(${scrollPosRef.current}px, 0, 0)`;
+      dragRef.current.currentTranslation = scrollPosRef.current;
+    }
+  };
+
+  const handleDragEnd = () => {
+    dragRef.current.isDragging = false;
+    setTimeout(() => setIsMarqueePaused(false), 50);
+  };
 
   return (
     <div className={`p-5 sm:p-8 md:p-10 rounded-[32px] sm:rounded-[40px] border transition-all ${isDarkMode ? 'bg-[#0f172a]/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
@@ -109,58 +189,61 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
 
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        <div className="lg:col-span-2">
-          <div className="h-[250px] sm:h-[350px] w-full">
+      <div className="w-full">
+        <div className="w-full">
+          <div className="h-[280px] sm:h-[380px] w-full -ml-4 sm:-ml-2">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analysisData.monthlyChart} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <BarChart
+                data={analysisData.monthlyChart}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                barGap={8}
+              >
                 <defs>
-                  <linearGradient id="spendingGradientMonthly" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0.1} />
+                  {/* 3D Spending Gradient */}
+                  <linearGradient id="3dSpendingMain" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#e11d48" />
+                    <stop offset="50%" stopColor="#fb7185" />
+                    <stop offset="100%" stopColor="#e11d48" />
                   </linearGradient>
-                  <linearGradient id="paymentGradientMonthly" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.1} />
+                  {/* 3D Payment Gradient */}
+                  <linearGradient id="3dPaymentMain" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#059669" />
+                    <stop offset="50%" stopColor="#34d399" />
+                    <stop offset="100%" stopColor="#059669" />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? '#334155' : '#f1f5f9'} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke={isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
+                />
                 <XAxis
                   dataKey="month"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: isDarkMode ? '#94a3b8' : '#64748b', fontSize: 11, fontWeight: 700 }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={60}
+                  tick={{ fill: isDarkMode ? '#64748b' : '#94a3b8', fontSize: 10, fontWeight: 700 }}
+                  minTickGap={30}
                 />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  width={85}
-                  domain={[0, 'auto']}
-                  nice={true}
-                  padding={{ top: 20 }}
-                  tick={{ fill: isDarkMode ? '#94a3b8' : '#64748b', fontSize: 11, fontWeight: 700 }}
-                  tickFormatter={(val) => `${val.toLocaleString('tr-TR')} ₺`}
+                  tick={{ fill: isDarkMode ? '#64748b' : '#94a3b8', fontSize: 10, fontWeight: 700 }}
+                  tickFormatter={(val) => `${val >= 1000 ? (val / 1000).toFixed(1) + 'k' : val} ₺`}
                 />
                 <Tooltip
-                  cursor={{ fill: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)', radius: 10 }}
+                  cursor={{ fill: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)' }}
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className={`p-4 rounded-[24px] border-none shadow-2xl animate-in zoom-in-95 duration-200 ${isDarkMode ? 'bg-slate-800/95 backdrop-blur-xl border border-slate-700' : 'bg-white/95 backdrop-blur-xl border border-slate-100'}`}>
-                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2.5 pb-2 border-b border-slate-200 dark:border-slate-700">{label}</p>
-                          <div className="space-y-1.5">
+                        <div className={`p-5 rounded-[24px] border-none shadow-2xl backdrop-blur-md transition-all duration-300 ${isDarkMode ? 'bg-[#1e293b]/90 border border-white/5' : 'bg-white/90 border border-slate-100'}`}>
+                          <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">{label}</p>
+                          <div className="space-y-2">
                             {payload.map((entry: any, index: number) => (
-                              <div key={index} className="flex items-center justify-between gap-8">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }}></div>
-                                  <span className={`text-[11px] font-black uppercase tracking-tight ${entry.dataKey === 'spending' ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                    {entry.name}
-                                  </span>
-                                </div>
-                                <span className={`text-sm font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                              <div key={index} className="flex items-center justify-between gap-6">
+                                <span className={`text-[13px] font-bold ${entry.name === 'Harcama' ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                  {entry.name}:
+                                </span>
+                                <span className={`text-[13px] font-black ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                                   {entry.value.toLocaleString('tr-TR')} ₺
                                 </span>
                               </div>
@@ -172,14 +255,22 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
                     return null;
                   }}
                 />
-                <Legend
-                  iconType="circle"
-                  verticalAlign="top"
-                  align="right"
-                  wrapperStyle={{ paddingBottom: '20px', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase' }}
+                <Bar
+                  name="Harcama"
+                  dataKey="spending"
+                  fill="url(#3dSpendingMain)"
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={20}
+                  animationDuration={800}
                 />
-                <Bar name="Harcama" dataKey="spending" fill="url(#spendingGradientMonthly)" radius={[6, 6, 0, 0]} barSize={16} maxBarSize={24} />
-                <Bar name="Ödeme" dataKey="payment" fill="url(#paymentGradientMonthly)" radius={[6, 6, 0, 0]} barSize={16} maxBarSize={24} />
+                <Bar
+                  name="Ödeme"
+                  dataKey="payment"
+                  fill="url(#3dPaymentMain)"
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={20}
+                  animationDuration={800}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -190,9 +281,9 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
                 <TrendingUp size={24} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-black text-slate-500/80 dark:text-slate-400 uppercase tracking-[0.15em] mb-1 text-nowrap">BU AYKİ TOPLAM HARCAMA</p>
+                <p className="text-[10px] font-black text-slate-500/80 dark:text-slate-400 uppercase tracking-[0.15em] mb-1 text-nowrap">{analysisData.currentMonthName} AYI TOPLAM HARCAMASI</p>
                 <p className={`text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tighter`}>
-                  {analysisData.monthlyChart[analysisData.monthlyChart.length - 1].spending.toLocaleString('tr-TR')} <span className="text-[0.7em] opacity-70">₺</span>
+                  {analysisData.currentMonthData.spending.toLocaleString('tr-TR')} <span className="text-[0.7em] opacity-70">₺</span>
                 </p>
               </div>
             </div>
@@ -201,50 +292,79 @@ const MonthlyAnalysis: React.FC<MonthlyAnalysisProps> = ({ transactions, cards, 
                 <TrendingDown size={24} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-black text-slate-500/80 dark:text-slate-400 uppercase tracking-[0.15em] mb-1 text-nowrap">BU AYKİ TOPLAM ÖDEME</p>
+                <p className="text-[10px] font-black text-slate-500/80 dark:text-slate-400 uppercase tracking-[0.15em] mb-1 text-nowrap">{analysisData.currentMonthName} AYI TOPLAM ÖDEMESİ</p>
                 <p className={`text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tighter`}>
-                  {analysisData.monthlyChart[analysisData.monthlyChart.length - 1].payment.toLocaleString('tr-TR')} <span className="text-[0.7em] opacity-70">₺</span>
+                  {analysisData.currentMonthData.payment.toLocaleString('tr-TR')} <span className="text-[0.7em] opacity-70">₺</span>
                 </p>
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="space-y-6">
-          <h4 className={`text-sm font-black uppercase tracking-widest ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-            BU AYIN ÖZETİ
-          </h4>
+      {/* Category Distribution Scrolling Banner */}
+      <div className="mt-12 overflow-hidden relative group pt-10 border-t border-slate-100 dark:border-slate-800">
+        <div className="flex items-center gap-4 mb-6 px-2">
+          <div className="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
+          <h3 className={`text-xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>KATEGORİ DAĞILIMI ({analysisData.currentMonthName})</h3>
+        </div>
 
-          <div className="grid grid-cols-2 gap-3">
+        <div
+          ref={marqueeRef}
+          onMouseDown={handleDragStart}
+          onMouseMove={handleDragMove}
+          onMouseUp={handleDragEnd}
+          onMouseLeaveCapture={handleDragEnd}
+          onTouchStart={handleDragStart}
+          onTouchMove={handleDragMove}
+          onTouchEnd={handleDragEnd}
+          className="relative overflow-hidden no-scrollbar py-6 cursor-grab active:cursor-grabbing select-none"
+          style={{ touchAction: 'pan-y' }}
+        >
+          <div
+            className="flex w-fit gap-6 px-6"
+            style={{ willChange: 'transform', backfaceVisibility: 'hidden' }}
+          >
             {analysisData.categoryBreakdown.length > 0 ? (
-              analysisData.categoryBreakdown.map((cat, i) => (
-                <div key={i} className={`p-4 rounded-3xl border transition-all hover:scale-[1.05] flex flex-col gap-3 ${isDarkMode ? 'bg-slate-800/20 border-slate-800 hover:bg-slate-800/40' : 'bg-slate-50 border-slate-100 shadow-sm hover:bg-white'}`}>
-                  <div className="flex flex-col gap-2">
-                    <span
-                      className="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest w-fit border"
-                      style={{
-                        backgroundColor: `${cat.color}15`,
-                        color: cat.color,
-                        borderColor: `${cat.color}30`
-                      }}
-                    >
-                      {cat.name}
-                    </span>
-                    <span className={`text-base font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                      -{cat.value.toLocaleString('tr-TR')} ₺
-                    </span>
+              [...analysisData.categoryBreakdown, null, ...analysisData.categoryBreakdown, null, ...analysisData.categoryBreakdown, null].map((cat, idx) => (
+                cat ? (
+                  <div
+                    key={idx}
+                    className={`flex-shrink-0 min-w-[280px] sm:min-w-[320px] p-5 rounded-[32px] border flex items-center gap-4 transition-all hover:scale-105 active:scale-95 ${isDarkMode ? 'bg-white/5 border-white/5 shadow-xl shadow-black/20' : 'bg-white border-slate-100 shadow-xl shadow-slate-200/50'
+                      }`}
+                  >
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <div className="w-1.5 h-10 rounded-full shrink-0 shadow-lg" style={{ backgroundColor: (cat as any).color, boxShadow: `0 0 15px ${(cat as any).color}40` }} />
+                      <div className="min-w-0 flex-1">
+                        <p className={`text-[13px] font-black tracking-tight truncate leading-tight uppercase ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                          {(cat as any).name}
+                        </p>
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1 opacity-60">
+                          {analysisData.currentMonthName} HARCAMASI
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <RollingNumber
+                        value={(cat as any).value}
+                        className={`text-lg font-black tracking-tighter ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}
+                      />
+                      <span className="text-[11px] font-bold text-slate-500 ml-1">₺</span>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div key={idx} className="flex-shrink-0 w-[50px] sm:w-[100px] flex items-center justify-center">
+                    <div className={`w-1 h-8 rounded-full opacity-10 ${isDarkMode ? 'bg-white' : 'bg-slate-900'}`} />
+                  </div>
+                )
               ))
             ) : (
-              <div className="col-span-2 py-10 text-center text-slate-500 italic text-sm">Bu ay henüz harcama verisi yok.</div>
+              <div className="py-10 text-center text-slate-500 italic text-sm w-full">Bu ay henüz harcama verisi yok.</div>
             )}
           </div>
-
-
         </div>
       </div>
-    </div >
+    </div>
   );
 };
 

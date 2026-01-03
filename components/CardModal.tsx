@@ -14,16 +14,16 @@ interface CardModalProps {
 }
 
 const CardModal: React.FC<CardModalProps> = ({ onClose, onSave, initialData, title, isDarkMode }) => {
-  const [formData, setFormData] = useState<Omit<CreditCard, 'id'>>({
+  const [formData, setFormData] = useState<any>({
     bankName: '',
     cardName: '',
     lastFour: '',
     limit: 0,
-    balance: 0,
     statementDay: 1,
     dueDay: 10,
     color: COLORS[0],
-    minPaymentRatio: 20
+    minPaymentRatio: 20,
+    openingBalance: 0
   });
 
   // Create a temporary card object for preview
@@ -54,18 +54,23 @@ const CardModal: React.FC<CardModalProps> = ({ onClose, onSave, initialData, tit
       const { id, ...rest } = initialData;
       setFormData({
         ...rest,
-        minPaymentRatio: rest.minPaymentRatio || 20
-      });
+        minPaymentRatio: rest.minPaymentRatio || 20,
+        openingBalance: 0 // Don't show opening balance on edit
+      } as any);
     }
   }, [initialData]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({
+    const { openingBalance, ...cardData } = formData;
+    const finalCard = {
       ...(initialData || {}),
-      ...formData,
+      ...cardData,
       id: initialData?.id || crypto.randomUUID()
-    } as CreditCard);
+    } as CreditCard;
+
+    // Pass openingBalance extra if it exists for App.tsx to handle
+    onSave(Object.assign(finalCard, { openingBalance }));
     onClose();
   };
 
@@ -149,22 +154,27 @@ const CardModal: React.FC<CardModalProps> = ({ onClose, onSave, initialData, tit
                 />
               </div>
             </div>
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-widest flex justify-between">
-                  <span>Güncel Borç (TL)</span>
-                  <span className="text-[8px] opacity-60">İsteğe Bağlı</span>
-                </label>
-                <input
-                  type="number"
-                  className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold transition-all"
-                  value={formData.balance || ''}
-                  onChange={e => handleNumberChange('balance', e.target.value)}
-                  onFocus={handleFocus}
-                  placeholder="0"
-                />
+            {!initialData && (
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-widest flex justify-between">
+                    <span>Açılış Borç Bakiyesi (TL)</span>
+                    <span className="text-[8px] opacity-60">Opsiyonel</span>
+                  </label>
+                  <input
+                    type="number"
+                    className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none bg-blue-500/5 dark:bg-blue-500/10 text-slate-900 dark:text-white font-black transition-all border-dashed border-blue-200 dark:border-blue-900/50"
+                    value={formData.openingBalance || ''}
+                    onChange={e => handleNumberChange('openingBalance', e.target.value)}
+                    onFocus={handleFocus}
+                    placeholder="0"
+                  />
+                  <p className="mt-2 text-[9px] font-bold text-slate-400 uppercase tracking-wider leading-relaxed">
+                    * Bu tutar işlem geçmişinize "Açılış Bakiyesi" olarak eklenecektir.
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-widest">H. Kesim Günü</label>

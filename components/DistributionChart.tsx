@@ -80,64 +80,83 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
     scrollContainerRef.current.style.scrollSnapType = 'x mandatory';
   };
 
-  // Prepare Cards Data
+  // Prepare Cards Data - TÜM DÖNEMLER (Kümülatif Borç)
   const cardsData = useMemo<DataItem[]>(() => {
+    // Her kart için tüm işlemlerden borç hesapla
     return cards
-      .filter(c => c.balance !== 0)
-      .map(c => ({
-        name: c.cardName,
-        bankName: c.bankName,
-        value: Math.abs(c.balance),
-        originalValue: c.balance,
-        color: c.color,
-        minPayment: (Math.abs(c.balance) * (c.minPaymentRatio || 20)) / 100
-      }))
-      .sort((a, b) => b.value - a.value);
-  }, [cards]);
+      .map(c => {
+        const cardTxs = transactions.filter(t => t.cardId === c.id);
+        const spending = cardTxs.filter(t => t.type === 'spending').reduce((acc, t) => acc + t.amount, 0);
+        const payment = cardTxs.filter(t => t.type === 'payment').reduce((acc, t) => acc + t.amount, 0);
+        const totalCardDebt = spending - payment;
 
-  // Prepare Banks Data
+        return {
+          name: c.cardName,
+          bankName: c.bankName,
+          value: Math.abs(totalCardDebt),
+          originalValue: totalCardDebt,
+          color: c.color,
+          minPayment: (Math.max(0, totalCardDebt) * (c.minPaymentRatio || 20)) / 100
+        };
+      })
+      .filter(c => c.value > 0)
+      .sort((a, b) => b.value - a.value);
+  }, [cards, transactions]);
+
+  // Prepare Banks Data - TÜM DÖNEMLER (Banka Bazlı Kümülatif Borç)
   const banksData = useMemo<DataItem[]>(() => {
-    const bankMap: Record<string, { value: number, originalValue: number, color: string, cards: number }> = {};
+    const bankMap: Record<string, { spending: number, payment: number, color: string, cards: number }> = {};
 
     cards.forEach(c => {
       const bankName = c.bankName || 'Diğer';
       if (!bankMap[bankName]) {
-        bankMap[bankName] = {
-          value: 0,
-          originalValue: 0,
-          color: c.color, // Use first card's color
-          cards: 0
-        };
+        bankMap[bankName] = { spending: 0, payment: 0, color: c.color, cards: 0 };
       }
-      bankMap[bankName].value += Math.abs(c.balance);
-      bankMap[bankName].originalValue += c.balance;
       bankMap[bankName].cards += 1;
     });
 
-    return Object.entries(bankMap)
-      .map(([name, data]) => ({
-        name: name.toLocaleUpperCase('tr-TR'),
-        value: Math.max(0.1, data.value),
-        originalValue: data.originalValue,
-        color: data.color,
-        cardsCount: data.cards
-      }))
-      .sort((a, b) => b.value - a.value);
-  }, [cards]);
+    transactions.forEach(t => {
+      const card = cards.find(c => c.id === t.cardId);
+      if (!card) return;
 
-  // Prepare Categories Data
-  const categoriesData = useMemo<DataItem[]>(() => {
-    const now = new Date();
-    const currentMonthTxs = transactions.filter(t => {
-      const d = new Date(t.date);
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && t.type === 'spending';
+      const bankName = card.bankName || 'Diğer';
+      if (!bankMap[bankName]) {
+        bankMap[bankName] = { spending: 0, payment: 0, color: card.color, cards: 0 };
+      }
+
+      if (t.type === 'spending') {
+        bankMap[bankName].spending += t.amount;
+      } else {
+        bankMap[bankName].payment += t.amount;
+      }
     });
 
+    return Object.entries(bankMap)
+      .map(([name, data]) => {
+        const debt = data.spending - data.payment;
+        return {
+          name: name.toLocaleUpperCase('tr-TR'),
+          value: Math.max(0.1, Math.abs(debt)),
+          originalValue: debt,
+          color: data.color,
+          cardsCount: data.cards
+        };
+      })
+      .filter(b => b.value > 0.1)
+      .sort((a, b) => b.value - a.value);
+  }, [cards, transactions]);
+
+  // Prepare Categories Data - TÜM DÖNEMLER (Bu Ay Değil, Tüm Zamanlar)
+  const categoriesData = useMemo<DataItem[]>(() => {
+    // Tüm harcama işlemlerini kullan (dönem filtresi yok)
+    const spendingTxs = transactions.filter(t => t.type === 'spending');
+
     const catMap: Record<string, { name: string, amount: number }> = {};
-    currentMonthTxs.forEach(t => {
-      const key = t.category.trim().toLocaleLowerCase('tr-TR');
+    spendingTxs.forEach(t => {
+      const cat = t.category || 'Diğer';
+      const key = cat.trim().toLocaleLowerCase('tr-TR');
       if (!catMap[key]) {
-        catMap[key] = { name: t.category.toLocaleUpperCase('tr-TR'), amount: 0 };
+        catMap[key] = { name: cat.toLocaleUpperCase('tr-TR'), amount: 0 };
       }
       catMap[key].amount += t.amount;
     });
@@ -203,7 +222,7 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
 
   const renderChartSlide = (data: DataItem[], totalValue: number, netTotal: number, type: 'cards' | 'banks' | 'categories') => {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-start flex-shrink-0 snap-center pb-8">
+      <div className="w-full min-h-full flex flex-col items-center justify-start flex-shrink-0 snap-center pb-8 border-none">
         {/* Chart Container */}
         <div className="relative w-full aspect-square sm:h-[360px] flex items-center justify-center">
           <ResponsiveContainer width="100%" height="100%">
@@ -368,7 +387,7 @@ const DistributionChart: React.FC<DistributionChartProps> = ({ cards, transactio
 
   return (
     <div
-      className="flex flex-col h-full w-full select-none"
+      className="flex flex-col w-full select-none"
       onClick={() => setActiveIndex(null)}
     >
       {/* Header Tabs - Optimized for Mobile */}
