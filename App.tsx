@@ -969,10 +969,21 @@ const App: React.FC = () => {
 
   const handleSaveAutoPayment = async (ap: AutoPayment) => {
     if (!user) return;
-    setAutoPayments(prev => [...prev.filter(x => x.id !== ap.id), ap]);
-    showToast('Otomatik ödeme kaydedildi', 'success');
-    await dataSyncService.upsertAutoPayment(user.id, ap);
-    await dataSyncService.sendSyncSignal(user.id);
+
+    try {
+      // 1. Database Write First
+      await dataSyncService.upsertAutoPayment(user.id, ap);
+
+      // 2. UI Update
+      setAutoPayments(prev => [...prev.filter(x => x.id !== ap.id), ap]);
+      showToast('Otomatik ödeme kaydedildi', 'success');
+
+      // 3. Signal others
+      await dataSyncService.sendSyncSignal(user.id);
+    } catch (error) {
+      console.error('Auto payment save failed:', error);
+      showToast('Otomatik ödeme kaydedilemedi.', 'error');
+    }
   };
 
   const processAutoPayments = async () => {
@@ -1316,49 +1327,61 @@ const App: React.FC = () => {
   }, [transactions]);
 
   const handleSaveCard = async (savedCard: CreditCard) => {
-    // 1. Optimistic Update
-    recentLocalChangesRef.current.set(savedCard.id, Date.now());
+    if (!user) return;
 
-    // Check if this is a NEW card with an initial balance
-    const initialBalance = (savedCard as any).balance || 0;
+    try {
+      console.log('[Card] Saving to database:', savedCard.cardName);
 
-    setBaseCards(prev => {
-      const exists = prev.find(c => c.id === savedCard.id);
-      if (exists) return prev.map(c => c.id === savedCard.id ? savedCard : c);
-      return [...prev, savedCard];
-    });
+      // 1. Save Card to Database First
+      await dataSyncService.upsertCard(user.id, savedCard);
 
-    // If new card has balance, create opening transaction in the ledger
-    const isNew = !baseCards.find(c => c.id === savedCard.id);
-    const openingBalance = (savedCard as any).openingBalance || 0;
+      // 2. Handle Opening Balance (if new)
+      const isNew = !baseCards.find(c => c.id === savedCard.id);
+      const openingBalance = (savedCard as any).openingBalance || 0;
+      let openingTx: Transaction | null = null;
 
-    if (isNew && openingBalance > 0) {
-      const openingTx: Transaction = {
-        id: `open-${savedCard.id}-${Date.now()}`,
-        cardId: savedCard.id,
-        cardName: savedCard.cardName,
-        type: 'spending',
-        amount: openingBalance,
-        category: 'Diğer',
-        date: new Date().toISOString(),
-        description: 'Açılış Bakiyesi',
-        expenseType: 'single'
-      };
-      setTransactions(prev => [openingTx, ...prev]);
-      if (user) dataSyncService.saveTransaction(user.id, openingTx);
-    }
+      if (isNew && openingBalance > 0) {
+        openingTx = {
+          id: `open-${savedCard.id}-${Date.now()}`,
+          cardId: savedCard.id,
+          cardName: savedCard.cardName,
+          type: 'spending',
+          amount: openingBalance,
+          category: 'Diğer',
+          date: new Date().toISOString(),
+          description: 'Açılış Bakiyesi',
+          expenseType: 'single'
+        };
+        // Save opening transaction to DB
+        await dataSyncService.saveTransaction(user.id, openingTx);
+      }
 
-    showToast(`${savedCard.cardName} kaydedildi.`, 'success');
-    setModalMode(null);
-    setEditingCard(undefined);
+      // 3. Update UI (only after DB success)
+      recentLocalChangesRef.current.set(savedCard.id, Date.now());
 
-    // 2. Server Sync
-    if (user) {
-      try {
-        await dataSyncService.upsertCard(user.id, savedCard);
-        await dataSyncService.sendSyncSignal(user.id);
-      } catch (error) {
-        showToast('Senkronizasyon hatası', 'warning');
+      setBaseCards(prev => {
+        const exists = prev.find(c => c.id === savedCard.id);
+        if (exists) return prev.map(c => c.id === savedCard.id ? savedCard : c);
+        return [...prev, savedCard];
+      });
+
+      if (openingTx) {
+        const tx = openingTx; // capture for closure
+        setTransactions(prev => [tx, ...prev]);
+      }
+
+      await dataSyncService.sendSyncSignal(user.id);
+
+      showToast(`${savedCard.cardName} kaydedildi.`, 'success');
+      setModalMode(null);
+      setEditingCard(undefined);
+
+    } catch (error: any) {
+      console.error('Card save failed:', error);
+      if (error?.code === '42501' || error?.message?.includes('policy')) {
+        showToast('Yetki hatası: Kart kaydedilemedi (RLS)', 'error');
+      } else {
+        showToast('Kart kaydedilemedi. Lütfen tekrar deneyin.', 'error');
       }
     }
   };
@@ -1454,19 +1477,8 @@ const App: React.FC = () => {
     const tx = transactionToDelete;
     const groupId = (tx as any).installmentGroupId;
 
-    if (groupId) {
-      // Delete ALL installments in the group
-      setTransactions(prev => prev.filter(t => (t as any).installmentGroupId !== groupId));
-      showToast('Tüm taksit grubu silindi.', 'success');
-    } else {
-      // Single transaction
-      setTransactions(prev => prev.filter(t => t.id !== tx.id));
-      showToast('İşlem günlüğünden silindi.', 'success');
-    }
-
-    setTransactionToDelete(null);
-
     try {
+      // 1. Delete from Database First
       if (groupId) {
         // Find all IDs in this group to delete from Supabase
         const groupTxs = transactions.filter(t => (t as any).installmentGroupId === groupId);
@@ -1474,10 +1486,24 @@ const App: React.FC = () => {
       } else {
         await dataSyncService.deleteTransaction(tx.id);
       }
+
+      // 2. Update UI (only after DB success)
+      if (groupId) {
+        setTransactions(prev => prev.filter(t => (t as any).installmentGroupId !== groupId));
+        showToast('Tüm taksit grubu silindi.', 'success');
+      } else {
+        setTransactions(prev => prev.filter(t => t.id !== tx.id));
+        showToast('İşlem günlüğünden silindi.', 'success');
+      }
+
+      setTransactionToDelete(null);
+
+      // 3. Signal others
       await dataSyncService.sendSyncSignal(user.id);
+
     } catch (err) {
       console.error('[Delete] Sync error:', err);
-      showToast('Senkronizasyon hatası', 'warning');
+      showToast('İşlem silinemedi.', 'error');
     }
   };
 
@@ -1485,24 +1511,29 @@ const App: React.FC = () => {
     if (!cardToDelete) return;
     const cardId = cardToDelete.id;
 
-    // 1. Ledger Cleanup: Remove the card and ALL associated history
-    setBaseCards(prev => prev.filter(c => c.id !== cardId));
-    setTransactions(prev => prev.filter(t => t.cardId !== cardId));
+    if (!user) return;
 
-    setCardToDelete(null);
-    showToast('Kart ve tüm geçmişi silindi.', 'success');
+    try {
+      // 1. Database Delete First
+      await dataSyncService.deleteCard(cardId);
 
-    // 2. Server Sync
-    if (user) {
-      try {
-        await dataSyncService.deleteCard(cardId);
-        // Cascading delete is already handled by server schema usually, 
-        // but we'll manually ensure it here for consistency.
-        const txsToDelete = transactions.filter(t => t.cardId === cardId);
-        await Promise.all(txsToDelete.map(t => dataSyncService.deleteTransaction(t.id)));
-      } catch (err) {
-        console.error('Failed to purge card ledger:', err);
-      }
+      // Cascading delete is handled by Supabase (or manually here if needed)
+      // Ideally, the SQL foreign keys handle this, but let's be safe and try manual cleanup if needed
+      // but since we are refactoring for DB-first, we rely on the primary delete succeeding.
+
+      // 2. Update UI
+      setBaseCards(prev => prev.filter(c => c.id !== cardId));
+      setTransactions(prev => prev.filter(t => t.cardId !== cardId));
+
+      setCardToDelete(null);
+      showToast('Kart ve tüm geçmişi silindi.', 'success');
+
+      // 3. Signal others
+      await dataSyncService.sendSyncSignal(user.id);
+
+    } catch (err) {
+      console.error('Failed to delete card:', err);
+      showToast('Kart silinemedi.', 'error');
     }
   };
 
